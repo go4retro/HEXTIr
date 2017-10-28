@@ -123,9 +123,6 @@ void hex_init(void) {
   HEX_HSK_IN_DDR &= ~HEX_HSK_IN_PIN;  // bring HSK hi-Z
   HEX_HSK_IN_OUT |= HEX_HSK_IN_PIN;
 
-  HEX_HSK_OUT_DDR |= HEX_HSK_OUT_PIN;
-  HEX_HSK_OUT_OUT &= ~HEX_HSK_OUT_PIN;
-
   HEX_BAV_DDR &= ~HEX_BAV_PIN;
   HEX_BAV_OUT |= HEX_BAV_PIN;
 
@@ -189,7 +186,6 @@ void hex_release_bus_send(void) {
   hex_hsk_hi();
   while(!hex_is_hsk());
   HEX_DATA_OUT |= HEX_DATA_PIN;
-  _delay_us(10);
   HEX_DATA_DDR &= ~HEX_DATA_PIN;
   _delay_us(48); // won't need this if someone else did it.
 }
@@ -288,6 +284,8 @@ int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
 
 uint8_t hex_write(pab_t pab) {
   uint16_t i = 0;
+
+  hex_release_bus_recv();
   if(hex_getdata(buffer, pab.datalen))
     return 1;
   _delay_ms(1000);
