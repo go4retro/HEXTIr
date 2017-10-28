@@ -39,8 +39,6 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
-
-
 #ifndef TRUE
 #define FALSE                 0
 #define TRUE                  (!FALSE)

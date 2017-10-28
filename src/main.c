@@ -25,48 +25,99 @@
 #include "uart.h"
 
 uint16_t length = 80;
-uint8_t pgm[32];
 uint8_t save[20] = { 0x80, 0x03, 0x0e, 0x00, 0x0a, 0x00, 0x07, 0x8a, 0xc9, 0x02, 0x68, 0x69, 0x00, 0xff, 0x7f, 0x03, 0x86, 0x00, 0x20, 0x00 };
 
-
-typedef enum { ST_IDLE,
-               ST_GETDEV,
-               ST_GETCMD,
-               ST_GETLUN,
-               ST_GETRECNUM_L,
-               ST_GETRECNUM_H,
-               ST_GETBUFLEN_L,
-               ST_GETBUFLEN_H,
-               ST_GETDATLEN_L,
-               ST_GETDATLEN_H,
-               ST_GETDATA,
-               ST_PROCESS
-             } hexstate_t;
+uint8_t buffer[64];
 
 typedef enum { HEXCMD_OPEN = 0,
                HEXCMD_CLOSE,
-               HEXCMD_DELETE,
+               HEXCMD_DELETE_OPEN,
                HEXCMD_READ,
                HEXCMD_WRITE,
+               HEXCMD_RESTORE,
+               HEXCMD_DELETE,
+               HEXCMD_RETURN_STATUS,
+               HEXCMD_SVC_REQ_ENABLE,
+               HEXCMD_SVC_REQ_DISABLE,
+               HEXCMD_SVC_REQ_POLL,
+               HEXCMD_MASTER,
+               HEXCMD_VERIFY,
+               HEXCMD_FORMAT,
+               HEXCMD_CATALOG,
+               HEXCMD_SET_OPTIONS,
+               HEXCMD_XMIT_BREAK,
+               HEXCMD_WP_FILE,
+               HEXCMD_READ_SECTORS,
+               HEXCMD_WRITE_SECTORS,
+               HEXCMD_RENAME_FILE,
+               HEXCMD_READ_FD,
+               HEXCMD_WRITE_FD,
+               HEXCMD_READ_FILE_SECTORS,
+               HEXCMD_WRITE_FILE_SECTORS,
+               HEXCMD_LOAD,
+               HEXCMD_SAVE,
+               HEXCMD_INQ_SAVE,
+               HEXCMD_HOME_COMP_STATUS,
+               HEXCMD_HOME_COMP_VERIFY,
+               HEXCMD_NULL = 0xfe,
+               HEXCMD_RESET_BUS
             } hexcmdtype_t;
 
-typedef struct _hexcmd{
+typedef enum {
+              HEXSTAT_SUCCESS = 0,
+              HEXSTAT_OPTION_ERR,
+              HEXSTAT_ATTR_ERR,
+              HEXSTAT_NOT_FOUND,
+              HEXSTAT_NOT_OPEN,
+              HEXSTAT_ALREADY_OPEN,
+              HEXSTAT_DEVICE_ERR,
+              HEXSTAT_EOF,
+              HEXSTAT_TOO_LONG,
+              HEXSTAT_WP_ERR,
+              HEXSTAT_NOT_REQUEST,
+              HEXSTAT_DIR_FULL,
+              HEXSTAT_BUF_SIZE_ERR,
+              HEXSTAT_UNSUPP_CMD,
+              HEXSTAT_NOT_WRITE,
+              HEXSTAT_NOT_READ,
+              HEXSTAT_DATA_ERR,
+              HEXSTAT_FILE_TYPE_ERR,
+              HEXSTAT_FILE_PROT_ERR,
+              HEXSTAT_APPEND_MODE_ERR,
+              HEXSTAT_OUTPUT_MODE_ERR,
+              HEXSTAT_INPUT_MODE_ERR,
+              HEXSTAT_UPDATE_MODE_ERR,
+              HEXSTAT_FILE_TYPE_INT_DISP_ERR,
+              HEXSTAT_VERIFY_ERR,
+              HEXSTAT_BATT_LOW,
+              HEXSTAT_UNFORMATTED,
+              HEXSTAT_BUS_ERR,
+              HEXSTAT_DEL_PROTECT,
+              HEXSTAT_CART_NOT_PRESENT,
+              HEXSTAT_RESTORE_NOT_ALLOWED,
+              HEXSTAT_FILE_NAME_INVALID,
+              HEXSTAT_MEDIA_FULL,
+              HEXSTAT_MAX_LUNS,
+              HEXSTAT_DATA_INVALID,
+              HEXSTAT_ILLEGAL_SLAVE = 0xfe,
+              HEXSTAT_TIMEOUT
+            } hexstatus_t;
+
+           typedef struct _hexcmd{
   uint8_t dev;
   uint8_t cmd;
   uint8_t lun;
   uint16_t record;
   uint16_t buflen;
   uint16_t datalen;
-} hexcmd_t;
+} pab_t;
 
-void hex_control(uint8_t i) {
-  if(i) {
-    HEX_HSK_DDR |= HEX_HSK_PIN;
-    //HEX_BAV_DDR |= HEX_BAV_PIN;
-    HEX_DATA_DDR |= HEX_DATA_PIN;
-  } else {
-  }
-}
+typedef struct {
+  union {
+    pab_t pab;
+    uint8_t raw[9];
+  };
+} pab_raw_t;
 
 void hex_init(void) {
   HEX_HSK_DDR &= ~HEX_HSK_PIN;
@@ -105,10 +156,16 @@ void hex_hsk_lo(void) {
 
 uint8_t hex_is_hsk(void) {
   return HEX_HSK_IN & HEX_HSK_PIN;
-
 }
 
-void hex_send_nybble(uint8_t data) {
+void hex_release_bus(void) {
+  hex_hsk_hi();
+  while(!hex_is_hsk());
+  HEX_DATA_OUT |= HEX_DATA_PIN;  // in case we were sending.
+  HEX_DATA_DDR &= ~HEX_DATA_PIN;
+}
+
+void hex_send_nybble(uint8_t data, uint8_t hold) {
   uint8_t i = HEX_DATA_PIN & data;
 
   hex_bav_lo();
@@ -117,126 +174,141 @@ void hex_send_nybble(uint8_t data) {
   _delay_us(10);
   hex_hsk_lo();
   hex_bav_hi();
-  _delay_us(9);
-  hex_hsk_hi();
-  while(!hex_is_hsk());
-  //_delay_us(1);
-  HEX_DATA_OUT |= HEX_DATA_PIN;
-  HEX_DATA_DDR &= ~HEX_DATA_PIN;
-  _delay_us(48);
+  if(!hold) {
+    _delay_us(9);
+    hex_release_bus();
+    _delay_us(48);
+  }
 }
 
-void hex_putc(uint8_t data) {
-  hex_send_nybble(data);
-  hex_send_nybble(data >> 4);
+void hex_putc(uint8_t data, uint8_t hold) {
+  hex_send_nybble(data, 0);
+  hex_send_nybble(data >> 4, 1);
   uart_puthex(data);
   uart_putc(' ');
+  if(!hold) {
+    _delay_us(9);
+    hex_release_bus();
+    _delay_us(48);
+  }
 }
 
-void hex_puti(uint16_t data) {
-  hex_putc(data);
-  hex_putc(data >> 8);
+void hex_puti(uint16_t data, uint8_t hold) {
+  hex_putc(data, 0);
+  hex_putc(data >> 8, hold);
 }
 
-uint8_t hex_read_nybble(uint8_t hold) {
+int16_t hex_read_nybble(uint8_t hold) {
   uint8_t data;
 
-  //while(HEX_HSK_IN & HEX_HSK_PIN);  // wait until low happens.
+  // should time out in 20ms
   while(hex_is_hsk());  // wait until low happens.
   hex_hsk_lo();
   data = (HEX_DATA_IN & HEX_DATA_PIN);
   if(!hold) {
-    hex_hsk_hi();
-    while(!hex_is_hsk());  // wait until hi happens.
+    hex_release_bus();
   }
   return data;
 }
 
 
 
-uint8_t hex_getc(uint8_t hold) {
+int16_t hex_getc(uint8_t hold) {
+  int16_t datal, datah;
   uint8_t data;
-  data = hex_read_nybble(0) | (hex_read_nybble(hold) << 4);
+
+  datal = hex_read_nybble(0);
+  if(datal < 0)
+    return datal;
+  datah = hex_read_nybble(1);
+  if(datah < 0) {
+    hex_release_bus();
+    return datah;
+  }
+  data = datal | (datah << 4);
   uart_puthex(data);
   uart_putc(' ');
+  if(!hold)
+    hex_release_bus();
   return data;
 
 }
 
-uint8_t hex_getdata(uint8_t buffer[256], uint16_t len) {
+int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   uint16_t i = 0;
-  uint8_t data;
+  int16_t data;
 
   while(i < len) {
     if(hex_is_bav()){
       return 1;
     }
     data = hex_getc((i+1) == len);
-    //data = hex_getc(0);
-    buffer[i++] = data;
+    if(data < 0)
+      return data;
+    buf[i++] = data;
   }
-  //if(len > 0) {
-  //  uart_putc(13);
-  //  uart_putc(10);
-  //  uart_puthex(len >> 8);
-  //  uart_puthex(len);
-  //  uart_trace(buffer,0,len);
-  //}
+  if(len > 0) {
+    uart_putc(13);
+    uart_putc(10);
+    uart_trace(buf,0,len);
+    uart_putc('<');
+  }
   return 0;
 }
 
-uint8_t hex_write(hexcmd_t cmd) {
+uint8_t hex_write(pab_t pab) {
   uint16_t i = 0;
-  uint8_t data;
-  uint8_t buffer[256];
-  if(hex_getdata(buffer, cmd.datalen))
+  if(hex_getdata(buffer, pab.datalen))
     return 1;
-  hex_hsk_hi();  // normally we would hold here until writing was done.
-  for(i = 0;i < cmd.datalen ; i++) {
-    pgm[i] = buffer[i];
+  _delay_ms(1000);
+  hex_release_bus();  // normally we would hold here until writing was done.
+  for(i = 0;i < pab.datalen ; i++) {
+    //pgm[i] = buffer[i];
   }
-  length = cmd.datalen;
+  length = pab.datalen;
   _delay_us(200);
   if(!hex_is_bav()) { // we can send response
-    uart_putc(13);
-    uart_putc(10);
-    hex_puti(0);  // zero length data
-    hex_putc(0);  // status code
+    hex_puti(0, FALSE);  // zero length data
+    hex_putc(HEXSTAT_SUCCESS, FALSE);  // status code
     return 0;
   }
   return 1;
 
 }
 
-uint8_t hex_read(hexcmd_t cmd) {
+uint8_t hex_read(pab_t pab) {
   uint16_t i;
 
-  _delay_ms(10000);
-  hex_hsk_hi();
-  hex_puti(sizeof(save));
+  uart_putc(13);
+  uart_putc(10);
+  uart_trace(save,0,sizeof(save));
+  uart_putc('<');
+  _delay_ms(1000);
+  hex_release_bus();
+  hex_puti(sizeof(save), FALSE);
   for(i = 0; i< sizeof(save); i++) {
-    hex_putc(save[i]);
+    //hex_putc(save[i], (i + 1) == sizeof(save));
+    hex_putc(save[i], (i + 1) == sizeof(save));
   }
-  /*hex_puti(length);
-  for(i = 0; i< length; i++) {
-    hex_putc(pgm[i]);
-  }*/
-  hex_putc(0);    // status code
+  _delay_ms(1000);
+  hex_release_bus();  // if we leave this out, we need to ensure we have waited 48uS
+  _delay_us(48);  // testing
+  hex_putc(HEXSTAT_SUCCESS, FALSE);    // status code
   return 0;
 }
 
-uint8_t hex_open(hexcmd_t cmd) {
+uint8_t hex_open(pab_t pab) {
   uint16_t i = 0;
   uint8_t data;
-  uint8_t buffer[256];
   uint16_t len = 0;
   uint8_t att = 0;
 
+  hex_release_bus();
   while(i < 3) {
     if(hex_is_bav()){
       return 1;
     }
-    data = hex_getc(0);
+    data = hex_getc(FALSE);
     switch(i) {
       case 0:
         len = data;
@@ -250,117 +322,87 @@ uint8_t hex_open(hexcmd_t cmd) {
     }
     i++;
   }
-  if(hex_getdata(buffer,cmd.datalen-3))
+  if(hex_getdata(buffer,pab.datalen-3))
     return 1;
-  hex_hsk_hi(); // we could hold here, if we were opening a file.
+  _delay_ms(1000);
+  hex_release_bus(); // we could hold here, if we were opening a file.
   _delay_us(200);
   if(!hex_is_bav()) { // we can send response
-    uart_putc(13);
-    uart_putc(10);
 
-    hex_puti(2);    // claims it is accepted buffer length, but looks to really be my return buffer length...
+    hex_puti(2, FALSE);    // claims it is accepted buffer length, but looks to really be my return buffer length...
     switch(att) {
       case 64:
-        hex_puti(length);
+        hex_puti(length, FALSE);
         break;
       default: // write
-        hex_puti(len ? len : 128);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
+        hex_puti((len ? len : 128), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
         break;
     }
-    hex_putc(0);    // status code
+    hex_putc(HEXSTAT_SUCCESS, FALSE);    // status code
     return 0;
   }
   return 1;
 }
 
-uint8_t hex_close(hexcmd_t cmd) {
+uint8_t hex_close(pab_t pab) {
   uart_putc(13);
   uart_putc(10);
-  hex_puti(0);
-  hex_putc(0);
+  uart_putc('<');
+  hex_release_bus();
+  hex_puti(0, FALSE);
+  hex_putc(HEXSTAT_SUCCESS, FALSE);
   return 0;
 }
 
-//int main(void) __attribute__((OS_main));
+int main(void) __attribute__((OS_main));
 int main(void) {
-  hexstate_t state = ST_IDLE;
-  uint8_t data;
-  hexcmd_t cmd;
+  uint8_t i = 0;
+  int16_t data;
+  pab_raw_t pabdata;
 
   hex_init();
   uart_init();
+
   sei();
 
-  cmd.dev = 0;
-  cmd.cmd = 0;
-  cmd.lun = 0;
-  cmd.record = 0;
-  cmd.buflen = 0;
-  cmd.datalen = 0;
+  pabdata.pab.dev = 0;
+  pabdata.pab.cmd = 0;
+  pabdata.pab.lun = 0;
+  pabdata.pab.record = 0;
+  pabdata.pab.buflen = 0;
+  pabdata.pab.datalen = 0;
 
   uart_putc('*');
+  uart_putc('>');
   while(1) {
-    while(HEX_BAV_IN & HEX_BAV_PIN) {
-      state = ST_IDLE;  // wait until low happens.
+    while(hex_is_bav()) {
+      i = 0;
     }
-    data = hex_getc((cmd.cmd == 3) && (state == ST_GETDATLEN_H));  // if it's the last byte, hold the hsk low.
-    switch(state) {
-      case ST_IDLE:
-        cmd.dev = data;
-        state = ST_GETCMD;
-        break;
-      case ST_GETCMD:
-        cmd.cmd = data;
-        state = ST_GETLUN;
-        break;
-      case ST_GETLUN:
-        cmd.lun = data;
-        state = ST_GETRECNUM_L;
-        break;
-      case ST_GETRECNUM_L:
-        cmd.record = data;
-        state = ST_GETRECNUM_H;
-        break;
-      case ST_GETRECNUM_H:
-        cmd.record |= data << 8;
-        state = ST_GETBUFLEN_L;
-        break;
-      case ST_GETBUFLEN_L:
-        cmd.buflen = data;
-        state = ST_GETBUFLEN_H;
-        break;
-      case ST_GETBUFLEN_H:
-        cmd.buflen |= data << 8;
-        state = ST_GETDATLEN_L;
-        break;
-      case ST_GETDATLEN_L:
-        cmd.datalen = data;
-        state = ST_GETDATLEN_H;
-        break;
-      case ST_GETDATLEN_H:
-        cmd.datalen |= data << 8;
-        switch(cmd.cmd) {
+    data = hex_getc(i == 8);  // if it's the last byte, hold the hsk low.
+    if(-1 != data) {
+      pabdata.raw[i++] = data;
+      if(i == 9) {
+        switch(pabdata.pab.cmd) {
           case HEXCMD_OPEN:
-            hex_open(cmd);
+            hex_open(pabdata.pab);
             break;
           case HEXCMD_CLOSE:
-            hex_close(cmd);
+            hex_close(pabdata.pab);
             break;
-          case HEXCMD_DELETE:
+          case HEXCMD_DELETE_OPEN:
             break;
           case HEXCMD_READ:
-            hex_read(cmd);
+            hex_read(pabdata.pab);
             break;
           case HEXCMD_WRITE:
-            hex_write(cmd);
+            hex_write(pabdata.pab);
             break;
         }
         uart_putc(13);
         uart_putc(10);
-        state = ST_IDLE;
-        break;
-      default:
-        break;
+        uart_putc('>');
+        i = 0;  // not sure why this has to be here
+      }
     }
   }
 }
