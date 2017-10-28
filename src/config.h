@@ -42,7 +42,7 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
-
+#define CONFIG_DEVICE_ID 100
 
 /* Interrupt handler for system tick */
 #define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)

@@ -493,6 +493,7 @@ int main(void) __attribute__((OS_main));
 int main(void) {
   uint8_t i = 0;
   int16_t data;
+  uint8_t ignore_cmd = FALSE;
   pab_raw_t pabdata;
   BYTE res;
 
@@ -543,49 +544,54 @@ int main(void) {
   uart_putc('*');
   while(TRUE) {
     while(hex_is_bav()) {
-      i = 0;
     }
     uart_putc('>');
     while(!hex_is_bav()) {
-      data = hex_getc(i == 8);  // if it's the last byte, hold the hsk low.
-      if(-1 != data) {
-        pabdata.raw[i++] = data;
-        if(i == 9) {
-          switch(pabdata.pab.cmd) {
-            case HEXCMD_OPEN:
-              hex_open(pabdata.pab);
-              break;
-            case HEXCMD_CLOSE:
-              hex_close(pabdata.pab);
-              break;
-            case HEXCMD_DELETE_OPEN:
-              break;
-            case HEXCMD_READ:
-              hex_read(pabdata.pab);
-              break;
-            case HEXCMD_WRITE:
-              hex_write(pabdata.pab);
-              break;
-            case HEXCMD_RESET_BUS:
-              hex_reset_bus(pabdata.pab);
-              break;
-            default:
-              uart_putc(13);
-              uart_putc(10);
-              uart_putc('E');
-              hex_release_bus_recv();
-              break;
+      while(!ignore_cmd) {
+        data = hex_getc(i == 8);  // if it's the last byte, hold the hsk low.
+        if(-1 < data) {
+          pabdata.raw[i++] = data;
+          if(i == 1 && pabdata.pab.dev != CONFIG_DEVICE_ID) {
+            ignore_cmd = TRUE;
+          } else if(i == 9) { // exec command
+            switch(pabdata.pab.cmd) {
+              case HEXCMD_OPEN:
+                hex_open(pabdata.pab);
+                break;
+              case HEXCMD_CLOSE:
+                hex_close(pabdata.pab);
+                break;
+              case HEXCMD_DELETE_OPEN:
+                break;
+              case HEXCMD_READ:
+                hex_read(pabdata.pab);
+                break;
+              case HEXCMD_WRITE:
+                hex_write(pabdata.pab);
+                break;
+              case HEXCMD_RESET_BUS:
+                hex_reset_bus(pabdata.pab);
+                break;
+              default:
+                uart_putc(13);
+                uart_putc(10);
+                uart_putc('E');
+                hex_release_bus_recv();
+                break;
+            }
+            ignore_cmd = TRUE;  // in case someone sends more data, ignore it.
           }
-          uart_putc(13);
-          uart_putc(10);
-          i = 0;  // not sure why this has to be here
+        } else {
+          uart_putc('%');
+          uart_puthex(data);
+          i = 0;
         }
-      } else {
-        uart_putc('%');
-        uart_puthex(data);
-        i = 0;
       }
     }
+    uart_putc(13);
+    uart_putc(10);
+    i = 0;
+    ignore_cmd = FALSE;
   }
 }
 
