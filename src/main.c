@@ -59,6 +59,15 @@ typedef struct _hexcmd{
   uint16_t datalen;
 } hexcmd_t;
 
+void hex_control(uint8_t i) {
+  if(i) {
+    HEX_HSK_DDR |= HEX_HSK_PIN;
+    //HEX_BAV_DDR |= HEX_BAV_PIN;
+    HEX_DATA_DDR |= HEX_DATA_PIN;
+  } else {
+  }
+}
+
 void hex_init(void) {
   HEX_HSK_DDR &= ~HEX_HSK_PIN;
   HEX_BAV_DDR &= ~HEX_BAV_PIN;
@@ -111,6 +120,7 @@ void hex_send_nybble(uint8_t data) {
   _delay_us(9);
   hex_hsk_hi();
   while(!hex_is_hsk());
+  //_delay_us(1);
   HEX_DATA_OUT |= HEX_DATA_PIN;
   HEX_DATA_DDR &= ~HEX_DATA_PIN;
   _delay_us(48);
@@ -131,6 +141,7 @@ void hex_puti(uint16_t data) {
 uint8_t hex_read_nybble(uint8_t hold) {
   uint8_t data;
 
+  //while(HEX_HSK_IN & HEX_HSK_PIN);  // wait until low happens.
   while(hex_is_hsk());  // wait until low happens.
   hex_hsk_lo();
   data = (HEX_DATA_IN & HEX_DATA_PIN);
@@ -180,7 +191,6 @@ uint8_t hex_write(hexcmd_t cmd) {
   uint8_t buffer[256];
   if(hex_getdata(buffer, cmd.datalen))
     return 1;
-  _delay_ms(10000);
   hex_hsk_hi();  // normally we would hold here until writing was done.
   for(i = 0;i < cmd.datalen ; i++) {
     pgm[i] = buffer[i];
@@ -242,7 +252,6 @@ uint8_t hex_open(hexcmd_t cmd) {
   }
   if(hex_getdata(buffer,cmd.datalen-3))
     return 1;
-  _delay_ms(10000);
   hex_hsk_hi(); // we could hold here, if we were opening a file.
   _delay_us(200);
   if(!hex_is_bav()) { // we can send response

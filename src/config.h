@@ -39,6 +39,8 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
+
+
 #ifndef TRUE
 #define FALSE                 0
 #define TRUE                  (!FALSE)
@@ -62,7 +64,6 @@
 #else
 #  error "CONFIG_HARDWARE_VARIANT is unset or set to an unknown value."
 #endif
-
 
 /* ---------------- End of user-configurable options ---------------- */
 
