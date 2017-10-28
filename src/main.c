@@ -43,7 +43,7 @@ typedef enum { ST_IDLE,
                ST_PROCESS
              } hexstate_t;
 
-typedef enum { HEXCMD_OPEN,
+typedef enum { HEXCMD_OPEN = 0,
                HEXCMD_CLOSE,
                HEXCMD_DELETE,
                HEXCMD_READ,
@@ -138,20 +138,25 @@ void hex_puti(uint16_t data) {
   hex_putc(data >> 8);
 }
 
-uint8_t hex_read_nybble(void) {
+uint8_t hex_read_nybble(uint8_t hold) {
   uint8_t data;
 
-  while(HEX_HSK_IN & HEX_HSK_PIN);  // wait until low happens.
+  //while(HEX_HSK_IN & HEX_HSK_PIN);  // wait until low happens.
+  while(hex_is_hsk());  // wait until low happens.
+  hex_hsk_lo();
   data = (HEX_DATA_IN & HEX_DATA_PIN);
-  while(!(HEX_HSK_IN & HEX_HSK_PIN));  // wait until low happens.
+  if(!hold) {
+    hex_hsk_hi();
+    while(!hex_is_hsk());  // wait until hi happens.
+  }
   return data;
 }
 
 
 
-uint8_t hex_getc(void) {
+uint8_t hex_getc(uint8_t hold) {
   uint8_t data;
-  data = hex_read_nybble() | (hex_read_nybble() << 4);
+  data = hex_read_nybble(0) | (hex_read_nybble(hold) << 4);
   uart_puthex(data);
   uart_putc(' ');
   return data;
@@ -166,16 +171,17 @@ uint8_t hex_getdata(uint8_t buffer[256], uint16_t len) {
     if(hex_is_bav()){
       return 1;
     }
-    data = hex_getc();
+    data = hex_getc((i+1) == len);
+    //data = hex_getc(0);
     buffer[i++] = data;
   }
-  if(len > 0) {
-    uart_putc(13);
-    uart_putc(10);
-    uart_puthex(len >> 8);
-    uart_puthex(len);
-    uart_trace(buffer,0,len);
-  }
+  //if(len > 0) {
+  //  uart_putc(13);
+  //  uart_putc(10);
+  //  uart_puthex(len >> 8);
+  //  uart_puthex(len);
+  //  uart_trace(buffer,0,len);
+  //}
   return 0;
 }
 
@@ -185,6 +191,7 @@ uint8_t hex_write(hexcmd_t cmd) {
   uint8_t buffer[256];
   if(hex_getdata(buffer, cmd.datalen))
     return 1;
+  hex_hsk_hi();  // normally we would hold here until writing was done.
   for(i = 0;i < cmd.datalen ; i++) {
     pgm[i] = buffer[i];
   }
@@ -204,6 +211,8 @@ uint8_t hex_write(hexcmd_t cmd) {
 uint8_t hex_read(hexcmd_t cmd) {
   uint16_t i;
 
+  _delay_ms(10000);
+  hex_hsk_hi();
   hex_puti(sizeof(save));
   for(i = 0; i< sizeof(save); i++) {
     hex_putc(save[i]);
@@ -227,7 +236,7 @@ uint8_t hex_open(hexcmd_t cmd) {
     if(hex_is_bav()){
       return 1;
     }
-    data = hex_getc();
+    data = hex_getc(0);
     switch(i) {
       case 0:
         len = data;
@@ -243,6 +252,7 @@ uint8_t hex_open(hexcmd_t cmd) {
   }
   if(hex_getdata(buffer,cmd.datalen-3))
     return 1;
+  hex_hsk_hi(); // we could hold here, if we were opening a file.
   _delay_us(200);
   if(!hex_is_bav()) { // we can send response
     uart_putc(13);
@@ -293,7 +303,7 @@ int main(void) {
     while(HEX_BAV_IN & HEX_BAV_PIN) {
       state = ST_IDLE;  // wait until low happens.
     }
-    data = hex_getc();
+    data = hex_getc((cmd.cmd == 3) && (state == ST_GETDATLEN_H));  // if it's the last byte, hold the hsk low.
     switch(state) {
       case ST_IDLE:
         cmd.dev = data;
