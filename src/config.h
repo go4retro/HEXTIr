@@ -2,9 +2,6 @@
     HEXTIr-SD - Texas Instruments HEX-BUS SD Mass Storage Device
     Copyright Jim Brain and RETRO Innovations, 2017
 
-    This code is a modification of uart functions in sd2iec:
-    Copyright (C) 2007-2017  Ingo Korb <ingo@akana.de>
-
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; version 2 of the License only.
@@ -42,7 +39,10 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
-#define CONFIG_DEVICE_ID 100
+/* HEX BUS Device ID for unit */
+#define DEFAULT_DEVICE_ID 100
+
+#define MAX_OPEN_FILES 3
 
 /* Interrupt handler for system tick */
 #define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)
