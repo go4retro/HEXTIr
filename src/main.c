@@ -18,28 +18,16 @@
     main.c: Main application
 */
 
-#include <avr/io.h>
-#include <inttypes.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "config.h"
 #include "diskio.h"
-#include "hexbus.h"
 #include "ff.h"
 #include "timer.h"
 #include "uart.h"
 
 FATFS fs;
 uint8_t buffer[64];
-
-typedef struct _luntbl {
-  uint8_t used;
-  uint8_t lun;
-  FIL fp;
-} luntbl;
-
-luntbl files[MAX_OPEN_FILES]; //file number to file mapping
-
 
 typedef struct _pab_t {
   uint8_t dev;
@@ -57,7 +45,15 @@ typedef struct _pab_raw_t {
   };
 } pab_raw_t;
 
-FIL* find_lun(uint8_t lun) {
+typedef struct _luntbl_t {
+  uint8_t used;
+  uint8_t lun;
+  FIL fp;
+} luntbl_t;
+
+luntbl_t files[MAX_OPEN_FILES]; //file number to file mapping
+
+static FIL* find_lun(uint8_t lun) {
   uint8_t i;
 
   for(i=0;i < MAX_OPEN_FILES; i++) {
@@ -68,7 +64,7 @@ FIL* find_lun(uint8_t lun) {
   return NULL;
 }
 
-FIL* reserve_lun(uint8_t lun) {
+static FIL* reserve_lun(uint8_t lun) {
   uint8_t i;
 
   for(i = 0; i < MAX_OPEN_FILES; i++) {
@@ -80,7 +76,7 @@ FIL* reserve_lun(uint8_t lun) {
   return NULL;
 }
 
-void free_lun(uint8_t lun) {
+static void free_lun(uint8_t lun) {
   uint8_t i;
 
   for(i=0;i < MAX_OPEN_FILES; i++) {
@@ -90,7 +86,7 @@ void free_lun(uint8_t lun) {
   }
 }
 
-void init(void) {
+static void init(void) {
   uint8_t i;
 
   for(i=0;i < MAX_OPEN_FILES; i++) {
@@ -98,7 +94,7 @@ void init(void) {
   }
 }
 
-int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
+static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   uint16_t i = 0;
   int16_t data;
 
@@ -120,7 +116,7 @@ int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   return 0;
 }
 
-int8_t hex_write(pab_t pab) {
+static int8_t hex_write(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint8_t i;
@@ -132,7 +128,6 @@ int8_t hex_write(pab_t pab) {
   uart_putc(10);
   uart_putc('>');
   fp = find_lun(pab.lun);
-  //hex_release_bus_recv();
   len = pab.datalen;
   while(len) {
     i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
@@ -170,10 +165,9 @@ int8_t hex_write(pab_t pab) {
   } else {
     return HEXERR_BAV;
   }
-
 }
 
-uint8_t hex_read(pab_t pab) {
+static uint8_t hex_read(pab_t pab) {
   uint8_t rc;
   uint8_t i;
   uint16_t len = 0;
@@ -222,7 +216,7 @@ uint8_t hex_read(pab_t pab) {
   return 0;
 }
 
-uint8_t hex_open(pab_t pab) {
+static uint8_t hex_open(pab_t pab) {
   uint16_t i = 0;
   uint8_t data;
   uint16_t len = 0;
@@ -252,9 +246,9 @@ uint8_t hex_open(pab_t pab) {
     }
     i++;
   }
-  if(hex_getdata(buffer,pab.datalen-3))
+  if(hex_getdata(buffer,pab.datalen - 3))
     return HEXERR_BAV;
-  buffer[pab.datalen-3] = 0;
+  buffer[pab.datalen - 3] = 0; // terminate the string
 
   switch (att & (0x80 | 0x40)) {
     case 0x00:  // append mode
@@ -272,8 +266,7 @@ uint8_t hex_open(pab_t pab) {
   }
   fp = reserve_lun(pab.lun);
   if(fp != NULL) {
-    uart_putc('^');
-    res = f_open(&fs,fp,(UCHAR*)buffer,mode);
+    res = f_open(&fs,fp,(UCHAR *)buffer,mode);
     switch(res) {
       case FR_OK:
         rc = HEXSTAT_SUCCESS;
@@ -317,7 +310,7 @@ uint8_t hex_open(pab_t pab) {
   return HEXERR_BAV;
 }
 
-uint8_t hex_close(pab_t pab) {
+static uint8_t hex_close(pab_t pab) {
   uint8_t rc;
   FIL* fp;
   BYTE res;
@@ -352,7 +345,7 @@ uint8_t hex_close(pab_t pab) {
   return HEXERR_BAV;
 }
 
-uint8_t hex_reset_bus(pab_t pab) {
+static uint8_t hex_reset_bus(pab_t pab) {
   uart_putc(13);
   uart_putc(10);
   uart_putc('R');

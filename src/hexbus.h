@@ -89,7 +89,7 @@ typedef enum _hexerror_t {
               HEXERR_TIMEOUT = -2
             } hexerror_t;
 
-uint8_t hex_is_bav(void);  // TODO make this static
+uint8_t hex_is_bav(void);
 void hex_release_bus_send(void);
 void hex_release_bus_recv(void);
 void hex_puti(uint16_t data, uint8_t hold);

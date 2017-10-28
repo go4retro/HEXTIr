@@ -28,29 +28,27 @@ uint8_t hex_is_bav(void) {
   return HEX_BAV_IN & HEX_BAV_PIN;
 }
 
-void hex_bav_hi(void) {
-  //if(!hex_is_bav()) {
-    HEX_BAV_DDR &= ~HEX_BAV_PIN;
-    HEX_BAV_OUT |= HEX_BAV_PIN;
-  //}
+static void hex_bav_hi(void) {
+  HEX_BAV_DDR &= ~HEX_BAV_PIN;
+  HEX_BAV_OUT |= HEX_BAV_PIN;
 }
 
-void hex_bav_lo(void) {
+static void hex_bav_lo(void) {
   HEX_BAV_OUT &= ~HEX_BAV_PIN;
   HEX_BAV_DDR |= HEX_BAV_PIN;
 }
 
-void hex_hsk_hi(void) {
+static void hex_hsk_hi(void) {
   HEX_HSK_DDR &= ~HEX_HSK_PIN;
   HEX_HSK_OUT |= HEX_HSK_PIN;
 }
 
-void hex_hsk_lo(void) {
+static void hex_hsk_lo(void) {
   HEX_HSK_DDR |= HEX_HSK_PIN;
   HEX_HSK_OUT &= ~HEX_HSK_PIN;
 }
 
-uint8_t hex_is_hsk(void) {
+static uint8_t hex_is_hsk(void) {
   return HEX_HSK_IN & HEX_HSK_PIN;
 }
 
@@ -67,7 +65,7 @@ void hex_release_bus_recv(void) {
   while(!hex_is_hsk());
 }
 
-void hex_send_nybble(uint8_t data, uint8_t hold) {
+static void hex_send_nybble(uint8_t data, uint8_t hold) {
   uint8_t i = HEX_DATA_PIN & data;
 
   hex_bav_lo();
@@ -96,7 +94,7 @@ void hex_puti(uint16_t data, uint8_t hold) {
   hex_putc(data >> 8, hold);
 }
 
-int16_t hex_read_nybble(uint8_t hold) {
+static int16_t hex_read_nybble(uint8_t hold) {
   uint8_t data;
 
   if(hex_is_bav())
