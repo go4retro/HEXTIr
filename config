@@ -48,7 +48,7 @@ CONFIG_UART_DEBUG=y
 
 # Initial Baud rate of the UART
 CONFIG_UART_BAUDRATE=38400
-CONFIG_UART_BUF_SHIFT=0
+CONFIG_UART_BUF_SHIFT=6
 
 # Select which hardware to compile for
 # Valid values:

@@ -120,11 +120,16 @@ typedef struct {
 } pab_raw_t;
 
 void hex_init(void) {
-  HEX_HSK_DDR &= ~HEX_HSK_PIN;
+  HEX_HSK_IN_DDR &= ~HEX_HSK_IN_PIN;  // bring HSK hi-Z
+  HEX_HSK_IN_OUT |= HEX_HSK_IN_PIN;
+
+  HEX_HSK_OUT_DDR |= HEX_HSK_OUT_PIN;
+  HEX_HSK_OUT_OUT &= ~HEX_HSK_OUT_PIN;
+
   HEX_BAV_DDR &= ~HEX_BAV_PIN;
-  HEX_DATA_DDR &= ~HEX_DATA_PIN;
-  HEX_HSK_OUT |= HEX_HSK_PIN;
   HEX_BAV_OUT |= HEX_BAV_PIN;
+
+  HEX_DATA_DDR &= ~HEX_DATA_PIN;
   HEX_DATA_OUT |= HEX_DATA_PIN;
 }
 
@@ -133,10 +138,10 @@ uint8_t hex_is_bav(void) {
 }
 
 void hex_bav_hi(void) {
-  if(!hex_is_bav()) {
+  //if(!hex_is_bav()) {
     HEX_BAV_DDR &= ~HEX_BAV_PIN;
     HEX_BAV_OUT |= HEX_BAV_PIN;
-  }
+  //}
 }
 
 void hex_bav_lo(void) {
@@ -144,25 +149,54 @@ void hex_bav_lo(void) {
   HEX_BAV_DDR |= HEX_BAV_PIN;
 }
 
+#define OLD_HSK
+//#define POS_HSK
+
 void hex_hsk_hi(void) {
-  HEX_HSK_DDR &= ~HEX_HSK_PIN;
-  HEX_HSK_OUT |= HEX_HSK_PIN;
+#ifdef OLD_HSK
+  HEX_HSK_IN_DDR &= ~HEX_HSK_IN_PIN;
+  HEX_HSK_IN_OUT |= HEX_HSK_IN_PIN;
+#else
+# ifdef POS_HSK
+  HEX_HSK_OUT_OUT |= HEX_HSK_OUT_PIN;
+# else
+  // negated logic
+  HEX_HSK_OUT_OUT &= ~HEX_HSK_OUT_PIN;
+# endif
+#endif
 }
 
 void hex_hsk_lo(void) {
-  HEX_HSK_OUT &= ~HEX_HSK_PIN;
-  HEX_HSK_DDR |= HEX_HSK_PIN;
+#ifdef OLD_HSK
+  HEX_HSK_IN_DDR |= HEX_HSK_IN_PIN;
+  HEX_HSK_IN_OUT &= ~HEX_HSK_IN_PIN;
+#else
+# ifdef POS_HSK
+  HEX_HSK_OUT_OUT &= ~HEX_HSK_OUT_PIN;
+# else
+  // negated logic
+  HEX_HSK_OUT_OUT |= HEX_HSK_OUT_PIN;
+# endif
+#endif
 }
 
 uint8_t hex_is_hsk(void) {
-  return HEX_HSK_IN & HEX_HSK_PIN;
+  return HEX_HSK_IN_IN & HEX_HSK_IN_PIN;
 }
 
-void hex_release_bus(void) {
+void hex_release_bus_send(void) {
+  _delay_us(1);
   hex_hsk_hi();
   while(!hex_is_hsk());
-  HEX_DATA_OUT |= HEX_DATA_PIN;  // in case we were sending.
+  HEX_DATA_OUT |= HEX_DATA_PIN;
+  _delay_us(10);
   HEX_DATA_DDR &= ~HEX_DATA_PIN;
+  _delay_us(48); // won't need this if someone else did it.
+}
+
+void hex_release_bus_recv(void) {
+  hex_hsk_hi();
+  while(!hex_is_hsk());
 }
 
 void hex_send_nybble(uint8_t data, uint8_t hold) {
@@ -175,26 +209,22 @@ void hex_send_nybble(uint8_t data, uint8_t hold) {
   hex_hsk_lo();
   hex_bav_hi();
   if(!hold) {
-    _delay_us(9);
-    hex_release_bus();
-    _delay_us(48);
+    hex_release_bus_send();
   }
 }
 
 void hex_putc(uint8_t data, uint8_t hold) {
-  hex_send_nybble(data, 0);
-  hex_send_nybble(data >> 4, 1);
+  hex_send_nybble(data, FALSE);
+  hex_send_nybble(data >> 4, TRUE);
   uart_puthex(data);
   uart_putc(' ');
   if(!hold) {
-    _delay_us(9);
-    hex_release_bus();
-    _delay_us(48);
+    hex_release_bus_send();
   }
 }
 
 void hex_puti(uint16_t data, uint8_t hold) {
-  hex_putc(data, 0);
+  hex_putc(data, FALSE);
   hex_putc(data >> 8, hold);
 }
 
@@ -206,7 +236,7 @@ int16_t hex_read_nybble(uint8_t hold) {
   hex_hsk_lo();
   data = (HEX_DATA_IN & HEX_DATA_PIN);
   if(!hold) {
-    hex_release_bus();
+    hex_release_bus_recv();
   }
   return data;
 }
@@ -222,14 +252,14 @@ int16_t hex_getc(uint8_t hold) {
     return datal;
   datah = hex_read_nybble(1);
   if(datah < 0) {
-    hex_release_bus();
+    hex_release_bus_recv();
     return datah;
   }
   data = datal | (datah << 4);
   uart_puthex(data);
   uart_putc(' ');
   if(!hold)
-    hex_release_bus();
+    hex_release_bus_recv();
   return data;
 
 }
@@ -261,9 +291,8 @@ uint8_t hex_write(pab_t pab) {
   if(hex_getdata(buffer, pab.datalen))
     return 1;
   _delay_ms(1000);
-  hex_release_bus();  // normally we would hold here until writing was done.
+  hex_release_bus_recv();  // normally we would hold here until writing was done.
   for(i = 0;i < pab.datalen ; i++) {
-    //pgm[i] = buffer[i];
   }
   length = pab.datalen;
   _delay_us(200);
@@ -277,22 +306,23 @@ uint8_t hex_write(pab_t pab) {
 }
 
 uint8_t hex_read(pab_t pab) {
-  uint16_t i;
+  uint8_t i;
+  uint16_t len;
 
   uart_putc(13);
   uart_putc(10);
-  uart_trace(save,0,sizeof(save));
   uart_putc('<');
-  _delay_ms(1000);
-  hex_release_bus();
-  hex_puti(sizeof(save), FALSE);
-  for(i = 0; i< sizeof(save); i++) {
-    //hex_putc(save[i], (i + 1) == sizeof(save));
+  hex_release_bus_recv();
+  _delay_us(48);
+  hex_puti(sizeof(save), TRUE);  // send full length of file
+  uart_putc(13);
+  uart_putc(10);
+  uart_trace(save,0,sizeof(save));
+  hex_release_bus_send();
+  for(i = 0; i < sizeof(save); i++) {
     hex_putc(save[i], (i + 1) == sizeof(save));
   }
-  _delay_ms(1000);
-  hex_release_bus();  // if we leave this out, we need to ensure we have waited 48uS
-  _delay_us(48);  // testing
+  hex_release_bus_send();
   hex_putc(HEXSTAT_SUCCESS, FALSE);    // status code
   return 0;
 }
@@ -302,8 +332,9 @@ uint8_t hex_open(pab_t pab) {
   uint8_t data;
   uint16_t len = 0;
   uint8_t att = 0;
+  uint8_t rc;
 
-  hex_release_bus();
+  hex_release_bus_recv();
   while(i < 3) {
     if(hex_is_bav()){
       return 1;
@@ -323,34 +354,39 @@ uint8_t hex_open(pab_t pab) {
     i++;
   }
   if(hex_getdata(buffer,pab.datalen-3))
-    return 1;
-  _delay_ms(1000);
-  hex_release_bus(); // we could hold here, if we were opening a file.
-  _delay_us(200);
+    return -1;
+  buffer[pab.datalen-3] = 0;
+
+  rc = HEXSTAT_SUCCESS;
+  hex_release_bus_recv();
+  _delay_us(200);  // wait a bit...
   if(!hex_is_bav()) { // we can send response
 
     hex_puti(2, FALSE);    // claims it is accepted buffer length, but looks to really be my return buffer length...
     switch(att) {
       case 64:
-        hex_puti(length, FALSE);
+        hex_puti(sizeof(save), FALSE);
         break;
       default: // write
-        hex_puti((len ? len : 128), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
+        hex_puti((len ? len : length), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
         break;
     }
-    hex_putc(HEXSTAT_SUCCESS, FALSE);    // status code
+    hex_putc(rc, FALSE);    // status code
     return 0;
   }
   return 1;
 }
 
 uint8_t hex_close(pab_t pab) {
+  uint8_t rc;
+
   uart_putc(13);
   uart_putc(10);
   uart_putc('<');
-  hex_release_bus();
+  rc = HEXSTAT_SUCCESS;
+  hex_release_bus_recv();
   hex_puti(0, FALSE);
-  hex_putc(HEXSTAT_SUCCESS, FALSE);
+  hex_putc(rc, FALSE);
   return 0;
 }
 
@@ -365,6 +401,8 @@ int main(void) {
 
   sei();
 
+  uart_putcrlf();
+
   pabdata.pab.dev = 0;
   pabdata.pab.cmd = 0;
   pabdata.pab.lun = 0;
@@ -373,37 +411,39 @@ int main(void) {
   pabdata.pab.datalen = 0;
 
   uart_putc('*');
-  uart_putc('>');
   while(1) {
     while(hex_is_bav()) {
       i = 0;
     }
-    data = hex_getc(i == 8);  // if it's the last byte, hold the hsk low.
-    if(-1 != data) {
-      pabdata.raw[i++] = data;
-      if(i == 9) {
-        switch(pabdata.pab.cmd) {
-          case HEXCMD_OPEN:
-            hex_open(pabdata.pab);
-            break;
-          case HEXCMD_CLOSE:
-            hex_close(pabdata.pab);
-            break;
-          case HEXCMD_DELETE_OPEN:
-            break;
-          case HEXCMD_READ:
-            hex_read(pabdata.pab);
-            break;
-          case HEXCMD_WRITE:
-            hex_write(pabdata.pab);
-            break;
+    uart_putc('>');
+    while(!hex_is_bav()) {
+      data = hex_getc(i == 8);  // if it's the last byte, hold the hsk low.
+      if(-1 != data) {
+        pabdata.raw[i++] = data;
+        if(i == 9) {
+          switch(pabdata.pab.cmd) {
+            case HEXCMD_OPEN:
+              hex_open(pabdata.pab);
+              break;
+            case HEXCMD_CLOSE:
+              hex_close(pabdata.pab);
+              break;
+            case HEXCMD_DELETE_OPEN:
+              break;
+            case HEXCMD_READ:
+              hex_read(pabdata.pab);
+              break;
+            case HEXCMD_WRITE:
+              hex_write(pabdata.pab);
+              break;
+          }
+          uart_putc(13);
+          uart_putc(10);
+          i = 0;  // not sure why this has to be here
         }
-        uart_putc(13);
-        uart_putc(10);
-        uart_putc('>');
-        i = 0;  // not sure why this has to be here
       }
     }
+
   }
 }
 

@@ -46,10 +46,15 @@
 
 #if CONFIG_HARDWARE_VARIANT == 1
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
-#  define HEX_HSK_DDR         DDRC
-#  define HEX_HSK_OUT         PORTC
-#  define HEX_HSK_IN          PINC
-#  define HEX_HSK_PIN         _BV(PIN4)
+#  define HEX_HSK_IN_DDR      DDRC
+#  define HEX_HSK_IN_OUT      PORTC
+#  define HEX_HSK_IN_IN       PINC
+#  define HEX_HSK_IN_PIN      _BV(PIN4)
+
+#  define HEX_HSK_OUT_DDR     DDRD
+#  define HEX_HSK_OUT_OUT     PORTD
+#  define HEX_HSK_OUT_PIN     _BV(PIN7)
+
 #  define HEX_BAV_DDR         DDRC
 #  define HEX_BAV_OUT         PORTC
 #  define HEX_BAV_IN          PINC
