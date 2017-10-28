@@ -1,7 +1,11 @@
 # This may not look like it, but it's a -*- makefile -*-
 #
-# HexTIr - Hex-Bus adapter
-# Copyright (C) 2017  Jim Brain <brain@jbrain.com>
+# sd2iec - SD/MMC to Commodore serial bus interface/controller
+# Copyright (C) 2007-2014  Ingo Korb <ingo@akana.de>
+#
+#  Inspired by MMC2IEC by Lars Pontoppidan et al.
+#
+#  FAT filesystem access based on code from ChaN, see tff.c|h.
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,51 +24,20 @@
 #          reduce the code/ram requirements of the code.
 #
 #
-# This file is included in the main Makefile and also parsed
+# This file is included in the main sd2iec Makefile and also parsed
 # into autoconf.h.
-# This system based on sd2iec Makefile by Ingo Korb
 
-
-# MCU to compile for
-CONFIG_MCU=atmega168
-
-# Use the -relax parameter when linking?
-# Passing -O9 and -relax to the linker saves ~650 bytes of flash,
-# but the option is broken in certain binutils versions.
-# (known troublemakers: binutils 2.17, 2.18 seems fine)
+CONFIG_MCU=atmega1281
 CONFIG_LINKER_RELAX=y
-
-# MCU frequency in Hz
-CONFIG_MCU_FREQ=16000000
-
-# Add a bootloader signature
+CONFIG_MCU_FREQ=8000000
 CONFIG_BOOTLOADER=n
-
-# Value of the signature word
-#CONFIG_BOOT_DEVID=0x12345678
-
-# Debug to serial
+CONFIG_BOOT_DEVID=0x33304955
 CONFIG_UART_DEBUG=y
-
-# Initial Baud rate of the UART
 CONFIG_UART_BAUDRATE=38400
-CONFIG_UART_BUF_SHIFT=0
-
-# Select which hardware to compile for
-# Valid values:
-#   1 - v1 board
-CONFIG_HARDWARE_VARIANT=1
-
-# Track the stack size
-# Warning: This option increases the code size a lot.
-CONFIG_STACK_TRACKING=n
-
-CONFIG_EFUSE=0xf9
-CONFIG_HFUSE=0xdf
-CONFIG_LFUSE=0xff
-
-
+CONFIG_UART_BUF_SHIFT=6
+CONFIG_HARDWARE_VARIANT=2
 CONFIG_HARDWARE_NAME=HEXTIr
 CONFIG_TWINSD=n
 CONFIG_SD_AUTO_RETRIES=10
 CONFIG_SD_DATACRC=y
+CONFIG_MAX_PARTITIONS=20

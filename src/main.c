@@ -18,16 +18,26 @@
     main.c: Main application
 */
 
+#include <avr/io.h>
 #include <inttypes.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+//#include <stdio.h>
 #include "config.h"
 #include "uart.h"
+#include "ff.h"
+#include "diskio.h"
+#include "timer.h"
 
 uint16_t length = 80;
-uint8_t save[20] = { 0x80, 0x03, 0x0e, 0x00, 0x0a, 0x00, 0x07, 0x8a, 0xc9, 0x02, 0x68, 0x69, 0x00, 0xff, 0x7f, 0x03, 0x86, 0x00, 0x20, 0x00 };
+//uint8_t save[20] = { 0x80, 0x03, 0x0e, 0x00, 0x0a, 0x00, 0x07, 0x8a, 0xc9, 0x02, 0x68, 0x69, 0x00, 0xff, 0x7f, 0x03, 0x86, 0x00, 0x20, 0x00 };
 
+FATFS fs;
+FIL file1;          /* File object */
 uint8_t buffer[64];
+BYTE res;
+
+
 
 typedef enum { HEXCMD_OPEN = 0,
                HEXCMD_CLOSE,
@@ -103,7 +113,8 @@ typedef enum {
               HEXSTAT_TIMEOUT
             } hexstatus_t;
 
-           typedef struct _hexcmd{
+
+typedef struct _hexcmd{
   uint8_t dev;
   uint8_t cmd;
   uint8_t lun;
@@ -119,9 +130,15 @@ typedef struct {
   };
 } pab_raw_t;
 
+typedef enum {
+              HEXERR_SUCCESS = 0,
+              HEXERR_BAV = -1,
+              HEXERR_TIMEOUT = -2
+            } hexerror_t;
+
 void hex_init(void) {
-  HEX_HSK_IN_DDR &= ~HEX_HSK_IN_PIN;  // bring HSK hi-Z
-  HEX_HSK_IN_OUT |= HEX_HSK_IN_PIN;
+  HEX_HSK_DDR &= ~HEX_HSK_PIN;  // bring HSK hi-Z
+  HEX_HSK_OUT |= HEX_HSK_PIN;
 
   HEX_BAV_DDR &= ~HEX_BAV_PIN;
   HEX_BAV_OUT |= HEX_BAV_PIN;
@@ -146,43 +163,21 @@ void hex_bav_lo(void) {
   HEX_BAV_DDR |= HEX_BAV_PIN;
 }
 
-#define OLD_HSK
-//#define POS_HSK
-
 void hex_hsk_hi(void) {
-#ifdef OLD_HSK
-  HEX_HSK_IN_DDR &= ~HEX_HSK_IN_PIN;
-  HEX_HSK_IN_OUT |= HEX_HSK_IN_PIN;
-#else
-# ifdef POS_HSK
-  HEX_HSK_OUT_OUT |= HEX_HSK_OUT_PIN;
-# else
-  // negated logic
-  HEX_HSK_OUT_OUT &= ~HEX_HSK_OUT_PIN;
-# endif
-#endif
+  HEX_HSK_DDR &= ~HEX_HSK_PIN;
+  HEX_HSK_OUT |= HEX_HSK_PIN;
 }
 
 void hex_hsk_lo(void) {
-#ifdef OLD_HSK
-  HEX_HSK_IN_DDR |= HEX_HSK_IN_PIN;
-  HEX_HSK_IN_OUT &= ~HEX_HSK_IN_PIN;
-#else
-# ifdef POS_HSK
-  HEX_HSK_OUT_OUT &= ~HEX_HSK_OUT_PIN;
-# else
-  // negated logic
-  HEX_HSK_OUT_OUT |= HEX_HSK_OUT_PIN;
-# endif
-#endif
+  HEX_HSK_DDR |= HEX_HSK_PIN;
+  HEX_HSK_OUT &= ~HEX_HSK_PIN;
 }
 
 uint8_t hex_is_hsk(void) {
-  return HEX_HSK_IN_IN & HEX_HSK_IN_PIN;
+  return HEX_HSK_IN & HEX_HSK_PIN;
 }
 
 void hex_release_bus_send(void) {
-  _delay_us(1);
   hex_hsk_hi();
   while(!hex_is_hsk());
   HEX_DATA_OUT |= HEX_DATA_PIN;
@@ -227,6 +222,8 @@ void hex_puti(uint16_t data, uint8_t hold) {
 int16_t hex_read_nybble(uint8_t hold) {
   uint8_t data;
 
+  if(hex_is_bav())
+    return HEXERR_BAV;
   // should time out in 20ms
   while(hex_is_hsk());  // wait until low happens.
   hex_hsk_lo();
@@ -243,10 +240,10 @@ int16_t hex_getc(uint8_t hold) {
   int16_t datal, datah;
   uint8_t data;
 
-  datal = hex_read_nybble(0);
+  datal = hex_read_nybble(FALSE);
   if(datal < 0)
     return datal;
-  datah = hex_read_nybble(1);
+  datah = hex_read_nybble(TRUE);
   if(datah < 0) {
     hex_release_bus_recv();
     return datah;
@@ -266,7 +263,7 @@ int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
 
   while(i < len) {
     if(hex_is_bav()){
-      return 1;
+      return HEXERR_BAV;
     }
     data = hex_getc((i+1) == len);
     if(data < 0)
@@ -282,46 +279,93 @@ int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   return 0;
 }
 
-uint8_t hex_write(pab_t pab) {
-  uint16_t i = 0;
+int8_t hex_write(pab_t pab) {
+  uint8_t rc = HEXSTAT_SUCCESS;
+  uint16_t len;
+  uint8_t i;
+  UINT written;
 
+  uart_putc(13);
+  uart_putc(10);
+  uart_putc('>');
   hex_release_bus_recv();
-  if(hex_getdata(buffer, pab.datalen))
-    return 1;
-  _delay_ms(1000);
-  hex_release_bus_recv();  // normally we would hold here until writing was done.
-  for(i = 0;i < pab.datalen ; i++) {
+  len = pab.datalen;
+  while(len) {
+    i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
+    hex_release_bus_recv();
+    if(hex_getdata(buffer, i))
+      return HEXERR_BAV;
+    if(rc == HEXSTAT_SUCCESS) {
+      res = f_write(&file1, buffer, i, &written);
+      uart_putc(13);
+      uart_putc(10);
+      uart_trace(buffer,0,written);
+    }
+    if(written != i) {
+      rc = HEXSTAT_TOO_LONG;  // generic error.
+    }
+    len -= i;
   }
-  length = pab.datalen;
+  switch(res) {
+    case FR_OK:
+      rc = HEXSTAT_SUCCESS;
+      break;
+    default:
+      rc = HEXSTAT_DEVICE_ERR;
+      break;
+  }
+  uart_putc('>');
+  hex_release_bus_recv();
   _delay_us(200);
   if(!hex_is_bav()) { // we can send response
     hex_puti(0, FALSE);  // zero length data
-    hex_putc(HEXSTAT_SUCCESS, FALSE);  // status code
-    return 0;
+    hex_putc(rc, FALSE);    // status code
+    return HEXERR_SUCCESS;
+  } else {
+    return HEXERR_BAV;
   }
-  return 1;
 
 }
 
 uint8_t hex_read(pab_t pab) {
+  uint8_t rc;
   uint8_t i;
-  uint16_t len;
+  uint16_t len = 0;
+  UINT read;
 
   uart_putc(13);
   uart_putc(10);
   uart_putc('<');
   hex_release_bus_recv();
-  _delay_us(48);
-  hex_puti(sizeof(save), TRUE);  // send full length of file
-  uart_putc(13);
-  uart_putc(10);
-  uart_trace(save,0,sizeof(save));
-  hex_release_bus_send();
-  for(i = 0; i < sizeof(save); i++) {
-    hex_putc(save[i], (i + 1) == sizeof(save));
+  _delay_us(200);
+  hex_puti(file1.fsize, TRUE);  // send full length of file
+  while(len < file1.fsize) {
+    res = f_read(&file1, buffer, sizeof(buffer), &read);
+    if(!res) {
+      uart_putc(13);
+      uart_putc(10);
+      uart_trace(buffer,0,read);
+    }
+    hex_release_bus_send();
+    _delay_us(48);  // should do this elsewhere, but...
+    if(FR_OK == res) {
+      for(i = 0; i < read; i++) {
+        hex_putc(buffer[i], (i + 1) == read);
+      }
+      len+=read;
+    }
   }
+  switch(res) {
+    case FR_OK:
+      rc = HEXSTAT_SUCCESS;
+      break;
+    default:
+      rc = HEXSTAT_DEVICE_ERR;
+      break;
+  }
+  uart_putc('>');
   hex_release_bus_send();
-  hex_putc(HEXSTAT_SUCCESS, FALSE);    // status code
+  hex_putc(rc, FALSE);    // status code
   return 0;
 }
 
@@ -331,6 +375,7 @@ uint8_t hex_open(pab_t pab) {
   uint16_t len = 0;
   uint8_t att = 0;
   uint8_t rc;
+  BYTE mode = 0;
 
   hex_release_bus_recv();
   while(i < 3) {
@@ -355,24 +400,58 @@ uint8_t hex_open(pab_t pab) {
     return -1;
   buffer[pab.datalen-3] = 0;
 
-  rc = HEXSTAT_SUCCESS;
+  switch (att & (0x80 | 0x40)) {
+    case 0x00:  // append mode
+      mode = FA_WRITE;
+      break;
+    case 0x80: // write, truncate if present. Maybe...
+      mode = FA_WRITE | FA_CREATE_ALWAYS;
+      break;
+    case 0xC0:
+      mode = FA_WRITE | FA_READ;
+      break;
+    default:
+      mode = FA_READ;
+      break;
+  }
+  res = f_open(&fs,&file1,(UCHAR*)buffer,mode);
+  switch(res) {
+    case FR_OK:
+      rc = HEXSTAT_SUCCESS;
+      break;
+    case FR_IS_READONLY:
+      rc = HEXSTAT_NOT_WRITE;
+      break;
+    case FR_INVALID_NAME:
+      rc = HEXSTAT_FILE_NAME_INVALID;
+      break;
+    case FR_RW_ERROR:
+      rc = HEXSTAT_DEVICE_ERR;
+      break;
+    case FR_EXIST:
+    case FR_DENIED:
+    case FR_IS_DIRECTORY:
+    case FR_NO_PATH:
+    default:
+      rc = HEXSTAT_NOT_FOUND;
+      break;
+  }
   hex_release_bus_recv();
   _delay_us(200);  // wait a bit...
   if(!hex_is_bav()) { // we can send response
-
     hex_puti(2, FALSE);    // claims it is accepted buffer length, but looks to really be my return buffer length...
     switch(att) {
       case 64:
-        hex_puti(sizeof(save), FALSE);
+        hex_puti(file1.fsize, FALSE);
         break;
       default: // write
-        hex_puti((len ? len : length), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
+        hex_puti((len ? len : sizeof(buffer)), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
         break;
     }
     hex_putc(rc, FALSE);    // status code
-    return 0;
+    return HEXERR_SUCCESS;
   }
-  return 1;
+  return HEXERR_BAV;
 }
 
 uint8_t hex_close(pab_t pab) {
@@ -381,11 +460,33 @@ uint8_t hex_close(pab_t pab) {
   uart_putc(13);
   uart_putc(10);
   uart_putc('<');
-  rc = HEXSTAT_SUCCESS;
+  res = f_close(&file1);
+  switch(res) {
+    case FR_OK:
+      rc = HEXSTAT_SUCCESS;
+      break;
+    case FR_INVALID_OBJECT:
+    case FR_NOT_READY:
+    default:
+      rc = HEXSTAT_DEVICE_ERR;
+      break;
+  }
   hex_release_bus_recv();
-  hex_puti(0, FALSE);
-  hex_putc(rc, FALSE);
-  return 0;
+  _delay_us(200);  // wait a bit...
+  if(!hex_is_bav()) { // we can send response
+    hex_puti(0, FALSE);
+    hex_putc(rc, FALSE);
+    return HEXERR_SUCCESS;
+  }
+  return HEXERR_BAV;
+}
+
+uint8_t hex_reset_bus(pab_t pab) {
+  uart_putc(13);
+  uart_putc(10);
+  uart_putc('R');
+  hex_release_bus_recv();
+  return HEXSTAT_SUCCESS;
 }
 
 int main(void) __attribute__((OS_main));
@@ -393,13 +494,44 @@ int main(void) {
   uint8_t i = 0;
   int16_t data;
   pab_raw_t pabdata;
+  BYTE res;
 
   hex_init();
   uart_init();
+  disk_init();
+  timer_init();
 
   sei();
 
+  res=f_mount(1, &fs);
+  uart_puthex(res);
   uart_putcrlf();
+  /*
+  //printf("f_mount result=%d\n",res);
+  //res = f_open(&fs,&file1,(UCHAR*)"TESTFILE.BIN",FA_WRITE|FA_CREATE_ALWAYS);
+  //printf("f_open result=%d\n",res);
+  //do {
+  //  buf[i] = i;
+  //  i++;
+  //} while(i);
+  //res = f_write(&file1, buf, 256, &len);
+  //printf("f_write result=%d\n",res);
+  //printf("f_write len=%d\n",len);
+  //res = f_close(&file1);
+  //printf("f_close result=%d\n",res);
+
+  res = f_open(&fs,&file1,(UCHAR*)"games",FA_READ);
+  //res = f_open(&fs,&file1,(UCHAR*)"TESTFILE.BIN",FA_READ);
+  uart_puthex(res);
+  uart_putcrlf();
+  //printf("f_open result=%d\n",res);
+  res = f_read(&file1, buffer, sizeof(buffer), &len);
+  //printf("f_read result=%d\n",res);
+  //printf("f_read len=%d\n",len);
+
+  uart_trace(buffer,0,len);
+  res = f_close(&file1);
+  //printf("f_close result=%d\n",res);*/
 
   pabdata.pab.dev = 0;
   pabdata.pab.cmd = 0;
@@ -409,7 +541,7 @@ int main(void) {
   pabdata.pab.datalen = 0;
 
   uart_putc('*');
-  while(1) {
+  while(TRUE) {
     while(hex_is_bav()) {
       i = 0;
     }
@@ -434,14 +566,26 @@ int main(void) {
             case HEXCMD_WRITE:
               hex_write(pabdata.pab);
               break;
+            case HEXCMD_RESET_BUS:
+              hex_reset_bus(pabdata.pab);
+              break;
+            default:
+              uart_putc(13);
+              uart_putc(10);
+              uart_putc('E');
+              hex_release_bus_recv();
+              break;
           }
           uart_putc(13);
           uart_putc(10);
           i = 0;  // not sure why this has to be here
         }
+      } else {
+        uart_putc('%');
+        uart_puthex(data);
+        i = 0;
       }
     }
-
   }
 }
 
