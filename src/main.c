@@ -23,10 +23,11 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "config.h"
-#include "uart.h"
-#include "ff.h"
 #include "diskio.h"
+#include "hexbus.h"
+#include "ff.h"
 #include "timer.h"
+#include "uart.h"
 
 FATFS fs;
 uint8_t buffer[64];
@@ -38,81 +39,6 @@ typedef struct _luntbl {
 } luntbl;
 
 luntbl files[MAX_OPEN_FILES]; //file number to file mapping
-
-typedef enum _hexcmdtype_t {
-               HEXCMD_OPEN = 0,
-               HEXCMD_CLOSE,
-               HEXCMD_DELETE_OPEN,
-               HEXCMD_READ,
-               HEXCMD_WRITE,
-               HEXCMD_RESTORE,
-               HEXCMD_DELETE,
-               HEXCMD_RETURN_STATUS,
-               HEXCMD_SVC_REQ_ENABLE,
-               HEXCMD_SVC_REQ_DISABLE,
-               HEXCMD_SVC_REQ_POLL,
-               HEXCMD_MASTER,
-               HEXCMD_VERIFY,
-               HEXCMD_FORMAT,
-               HEXCMD_CATALOG,
-               HEXCMD_SET_OPTIONS,
-               HEXCMD_XMIT_BREAK,
-               HEXCMD_WP_FILE,
-               HEXCMD_READ_SECTORS,
-               HEXCMD_WRITE_SECTORS,
-               HEXCMD_RENAME_FILE,
-               HEXCMD_READ_FD,
-               HEXCMD_WRITE_FD,
-               HEXCMD_READ_FILE_SECTORS,
-               HEXCMD_WRITE_FILE_SECTORS,
-               HEXCMD_LOAD,
-               HEXCMD_SAVE,
-               HEXCMD_INQ_SAVE,
-               HEXCMD_HOME_COMP_STATUS,
-               HEXCMD_HOME_COMP_VERIFY,
-               HEXCMD_NULL = 0xfe,
-               HEXCMD_RESET_BUS
-            } hexcmdtype_t;
-
-typedef enum _hexstatus_t {
-              HEXSTAT_SUCCESS = 0,
-              HEXSTAT_OPTION_ERR,
-              HEXSTAT_ATTR_ERR,
-              HEXSTAT_NOT_FOUND,
-              HEXSTAT_NOT_OPEN,
-              HEXSTAT_ALREADY_OPEN,
-              HEXSTAT_DEVICE_ERR,
-              HEXSTAT_EOF,
-              HEXSTAT_TOO_LONG,
-              HEXSTAT_WP_ERR,
-              HEXSTAT_NOT_REQUEST,
-              HEXSTAT_DIR_FULL,
-              HEXSTAT_BUF_SIZE_ERR,
-              HEXSTAT_UNSUPP_CMD,
-              HEXSTAT_NOT_WRITE,
-              HEXSTAT_NOT_READ,
-              HEXSTAT_DATA_ERR,
-              HEXSTAT_FILE_TYPE_ERR,
-              HEXSTAT_FILE_PROT_ERR,
-              HEXSTAT_APPEND_MODE_ERR,
-              HEXSTAT_OUTPUT_MODE_ERR,
-              HEXSTAT_INPUT_MODE_ERR,
-              HEXSTAT_UPDATE_MODE_ERR,
-              HEXSTAT_FILE_TYPE_INT_DISP_ERR,
-              HEXSTAT_VERIFY_ERR,
-              HEXSTAT_BATT_LOW,
-              HEXSTAT_UNFORMATTED,
-              HEXSTAT_BUS_ERR,
-              HEXSTAT_DEL_PROTECT,
-              HEXSTAT_CART_NOT_PRESENT,
-              HEXSTAT_RESTORE_NOT_ALLOWED,
-              HEXSTAT_FILE_NAME_INVALID,
-              HEXSTAT_MEDIA_FULL,
-              HEXSTAT_MAX_LUNS,
-              HEXSTAT_DATA_INVALID,
-              HEXSTAT_ILLEGAL_SLAVE = 0xfe,
-              HEXSTAT_TIMEOUT
-            } hexstatus_t;
 
 
 typedef struct _pab_t {
@@ -130,12 +56,6 @@ typedef struct _pab_raw_t {
     uint8_t raw[9];
   };
 } pab_raw_t;
-
-typedef enum _hexerror_t {
-              HEXERR_SUCCESS = 0,
-              HEXERR_BAV = -1,
-              HEXERR_TIMEOUT = -2
-            } hexerror_t;
 
 FIL* find_lun(uint8_t lun) {
   uint8_t i;
@@ -176,127 +96,6 @@ void init(void) {
   for(i=0;i < MAX_OPEN_FILES; i++) {
     files[i].used = FALSE;
   }
-}
-
-void hex_init(void) {
-  HEX_HSK_DDR &= ~HEX_HSK_PIN;  // bring HSK hi-Z
-  HEX_HSK_OUT |= HEX_HSK_PIN;
-
-  HEX_BAV_DDR &= ~HEX_BAV_PIN;
-  HEX_BAV_OUT |= HEX_BAV_PIN;
-
-  HEX_DATA_DDR &= ~HEX_DATA_PIN;
-  HEX_DATA_OUT |= HEX_DATA_PIN;
-}
-
-uint8_t hex_is_bav(void) {
-  return HEX_BAV_IN & HEX_BAV_PIN;
-}
-
-void hex_bav_hi(void) {
-  //if(!hex_is_bav()) {
-    HEX_BAV_DDR &= ~HEX_BAV_PIN;
-    HEX_BAV_OUT |= HEX_BAV_PIN;
-  //}
-}
-
-void hex_bav_lo(void) {
-  HEX_BAV_OUT &= ~HEX_BAV_PIN;
-  HEX_BAV_DDR |= HEX_BAV_PIN;
-}
-
-void hex_hsk_hi(void) {
-  HEX_HSK_DDR &= ~HEX_HSK_PIN;
-  HEX_HSK_OUT |= HEX_HSK_PIN;
-}
-
-void hex_hsk_lo(void) {
-  HEX_HSK_DDR |= HEX_HSK_PIN;
-  HEX_HSK_OUT &= ~HEX_HSK_PIN;
-}
-
-uint8_t hex_is_hsk(void) {
-  return HEX_HSK_IN & HEX_HSK_PIN;
-}
-
-void hex_release_bus_send(void) {
-  hex_hsk_hi();
-  while(!hex_is_hsk());
-  HEX_DATA_OUT |= HEX_DATA_PIN;
-  HEX_DATA_DDR &= ~HEX_DATA_PIN;
-  _delay_us(48); // won't need this if someone else did it.
-}
-
-void hex_release_bus_recv(void) {
-  hex_hsk_hi();
-  while(!hex_is_hsk());
-}
-
-void hex_send_nybble(uint8_t data, uint8_t hold) {
-  uint8_t i = HEX_DATA_PIN & data;
-
-  hex_bav_lo();
-  HEX_DATA_OUT = (HEX_DATA_OUT & ~HEX_DATA_PIN) | i;
-  HEX_DATA_DDR = (HEX_DATA_OUT & ~HEX_DATA_PIN) | (~i & HEX_DATA_PIN);
-  _delay_us(10);
-  hex_hsk_lo();
-  hex_bav_hi();
-  if(!hold) {
-    hex_release_bus_send();
-  }
-}
-
-void hex_putc(uint8_t data, uint8_t hold) {
-  hex_send_nybble(data, FALSE);
-  hex_send_nybble(data >> 4, TRUE);
-  uart_puthex(data);
-  uart_putc(' ');
-  if(!hold) {
-    hex_release_bus_send();
-  }
-}
-
-void hex_puti(uint16_t data, uint8_t hold) {
-  hex_putc(data, FALSE);
-  hex_putc(data >> 8, hold);
-}
-
-int16_t hex_read_nybble(uint8_t hold) {
-  uint8_t data;
-
-  if(hex_is_bav())
-    return HEXERR_BAV;
-  // should time out in 20ms
-  while(hex_is_hsk());  // wait until low happens.
-  hex_hsk_lo();
-  data = (HEX_DATA_IN & HEX_DATA_PIN);
-  if(!hold) {
-    hex_release_bus_recv();
-  }
-  return data;
-}
-
-
-
-int16_t hex_getc(uint8_t hold) {
-  int16_t datal, datah;
-  uint8_t data;
-
-  datal = hex_read_nybble(FALSE);
-  if(datal < 0)
-    return datal;
-  datah = hex_read_nybble(TRUE);
-  if(datah < 0) {
-    hex_release_bus_recv();
-    return datah;
-  }
-  data = datal | (datah << 4);
-  uart_puthex(data);
-  uart_putc(' ');
-  if(!hold)
-    hex_release_bus_recv();
-  return data;
-
 }
 
 int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
@@ -398,13 +197,12 @@ uint8_t hex_read(pab_t pab) {
         uart_trace(buffer,0,read);
       }
       hex_release_bus_send();
-      _delay_us(48);  // should do this elsewhere, but...
       if(FR_OK == res) {
         for(i = 0; i < read; i++) {
           hex_putc(buffer[i], (i + 1) == read);
         }
         len+=read;
-      }
+      }  // TODO if reading fails, we need to error out.
     }
     switch(res) {
       case FR_OK:
@@ -506,7 +304,7 @@ uint8_t hex_open(pab_t pab) {
   if(!hex_is_bav()) { // we can send response
     hex_puti(2, FALSE);    // claims it is accepted buffer length, but looks to really be my return buffer length...
     switch(att) {
-      case 64:
+      case 64: // read
         hex_puti(fsize, FALSE);
         break;
       default: // write

@@ -66,7 +66,9 @@ TARGET = $(OBJDIR)/HEXTIr
 SRC  = main.c
 SRC += ff.c
 SRC += diskio.c
-SRC += timer.c spi.c
+SRC += timer.c
+SRC += spi.c
+SRC += hexbus.c
 
 ifneq ($(CONFIG_NO_SD),y)
   SRC += sdcard.c
