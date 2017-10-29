@@ -93,8 +93,9 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
+/* This allows the user to set the drive address to be 100-107 or 108-117) */
 static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7))) >> 4);
+  return 100 + !(((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4) + (PIND &  _BV(PIN7) ? 0 : 8));
 }
 
 static inline void device_hw_address_init(void) {
