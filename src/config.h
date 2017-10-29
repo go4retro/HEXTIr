@@ -44,11 +44,6 @@
 /* Interrupt handler for system tick */
 #define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)
 
-//#ifndef TRUE
-//#define FALSE                 0
-//#define TRUE                  (!FALSE)
-//#endif
-
 #if CONFIG_HARDWARE_VARIANT == 1
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
 #  define HEX_HSK_DDR         DDRC
@@ -122,63 +117,6 @@ static inline void board_init(void) {
   // turn on power LED
   DDRD  |= _BV(PIN3);
   PORTD |= _BV(PIN3);
-}
-
-#elif CONFIG_HARDWARE_VARIANT == 2
-/* ---------- Hardware configuration: uIEC v3 ---------- */
-#  define HAVE_SD
-#  define SD_CHANGE_HANDLER     ISR(INT6_vect)
-#  define SD_SUPPLY_VOLTAGE     (1L<<21)
-
-/* 250kHz slow, 2MHz fast */
-#  define SPI_DIVISOR_SLOW 32
-#  define SPI_DIVISOR_FAST 4
-
-static inline void sdcard_interface_init(void) {
-  DDRE  &= ~_BV(PE6);
-  PORTE |=  _BV(PE6);
-  DDRE  &= ~_BV(PE2);
-  PORTE |=  _BV(PE2);
-  EICRB |=  _BV(ISC60);
-  EIMSK |=  _BV(INT6);
-}
-
-static inline uint8_t sdcard_detect(void) {
-  return !(PINE & _BV(PE6));
-}
-
-static inline uint8_t sdcard_wp(void) {
-  return PINE & _BV(PE2);
-}
-
-static inline uint8_t device_hw_address(void) {
-  /* No device jumpers on uIEC */
-  return 100;
-}
-
-static inline void device_hw_address_init(void) {
-  return;
-}
-
-static inline void leds_init(void) {
-  DDRG |= _BV(PIN0);
-}
-
-static inline __attribute__((always_inline)) void set_led(uint8_t state) {
-  if (state)
-    PORTG |= _BV(PIN0);
-  else
-    PORTG &= ~_BV(PIN0);
-}
-
-static inline void board_init(void) {
-  // turn on power LED
-  DDRG  |= _BV(PIN1);
-  PORTG |= _BV(PIN1);
-}
-
-static inline void toggle_led(void) {
-  PORTG ^= _BV(PIN0);
 }
 
 #else
