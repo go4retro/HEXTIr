@@ -47,28 +47,38 @@ typedef struct _pab_raw_t {
   };
 } pab_raw_t;
 
+#define FILEATTR_READ     1
+#define FILEATTR_WRITE    2
+#define FILEATTR_PROTECT  4
+#define FILEATTR_DISPLAY  8
+
+typedef struct _file_t {
+  FIL fp;
+  uint8_t attr;
+} file_t;
+
 typedef struct _luntbl_t {
   uint8_t used;
   uint8_t lun;
-  FIL fp;
+  file_t file;
 } luntbl_t;
 
 uint8_t open_files = 0;
 
 luntbl_t files[MAX_OPEN_FILES]; //file number to file mapping
 
-static FIL* find_lun(uint8_t lun) {
+static file_t* find_lun(uint8_t lun) {
   uint8_t i;
 
   for(i=0;i < MAX_OPEN_FILES; i++) {
     if(files[i].used && files[i].lun == lun) {
-      return &(files[i].fp);
+      return &(files[i].file);
     }
   }
   return NULL;
 }
 
-static FIL* reserve_lun(uint8_t lun) {
+static file_t* reserve_lun(uint8_t lun) {
   uint8_t i;
 
   for(i = 0; i < MAX_OPEN_FILES; i++) {
@@ -76,7 +86,7 @@ static FIL* reserve_lun(uint8_t lun) {
       files[i].used = TRUE;
       open_files++;
       set_busy_led(TRUE);
-      return &(files[i].fp);
+      return &(files[i].file);
     }
   }
   return NULL;
@@ -129,21 +139,21 @@ static int8_t hex_write(pab_t pab) {
   uint16_t len;
   uint8_t i;
   UINT written;
-  FIL* fp;
+  file_t* file;
   BYTE res = FR_OK;
 
   uart_putc(13);
   uart_putc(10);
   uart_putc('>');
-  fp = find_lun(pab.lun);
+  file = find_lun(pab.lun);
   len = pab.datalen;
   while(len) {
     i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
     hex_release_bus_recv();
     if(hex_getdata(buffer, i))
       rc = HEXERR_BAV;
-    if(fp != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
-      res = f_write(fp, buffer, i, &written);
+    if(file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
+      res = f_write(&(file->fp), buffer, i, &written);
       uart_putc(13);
       uart_putc(10);
       uart_trace(buffer,0,written);
@@ -152,6 +162,13 @@ static int8_t hex_write(pab_t pab) {
       rc = HEXSTAT_TOO_LONG;  // generic error.
     }
     len -= i;
+  }
+  if(file != NULL && (file->attr & FILEATTR_DISPLAY)) { // add CRLF to data
+    buffer[0] = 13;
+    buffer[1] = 10;
+    res = f_write(&(file->fp), buffer, 2, &written);
+    if(written != 2)
+      rc = HEXSTAT_TOO_LONG;  // generic error.
   }
   if(rc == HEXSTAT_SUCCESS) {
     switch(res) {
@@ -181,18 +198,18 @@ static uint8_t hex_read(pab_t pab) {
   uint16_t len = 0;
   UINT read;
   BYTE res = FR_OK;
-  FIL* fp;
+  file_t* file;
 
   uart_putc(13);
   uart_putc(10);
   uart_putc('<');
-  fp = find_lun(pab.lun);
+  file = find_lun(pab.lun);
   hex_release_bus_recv();
   _delay_us(200);
-  if(fp != NULL) {
-    hex_puti(fp->fsize, TRUE);  // send full length of file
-    while(len < fp->fsize) {
-      res = f_read(fp, buffer, sizeof(buffer), &read);
+  if(file != NULL) {
+    hex_puti(file->fp.fsize, TRUE);  // send full length of file
+    while(len < file->fp.fsize) {
+      res = f_read(&(file->fp), buffer, sizeof(buffer), &read);
       if(!res) {
         uart_putc(13);
         uart_putc(10);
@@ -232,13 +249,13 @@ static uint8_t hex_open(pab_t pab) {
   uint8_t rc;
   BYTE mode = 0;
   uint16_t fsize = 0;
-  FIL* fp;
+  file_t* file;
   BYTE res;
 
   hex_release_bus_recv();
   while(i < 3) {
     if(hex_is_bav()){
-      return 1;
+      return HEXERR_BAV;
     }
     data = hex_getc(FALSE);
     switch(i) {
@@ -272,13 +289,13 @@ static uint8_t hex_open(pab_t pab) {
       mode = FA_READ;
       break;
   }
-  fp = reserve_lun(pab.lun);
-  if(fp != NULL) {
-    res = f_open(&fs,fp,(UCHAR *)buffer,mode);
+  file = reserve_lun(pab.lun);
+  if(file != NULL) {
+    res = f_open(&fs,&(file->fp),(UCHAR *)buffer,mode);
     switch(res) {
       case FR_OK:
         rc = HEXSTAT_SUCCESS;
-        fsize = fp->fsize;
+        fsize = file->fp.fsize;
         break;
       case FR_IS_READONLY:
         rc = HEXSTAT_NOT_WRITE;
@@ -309,6 +326,8 @@ static uint8_t hex_open(pab_t pab) {
         hex_puti(fsize, FALSE);
         break;
       default: // write
+        if(!len) // I think this means we're going to get a listing...
+          file->attr |= FILEATTR_DISPLAY;
         hex_puti((len ? len : sizeof(buffer)), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
         break;
     }
@@ -320,15 +339,15 @@ static uint8_t hex_open(pab_t pab) {
 
 static uint8_t hex_close(pab_t pab) {
   uint8_t rc;
-  FIL* fp;
+  file_t* file;
   BYTE res;
 
   uart_putc(13);
   uart_putc(10);
   uart_putc('<');
-  fp = find_lun(pab.lun);
-  if(fp != NULL) {
-    res = f_close(fp);
+  file = find_lun(pab.lun);
+  if(file != NULL) {
+    res = f_close(&(file->fp));
     free_lun(pab.lun);
     switch(res) {
       case FR_OK:
