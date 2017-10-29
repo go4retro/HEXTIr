@@ -24,36 +24,11 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    timer.c: System timer (and LED enabler)
+    led.c: handling
 
 */
 
 #include "config.h"
 #include "led.h"
-#include "timer.h"
 
-volatile tick_t ticks;
-
-/* The main timer interrupt */
-SYSTEM_TICK_HANDLER {
-  ticks++;
-
-  if (led_state & LED_ERROR) {
-    if ((ticks & 15) == 0)
-      toggle_led();
-  } else {
-    set_led(led_state & LED_BUSY);
-  }
-}
-
-void timer_init(void) {
-  /* Count F_CPU/8 in timer 0 */
-  TCCR0B = _BV(CS01);
-
-  /* Set up a 100Hz interrupt using timer 1 */
-  OCR1A  = F_CPU / 64 / 100 - 1;
-  TCNT1  = 0;
-  TCCR1A = 0;
-  TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS11);
-  TIMSK1 |= _BV(OCIE1A);
-}
+volatile uint8_t led_state;

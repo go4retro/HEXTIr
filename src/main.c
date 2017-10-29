@@ -23,11 +23,13 @@
 #include "config.h"
 #include "diskio.h"
 #include "ff.h"
+#include "hexbus.h"
+#include "led.h"
 #include "timer.h"
 #include "uart.h"
 
 FATFS fs;
-uint8_t buffer[64];
+uint8_t buffer[32];
 
 typedef struct _pab_t {
   uint8_t dev;
@@ -51,6 +53,8 @@ typedef struct _luntbl_t {
   FIL fp;
 } luntbl_t;
 
+uint8_t open_files = 0;
+
 luntbl_t files[MAX_OPEN_FILES]; //file number to file mapping
 
 static FIL* find_lun(uint8_t lun) {
@@ -70,6 +74,8 @@ static FIL* reserve_lun(uint8_t lun) {
   for(i = 0; i < MAX_OPEN_FILES; i++) {
     if(!files[i].used) {
       files[i].used = TRUE;
+      open_files++;
+      set_busy_led(TRUE);
       return &(files[i].fp);
     }
   }
@@ -82,6 +88,8 @@ static void free_lun(uint8_t lun) {
   for(i=0;i < MAX_OPEN_FILES; i++) {
     if(files[i].used && files[i].lun == lun) {
       files[i].used = FALSE;
+      open_files--;
+      set_busy_led(open_files);
     }
   }
 }
@@ -361,10 +369,13 @@ int main(void) {
   pab_raw_t pabdata;
   BYTE res;
 
+  board_init();
   hex_init();
   uart_init();
   disk_init();
   timer_init();
+  leds_init();
+  device_hw_address_init();
   init();
 
   sei();
@@ -405,6 +416,8 @@ int main(void) {
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
+  uart_putc('D');
+  uart_puthex(device_hw_address());
   uart_putc('*');
   while(TRUE) {
     while(hex_is_bav()) {
@@ -415,7 +428,7 @@ int main(void) {
         data = hex_getc(i == 8);  // if it's the last byte, hold the hsk low.
         if(-1 < data) {
           pabdata.raw[i++] = data;
-          if(i == 1 && pabdata.pab.dev != DEFAULT_DEVICE_ID) {
+          if(i == 1 && pabdata.pab.dev != device_hw_address()) {
             ignore_cmd = TRUE;
           } else if(i == 9) { // exec command
             switch(pabdata.pab.cmd) {

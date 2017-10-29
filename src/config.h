@@ -39,9 +39,6 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
-/* HEX BUS Device ID for unit */
-#define DEFAULT_DEVICE_ID 100
-
 #define MAX_OPEN_FILES 3
 
 /* Interrupt handler for system tick */
@@ -89,11 +86,41 @@ static inline void sdcard_interface_init(void) {
 }
 
 static inline uint8_t sdcard_detect(void) {
-  return !(PINB & _BV(PB1));
+  return !(PINB & _BV(PIN1));
 }
 
 static inline uint8_t sdcard_wp(void) {
-  return PINB & _BV(PB0);
+  return PINB & _BV(PIN0);
+}
+
+static inline uint8_t device_hw_address(void) {
+  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7))) >> 4);
+}
+
+static inline void device_hw_address_init(void) {
+  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
+  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
+}
+
+static inline void leds_init(void) {
+  DDRD |= _BV(PIN2);
+}
+
+static inline __attribute__((always_inline)) void set_led(uint8_t state) {
+  if (state)
+    PORTD |= _BV(PIN2);
+  else
+    PORTD &= ~_BV(PIN2);
+}
+
+static inline void toggle_led(void) {
+  PORTD ^= _BV(PIN2);
+}
+
+static inline void board_init(void) {
+  // turn on power LED
+  DDRD  |= _BV(PIN3);
+  PORTD |= _BV(PIN3);
 }
 
 #elif CONFIG_HARDWARE_VARIANT == 2
@@ -121,6 +148,36 @@ static inline uint8_t sdcard_detect(void) {
 
 static inline uint8_t sdcard_wp(void) {
   return PINE & _BV(PE2);
+}
+
+static inline uint8_t device_hw_address(void) {
+  /* No device jumpers on uIEC */
+  return 100;
+}
+
+static inline void device_hw_address_init(void) {
+  return;
+}
+
+static inline void leds_init(void) {
+  DDRG |= _BV(PIN0);
+}
+
+static inline __attribute__((always_inline)) void set_led(uint8_t state) {
+  if (state)
+    PORTG |= _BV(PIN0);
+  else
+    PORTG &= ~_BV(PIN0);
+}
+
+static inline void board_init(void) {
+  // turn on power LED
+  DDRG  |= _BV(PIN1);
+  PORTG |= _BV(PIN1);
+}
+
+static inline void toggle_led(void) {
+  PORTG ^= _BV(PIN0);
 }
 
 #else

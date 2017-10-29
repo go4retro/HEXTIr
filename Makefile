@@ -69,6 +69,7 @@ SRC += diskio.c
 SRC += timer.c
 SRC += spi.c
 SRC += hexbus.c
+SRC += led.c
 
 ifneq ($(CONFIG_NO_SD),y)
   SRC += sdcard.c
