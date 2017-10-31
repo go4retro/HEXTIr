@@ -51,9 +51,14 @@ else ifeq ($(MCU),atmega1284p)
   LFUSE = 0xe7
 else ifeq ($(MCU),atmega168)
   BINARY_LENGTH = 0x4000
-  EFUSE = 0xfd
-  HFUSE = 0x91
-  LFUSE = 0xef
+  EFUSE = 0xf9
+  HFUSE = 0xdf
+  LFUSE = 0xff
+else ifeq ($(MCU),atmega328)
+  BINARY_LENGTH = 0x8000
+  EFUSE = 0xf9
+  HFUSE = 0xdf
+  LFUSE = 0xff
 else
 .PHONY: nochip
 nochip:
@@ -94,13 +99,13 @@ AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
 
 # Allow fuse overrides from the config file
 ifdef CONFIG_EFUSE
-  EFUSE := CONFIG_EFUSE
+  EFUSE := $(CONFIG_EFUSE)
 endif
 ifdef CONFIG_HFUSE
-  HFUSE := CONFIG_HFUSE
+  HFUSE := $(CONFIG_HFUSE)
 endif
 ifdef CONFIG_LFUSE
-  LFUSE := CONFIG_LFUSE
+  LFUSE := $(CONFIG_LFUSE)
 endif
 
 # Calculate command line arguments for fuses
