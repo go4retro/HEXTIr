@@ -75,6 +75,7 @@ static file_t* find_lun(uint8_t lun) {
       return &(files[i].file);
     }
   }
+  uart_putc('n');
   return NULL;
 }
 
@@ -84,6 +85,7 @@ static file_t* reserve_lun(uint8_t lun) {
   for(i = 0; i < MAX_OPEN_FILES; i++) {
     if(!files[i].used) {
       files[i].used = TRUE;
+      files[i].lun = lun;
       open_files++;
       set_busy_led(TRUE);
       return &(files[i].file);
@@ -129,9 +131,8 @@ static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
     uart_putc(13);
     uart_putc(10);
     uart_trace(buf,0,len);
-    uart_putc('<');
   }
-  return 0;
+  return HEXERR_SUCCESS;
 }
 
 static int8_t hex_write(pab_t pab) {
@@ -142,8 +143,6 @@ static int8_t hex_write(pab_t pab) {
   file_t* file;
   BYTE res = FR_OK;
 
-  uart_putc(13);
-  uart_putc(10);
   uart_putc('>');
   file = find_lun(pab.lun);
   len = pab.datalen;
@@ -154,12 +153,6 @@ static int8_t hex_write(pab_t pab) {
       rc = HEXERR_BAV;
     if(file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
       res = f_write(&(file->fp), buffer, i, &written);
-      uart_putc(13);
-      uart_putc(10);
-      uart_trace(buffer,0,written);
-    }
-    if(written != i) {
-      rc = HEXSTAT_TOO_LONG;  // generic error.
     }
     len -= i;
   }
@@ -168,7 +161,7 @@ static int8_t hex_write(pab_t pab) {
     buffer[1] = 10;
     res = f_write(&(file->fp), buffer, 2, &written);
     if(written != 2)
-      rc = HEXSTAT_TOO_LONG;  // generic error.
+      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
   }
   if(rc == HEXSTAT_SUCCESS) {
     switch(res) {
@@ -200,8 +193,6 @@ static uint8_t hex_read(pab_t pab) {
   BYTE res = FR_OK;
   file_t* file;
 
-  uart_putc(13);
-  uart_putc(10);
   uart_putc('<');
   file = find_lun(pab.lun);
   hex_release_bus_recv();
@@ -252,6 +243,7 @@ static uint8_t hex_open(pab_t pab) {
   file_t* file;
   BYTE res;
 
+  uart_putc('>');
   hex_release_bus_recv();
   while(i < 3) {
     if(hex_is_bav()){
@@ -279,13 +271,13 @@ static uint8_t hex_open(pab_t pab) {
     case 0x00:  // append mode
       mode = FA_WRITE;
       break;
-    case 0x80: // write, truncate if present. Maybe...
+    case OPENMODE_WRITE: // write, truncate if present. Maybe...
       mode = FA_WRITE | FA_CREATE_ALWAYS;
       break;
-    case 0xC0:
-      mode = FA_WRITE | FA_READ;
+    case OPENMODE_WRITE | OPENMODE_READ:
+      mode = FA_WRITE | FA_READ | FA_CREATE_ALWAYS;
       break;
-    default:
+    default: //OPENMODE_READ
       mode = FA_READ;
       break;
   }
@@ -314,6 +306,9 @@ static uint8_t hex_open(pab_t pab) {
         rc = HEXSTAT_NOT_FOUND;
         break;
     }
+    if(rc) {
+      free_lun(pab.lun); // free up buffer
+    }
   } else { // too many open files.
     rc = HEXSTAT_MAX_LUNS;
   }
@@ -321,12 +316,12 @@ static uint8_t hex_open(pab_t pab) {
   _delay_us(200);  // wait a bit...
   if(!hex_is_bav()) { // we can send response
     hex_puti(2, FALSE);    // claims it is accepted buffer length, but looks to really be my return buffer length...
-    switch(att) {
-      case 64: // read
+    switch(att & (OPENMODE_WRITE | OPENMODE_READ)) {
+      case OPENMODE_READ: // read
         hex_puti(fsize, FALSE);
         break;
-      default: // write
-        if(!len) // I think this means we're going to get a listing...
+      default: //
+        if(!len && !pab.lun) // lun = 0 and len = 0 means list "<device>.<filename>", thus we should add CRLF to each line.
           file->attr |= FILEATTR_DISPLAY;
         hex_puti((len ? len : sizeof(buffer)), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
         break;
@@ -342,8 +337,6 @@ static uint8_t hex_close(pab_t pab) {
   file_t* file;
   BYTE res;
 
-  uart_putc(13);
-  uart_putc(10);
   uart_putc('<');
   file = find_lun(pab.lun);
   if(file != NULL) {
@@ -370,6 +363,31 @@ static uint8_t hex_close(pab_t pab) {
     return HEXERR_SUCCESS;
   }
   return HEXERR_BAV;
+}
+
+static uint8_t hex_format(pab_t pab) {
+
+  uart_putc('>');
+  hex_release_bus_recv();
+  // get options, if any
+  if(hex_getdata(buffer, pab.datalen))
+    return HEXERR_BAV;
+  hex_release_bus_recv();
+  _delay_us(200);  // wait a bit...
+  if(!hex_is_bav()) { // we can send response
+    //if(pab.datalen) {
+      // technically, a format with options should return size of disk, I assume in sectors
+      //hex_puti(2, FALSE);
+      //hex_puti(65535, FALSE);
+    //} else {
+    hex_puti(0, FALSE);
+    //}
+    //hex_putc(HEXSTAT_SUCCESS, FALSE);
+    hex_putc(HEXSTAT_UNSUPP_CMD, FALSE);
+    return HEXERR_SUCCESS;
+  }
+  return HEXERR_BAV;
+
 }
 
 static uint8_t hex_reset_bus(pab_t pab) {
@@ -450,6 +468,8 @@ int main(void) {
           if(i == 1 && pabdata.pab.dev != device_hw_address()) {
             ignore_cmd = TRUE;
           } else if(i == 9) { // exec command
+            uart_putc(13);
+            uart_putc(10);
             switch(pabdata.pab.cmd) {
               case HEXCMD_OPEN:
                 hex_open(pabdata.pab);
@@ -468,6 +488,8 @@ int main(void) {
               case HEXCMD_RESET_BUS:
                 hex_reset_bus(pabdata.pab);
                 break;
+              case HEXCMD_FORMAT:
+                hex_format(pabdata.pab);
               default:
                 uart_putc(13);
                 uart_putc(10);

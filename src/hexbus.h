@@ -102,6 +102,14 @@ typedef enum _hexerror_t {
               HEXERR_TIMEOUT = -2
             } hexerror_t;
 
+typedef enum _openmode_t {
+              OPENMODE_READ =     0x40,
+              OPENMODE_WRITE =    0x80,
+              OPENMODE_RELATIVE = 0x20,
+              OPENMODE_FIXED =    0x10,
+              OPENMODE_INTERNAL = 0x08
+            } openmode_t ;
+
 uint8_t hex_is_bav(void);
 void hex_release_bus_send(void);
 void hex_release_bus_recv(void);
