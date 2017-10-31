@@ -60,7 +60,7 @@
 #  define HWI2C_SDA  _BV(PD1)
 #  define HWI2C_SCL  _BV(PD0)
 
-#elif defined __AVR_ATmega48__ || defined __AVR_ATmega88__ || defined __AVR_ATmega168__
+#elif defined __AVR_ATmega48__ || defined __AVR_ATmega88__ || defined __AVR_ATmega168__ || defined __AVR_ATmega328__
 
 #  define SPI_PORT   PORTB
 #  define SPI_DDR    DDRB
