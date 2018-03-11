@@ -29,7 +29,7 @@
 #include "uart.h"
 
 FATFS fs;
-uint8_t buffer[32];
+uint8_t buffer[40];
 
 typedef struct _pab_t {
   uint8_t dev;
@@ -321,7 +321,7 @@ static uint8_t hex_open(pab_t pab) {
         hex_puti(fsize, FALSE);
         break;
       default: //
-        if(!len && !pab.lun) // lun = 0 and len = 0 means list "<device>.<filename>", thus we should add CRLF to each line.
+        if(!len) // len = 0 means list "<device>.<filename>" or open #<> for writing, thus we should add CRLF to each line.
           file->attr |= FILEATTR_DISPLAY;
         hex_puti((len ? len : sizeof(buffer)), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
         break;

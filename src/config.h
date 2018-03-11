@@ -39,7 +39,7 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
-#define MAX_OPEN_FILES 3
+#define MAX_OPEN_FILES 8
 
 /* Interrupt handler for system tick */
 #define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)
