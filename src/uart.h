@@ -150,7 +150,7 @@
 #    define USARTB_RXC_vect USART1_RXC_vect
 #  endif
 
-#elif defined __AVR_ATmega28__ || defined __AVR_ATmega48__ || defined __AVR_ATmega88__ || defined __AVR_ATmega168__ || defined __AVR_ATmega328__
+#elif defined __AVR_ATmega28__ || defined __AVR_ATmega48__ || defined __AVR_ATmega88__ || defined __AVR_ATmega168__ || defined __AVR_ATmega328__ || defined __AVR_ATmega328P__
 #  define UDREA  UDRE0
 #  define UCSZA0 UCSZ00
 #  define UCSZA1 UCSZ01

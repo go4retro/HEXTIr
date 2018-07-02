@@ -119,6 +119,81 @@ static inline void board_init(void) {
   PORTD |= _BV(PIN3);
 }
 
+#elif CONFIG_HARDWARE_VARIANT == 2
+/* ---------- Hardware configuration: HEXTIr Arduino ---------- */
+#  define HEX_HSK_DDR         DDRC
+#  define HEX_HSK_OUT         PORTC
+#  define HEX_HSK_IN          PINC
+#  define HEX_HSK_PIN         _BV(PIN4)
+
+#  define HEX_BAV_DDR         DDRC
+#  define HEX_BAV_OUT         PORTC
+#  define HEX_BAV_IN          PINC
+#  define HEX_BAV_PIN         _BV(PIN5)
+
+#  define HEX_DATA_DDR        DDRC
+#  define HEX_DATA_OUT        PORTC
+#  define HEX_DATA_IN         PINC
+#  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
+
+#  define HAVE_SD
+#  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
+#  define SD_SUPPLY_VOLTAGE     (1L<<21)
+
+/* 250kHz slow, 2MHz fast */
+#  define SPI_DIVISOR_SLOW 64
+#  define SPI_DIVISOR_FAST 8
+
+static inline void sdcard_interface_init(void) {
+  DDRB  &= ~_BV(PB0);  // wp
+  PORTB |=  _BV(PB0);
+  DDRB  &= ~_BV(PB1);  // detect
+  PORTB |=  _BV(PB1);
+  PCICR |= _BV(PCIE0);
+  //EICRB |=  _BV(ISC60);
+  PCMSK0 |= _BV(PCINT0);
+  //EIMSK |=  _BV(INT6);
+}
+
+static inline uint8_t sdcard_detect(void) {
+  return !(PINB & _BV(PIN1));
+}
+
+static inline uint8_t sdcard_wp(void) {
+  return PINB & _BV(PIN0);
+}
+
+/* This allows the user to set the drive address to be 100-107 or 108-117) */
+static inline uint8_t device_hw_address(void) {
+  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4) + (PIND &  _BV(PIN7) ? 0 : 10);
+}
+
+static inline void device_hw_address_init(void) {
+  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
+  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
+}
+
+static inline void leds_init(void) {
+  DDRD |= _BV(PIN2);
+}
+
+static inline __attribute__((always_inline)) void set_led(uint8_t state) {
+  if (state)
+    PORTD |= _BV(PIN2);
+  else
+    PORTD &= ~_BV(PIN2);
+}
+
+static inline void toggle_led(void) {
+  PORTD ^= _BV(PIN2);
+}
+
+static inline void board_init(void) {
+  // turn on power LED
+  DDRD  |= _BV(PIN3);
+  PORTD |= _BV(PIN3);
+}
+
 #else
 #  error "CONFIG_HARDWARE_VARIANT is unset or set to an unknown value."
 #endif

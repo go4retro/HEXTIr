@@ -418,6 +418,7 @@ int main(void) {
   sei();
 
   res=f_mount(1, &fs);
+  uart_puts_P(PSTR("Mount SD RC: "));
   uart_puthex(res);
   uart_putcrlf();
   /*
@@ -453,9 +454,10 @@ int main(void) {
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-  uart_putc('D');
+  uart_puts_P(PSTR("Device ID: "));
   uart_puthex(device_hw_address());
   uart_putc('*');
+  uart_putcrlf();
   while(TRUE) {
     while(hex_is_bav()) {
     }

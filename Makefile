@@ -150,7 +150,7 @@ SHELL = sh
 REMOVE = rm -f
 COPY = cp
 WINSHELL = cmd
-AWK = awk
+AWK = gawk
 #CRCGEN = crcgen-new
 
 # Include architecture-specific variables
@@ -298,7 +298,7 @@ fuses: $(CONFIG)
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FUSES)
 
 # Generate autoconf.h from config
-.PRECIOUS : $(OBJDIR)/autoconf.h
+.PRECIOUS : $(OBJDIR) $(OBJDIR)/autoconf.h
 $(OBJDIR)/autoconf.h: $(CONFIG) | $(OBJDIR)
 	$(E) "  CONF2H $(CONFIG)"
 	$(Q)$(AWK) -f scripts/conf2h.awk $(CONFIG) > $(OBJDIR)/autoconf.h

@@ -1,0 +1,73 @@
+# This may not look like it, but it's a -*- makefile -*-
+#
+# HexTIr-SD - Hex-Bus adapter
+# Copyright (C) 2017  Jim Brain <brain@jbrain.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License only.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+# config: User-configurable options to simplify hardware changes and/or
+#         reduce the code/ram requirements of the code.
+#
+#
+# This file is included in the main Makefile and also parsed
+# into autoconf.h.
+# This system based on sd2iec Makefile by Ingo Korb
+
+
+# MCU to compile for
+CONFIG_MCU=atmega328p
+
+# Use the -relax parameter when linking?
+# Passing -O9 and -relax to the linker saves ~650 bytes of flash,
+# but the option is broken in certain binutils versions.
+# (known troublemakers: binutils 2.17, 2.18 seems fine)
+CONFIG_LINKER_RELAX=y
+
+# MCU frequency in Hz
+CONFIG_MCU_FREQ=16000000
+
+# Add a bootloader signature
+CONFIG_BOOTLOADER=n
+
+# Value of the signature word
+#CONFIG_BOOT_DEVID=0x12345678
+
+# Debug to serial
+CONFIG_UART_DEBUG=y
+
+# Initial Baud rate of the UART
+CONFIG_UART_BAUDRATE=57600
+CONFIG_UART_BUF_SHIFT=0
+
+# Select which hardware to compile for
+# Valid values:
+#   1 - v1 board
+#   2 - Arduino Uno
+CONFIG_HARDWARE_VARIANT=2
+CONFIG_AVRDUDE_PROGRAMMER=arduino
+CONFIG_AVRDUDE_PORT=COM32
+
+# Track the stack size
+# Warning: This option increases the code size a lot.
+CONFIG_STACK_TRACKING=n
+
+CONFIG_EFUSE=0xf9
+CONFIG_HFUSE=0xdf
+CONFIG_LFUSE=0xff
+
+
+CONFIG_HARDWARE_NAME=HEXTIr
+CONFIG_TWINSD=n
+CONFIG_SD_AUTO_RETRIES=10
+CONFIG_SD_DATACRC=y

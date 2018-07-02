@@ -59,6 +59,11 @@ else ifeq ($(MCU),atmega328)
   EFUSE = 0xf9
   HFUSE = 0xdf
   LFUSE = 0xff
+else ifeq ($(MCU),atmega328p)
+  BINARY_LENGTH = 0x8000
+  EFUSE = 0xf9
+  HFUSE = 0xdf
+  LFUSE = 0xff
 else
 .PHONY: nochip
 nochip:
@@ -90,9 +95,15 @@ EXTMEMOPTS =
 # to get a full listing.
 #
 #AVRDUDE_PROGRAMMER = stk200
+ifdef CONFIG_AVRDUDE_PROGRAMMER
+  AVRDUDE_PROGRAMMER := -c $(CONFIG_AVRDUDE_PROGRAMMER)
+endif
 
 # com1 = serial port. Use lpt1 to connect to parallel port.
 #AVRDUDE_PORT = lpt1    # programmer connected to serial device
+ifdef CONFIG_AVRDUDE_PORT
+  AVRDUDE_PORT := -P $(CONFIG_AVRDUDE_PORT)
+endif
 
 AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
 # AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(TARGET).eep
@@ -139,6 +150,7 @@ AVRDUDE_FLAGS = -p $(MCU)
 AVRDUDE_FLAGS += $(AVRDUDE_NO_VERIFY)
 AVRDUDE_FLAGS += $(AVRDUDE_VERBOSE)
 AVRDUDE_FLAGS += $(AVRDUDE_ERASE_COUNTER)
+AVRDUDE_FLAGS += $(AVRDUDE_PROGRAMMER) $(AVRDUDE_PORT)
 
 #---------------- Architecture variables ----------------
 ARCH_CFLAGS  = -mmcu=$(MCU) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mcall-prologues
