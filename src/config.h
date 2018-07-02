@@ -121,15 +121,15 @@ static inline void board_init(void) {
 
 #elif CONFIG_HARDWARE_VARIANT == 2
 /* ---------- Hardware configuration: HEXTIr Arduino ---------- */
-#  define HEX_HSK_DDR         DDRC
-#  define HEX_HSK_OUT         PORTC
-#  define HEX_HSK_IN          PINC
-#  define HEX_HSK_PIN         _BV(PIN4)
+#  define HEX_HSK_DDR         DDRD
+#  define HEX_HSK_OUT         PORTD
+#  define HEX_HSK_IN          PIND
+#  define HEX_HSK_PIN         _BV(PIN3)
 
-#  define HEX_BAV_DDR         DDRC
-#  define HEX_BAV_OUT         PORTC
-#  define HEX_BAV_IN          PINC
-#  define HEX_BAV_PIN         _BV(PIN5)
+#  define HEX_BAV_DDR         DDRD
+#  define HEX_BAV_OUT         PORTD
+#  define HEX_BAV_IN          PIND
+#  define HEX_BAV_PIN         _BV(PIN7)
 
 #  define HEX_DATA_DDR        DDRC
 #  define HEX_DATA_OUT        PORTC
@@ -165,12 +165,12 @@ static inline uint8_t sdcard_wp(void) {
 
 /* This allows the user to set the drive address to be 100-107 or 108-117) */
 static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4) + (PIND &  _BV(PIN7) ? 0 : 10);
+  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
 }
 
 static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
+  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
+  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
 }
 
 static inline void leds_init(void) {

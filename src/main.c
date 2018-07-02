@@ -454,9 +454,8 @@ int main(void) {
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-  uart_puts_P(PSTR("Device ID: "));
+  uart_puts_P(PSTR("Device ID: 0x"));
   uart_puthex(device_hw_address());
-  uart_putc('*');
   uart_putcrlf();
   while(TRUE) {
     while(hex_is_bav()) {

@@ -12467,35 +12467,35 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <wire x1="53.34" y1="7.62" x2="53.34" y2="10.16" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$8" class="0">
+<net name="D0" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="PC0(ADC0)"/>
 <wire x1="86.36" y1="172.72" x2="121.92" y2="172.72" width="0.1524" layer="91"/>
 <pinref part="CN1" gate="G$1" pin="D0"/>
 </segment>
 </net>
-<net name="N$9" class="0">
+<net name="D1" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="PC1(ADC1)"/>
 <wire x1="121.92" y1="170.18" x2="86.36" y2="170.18" width="0.1524" layer="91"/>
 <pinref part="CN1" gate="G$1" pin="D1"/>
 </segment>
 </net>
-<net name="N$10" class="0">
+<net name="D2" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="PC2(ADC2)"/>
 <wire x1="86.36" y1="167.64" x2="121.92" y2="167.64" width="0.1524" layer="91"/>
 <pinref part="CN1" gate="G$1" pin="D2"/>
 </segment>
 </net>
-<net name="N$11" class="0">
+<net name="D3" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="PC3(ADC3)"/>
 <wire x1="121.92" y1="165.1" x2="86.36" y2="165.1" width="0.1524" layer="91"/>
 <pinref part="CN1" gate="G$1" pin="D3"/>
 </segment>
 </net>
-<net name="N$12" class="0">
+<net name="!HSK" class="0">
 <segment>
 <wire x1="121.92" y1="177.8" x2="106.68" y2="177.8" width="0.1524" layer="91"/>
 <wire x1="106.68" y1="177.8" x2="106.68" y2="162.56" width="0.1524" layer="91"/>
@@ -12504,7 +12504,7 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <pinref part="CN1" gate="G$1" pin="!HSK"/>
 </segment>
 </net>
-<net name="N$13" class="0">
+<net name="BAV" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="PC5(ADC5/SCL)"/>
 <wire x1="86.36" y1="160.02" x2="104.14" y2="160.02" width="0.1524" layer="91"/>
