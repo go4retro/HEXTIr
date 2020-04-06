@@ -360,23 +360,23 @@ $(OBJDIR)/%.elf: $(OBJ)
 
 
 # Compile: create object files from C source files.
-$(OBJDIR)/%.o : %.c $(CONFFILES) | $(OBJDIR)/src
+$(OBJDIR)/%.o : %.c $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(E) "  CC     $<"
 	$(Q)$(CC) -c $(ALL_CFLAGS) $< -o $@
 
 
 # Compile: create assembler files from C source files.
-$(OBJDIR)/%.s : %.c $(CONFFILES) | $(OBJDIR)/src
+$(OBJDIR)/%.s : %.c $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(CC) -S $(ALL_CFLAGS) $< -o $@
 
 
 # Assemble: create object files from assembler source files.
-$(OBJDIR)/%.o : %.S $(OBJDIR)/asmconfig.h $(CONFFILES) | $(OBJDIR)/src
+$(OBJDIR)/%.o : %.S $(OBJDIR)/asmconfig.h $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(E) "  AS     $<"
 	$(Q)$(CC) -c $(ALL_ASFLAGS) $< -o $@
 
 # Create preprocessed source for use in sending a bug report.
-$(OBJDIR)/%.i : %.c $(CONFFILES) | $(OBJDIR)/src
+$(OBJDIR)/%.i : %.c $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(CC) -E -mmcu=$(MCU) -I. $(CFLAGS) $< -o $@
 
 # Create the output directories
