@@ -460,7 +460,7 @@ int main(void) {
   while(TRUE) {
     while(hex_is_bav()) {
     }
-    uart_putc('>');
+    uart_putc('^');
     while(!hex_is_bav()) {
       while(!ignore_cmd) {
         data = hex_getc(i == 8);  // if it's the last byte, hold the hsk low.
