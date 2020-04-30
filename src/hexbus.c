@@ -75,6 +75,7 @@ static void hex_send_nybble(uint8_t data, uint8_t hold) {
   hex_hsk_lo();
   hex_bav_hi();
   if(!hold) {
+    _delay_us(20);
     hex_release_bus_send();
   }
 }
