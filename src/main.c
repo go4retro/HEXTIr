@@ -135,6 +135,93 @@ static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   return HEXERR_SUCCESS;
 }
 
+static int8_t hex_verify(pab_t pab) {
+	uint8_t rc = HEXSTAT_SUCCESS;
+	uint16_t len;
+	uint8_t i;
+	UINT read;
+	file_t* file;
+	BYTE res = FR_OK;
+	uint8_t data[sizeof(buffer)];
+	uint16_t len_prog_mem = 0;
+	uint16_t len_prog_stored = 0;
+
+	uart_putc('>');
+	file = find_lun(pab.lun);
+	len = pab.datalen;
+
+	res = (file != NULL ? FR_OK : FR_NO_FILE);
+	int first_buffer = 1;
+	while(len) {
+		i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
+		hex_release_bus_recv();
+		if(hex_getdata(buffer, i)) {
+			rc = HEXERR_BAV;
+		}
+
+		if(res == FR_OK && rc == HEXSTAT_SUCCESS) {
+
+			// length of program in memory
+			if (first_buffer == 1) {
+				len_prog_mem = buffer[2];
+				len_prog_mem |= buffer[3] << 8;
+			}
+
+			res = f_read(&(file->fp), data, i, &read);
+			if(res == FR_OK) {
+				// trace
+				uart_putc(13);
+				uart_putc(10);
+				uart_trace(data,0,read);
+
+				// length of program on storage device
+				if (first_buffer == 1) {
+					len_prog_stored = data[2];
+					len_prog_stored |= data[3] << 8;
+				}
+
+				if (len_prog_stored > len_prog_mem) {
+					// program on disk larger then in memory
+					rc = HEXSTAT_BUF_SIZE_ERR;
+				}
+				else {
+					for (int j=0; j<read; j++) {
+						if (data[j] != buffer[j]) {
+							// program data on storage device differs from data in memory
+							rc= HEXSTAT_VERIFY_ERR;
+							break; // the for loop
+						}
+					}
+				}
+			}
+		}
+		if (first_buffer ==1) {
+			first_buffer = 0;
+		}
+		len -= i;
+	}
+	if(rc == HEXSTAT_SUCCESS) {
+		switch(res) {
+		case FR_OK:
+			rc = HEXSTAT_SUCCESS;
+			break;
+		default:
+			rc = HEXSTAT_DEVICE_ERR;
+			break;
+		}
+	}
+	uart_putc('>');
+	hex_release_bus_recv();
+	_delay_us(200);
+	if(!hex_is_bav()) { // we can send response
+		hex_puti(0, FALSE);  // zero length data
+		hex_putc(rc, FALSE);    // status code
+		return HEXERR_SUCCESS;
+	} else {
+		return HEXERR_BAV;
+	}
+}
+
 static int8_t hex_write(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
@@ -489,6 +576,9 @@ int main(void) {
               case HEXCMD_RESET_BUS:
                 hex_reset_bus(pabdata.pab);
                 break;
+              case HEXCMD_VERIFY:
+            	hex_verify(pabdata.pab);
+            	break;
               case HEXCMD_FORMAT:
                 hex_format(pabdata.pab);
               default:
