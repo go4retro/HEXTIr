@@ -41,6 +41,7 @@ static void hex_bav_lo(void) {
 static void hex_hsk_hi(void) {
   HEX_HSK_DDR &= ~HEX_HSK_PIN;
   HEX_HSK_OUT |= HEX_HSK_PIN;
+  // TODO bring all data lines hi, as per spec
 }
 
 static void hex_hsk_lo(void) {
@@ -52,17 +53,20 @@ static uint8_t hex_is_hsk(void) {
   return HEX_HSK_IN & HEX_HSK_PIN;
 }
 
-void hex_release_bus_send(void) {
+void hex_release_bus(void) {
   hex_hsk_hi();
-  while(!hex_is_hsk());
+  while(!hex_is_hsk());  // TODO fix deadlock here
+}
+
+void hex_release_bus_send(void) {
+  hex_release_bus();
   HEX_DATA_OUT |= HEX_DATA_PIN;
   HEX_DATA_DDR &= ~HEX_DATA_PIN;
   _delay_us(48); // won't need this if someone else did it.
 }
 
 void hex_release_bus_recv(void) {
-  hex_hsk_hi();
-  while(!hex_is_hsk());
+  hex_release_bus();
 }
 
 static void hex_send_nybble(uint8_t data, uint8_t hold) {
