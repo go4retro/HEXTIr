@@ -135,6 +135,31 @@ static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   return HEXERR_SUCCESS;
 }
 
+/*
+ * https://github.com/m5dk2n comments:
+ *
+ * What happens during the VERIFY is the following:
+
+   The calculator sends an hex-bus open (R) command with the name of the
+   stored program and receives its size in the response. Then the calculator
+   sends the hex-bus verify command which contains the program it has in its
+   memory. If the comparison is not successful either IO error 12 or 24 is
+   sent according to the user manual. (12 = stored program larger then
+   program in memory, 24 = programs differ). The calculator sends the hex-bus
+   close command.
+
+   The expectation was that IO error 12 was issued by the calculator in case
+   the length of the stored program (returned in the open response) is greater
+   then the length of the program in memory. But this is not the case. Instead
+   the calculator starts to send (step 2) its memory content up to the length
+   it got in the open response no matter if this exceeds the actual length of
+   the program stored in memory! By staring at the debug output I found out
+   that the bytes 2 and 3 (start counting at 0) is the actual length of the
+   program. So one can compare the sizes and, in case they differ, return IO
+   error 12. And although if a comparison error occured, one has read the data
+   transmitted in the verify command until sending stops.
+ */
+
 static int8_t hex_verify(pab_t pab) {
 	uint8_t rc = HEXSTAT_SUCCESS;
 	uint16_t len;
