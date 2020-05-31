@@ -64,16 +64,16 @@ void timer_init(void) {
 }
 
 #else
-
+#include <Arduino.h>
 unsigned long t_time;
 
 void timer_init(void) {
-  t_time = millis() + 10;
+  t_time = (unsigned long)millis() + 10;
   ticks = 0;
 }
 
 void timer_check(uint8_t flag) {
-  unsigned long t = millis();
+  unsigned long t = (unsigned long)millis();
   if ( t > t_time || flag ) {
     t_time = t;
     ticks++;

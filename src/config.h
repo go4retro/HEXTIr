@@ -24,20 +24,44 @@
 
 #include <avr/io.h>
 
-#ifndef ARDUINO
-# include "autoconf.h"
-#else
+#define BUFSIZE       64
 
- #define CONFIG_HARDWARE_VARIANT   2
- #define CONFIG_SD_AUTO_RETRIES    2
- 
+#if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO
+ #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
+ // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
+#elif defined ARDUINO_AVR_MEGA2560
+ #define CONFIG_HARDWARE_VARIANT   3 // this is for testing the build
+ // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
 #endif
+
+#ifndef ARDUINO
+
+ #include "autoconf.h"
+ #define MAX_OPEN_FILES 8
+ 
+#else
+ #define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
+ #define INCLUDE_PRINTER
+ #define INCLUDE_CLOCK
+ #define INCLUDE_SERIAL
+ #define INCLUDE_POWERMGMT
+#endif
+
+/* ----- Common definitions  ------ */
+// TODO these 5 should move to a standard hexdev.h or something, since they are defaults, and they should be the same for all
+// boards.
+#define PRINTER_DEV     12    // Device code to support a printer on HW serial (rx/tx) @115200,N,8,1
+#define DISK_DEV       100    // Base disk device code we support
+#define ANY_DEV        255    // used by this implementation to allow the same handler to be used by any/all devices, from the handler table.
+#define RTC_DEV        233    // Device code to support DS3231 RTC on I2C/wire; A5/A4.
+#define RS232_DEV       20    // Device code for RS-232 Serial peripheral using SW serial (def=300 baud)
+
+#define MAX_DISKS        7    // Add to DISK_DEV to obtain highest address.  1 less than true number of max disks.
 
 /* ----- Common definitions for all AVR hardware variants ------ */
 
 /* Interrupt handler for system tick */
 #define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)
-
 
 #ifdef CONFIG_UART_DEBUG
 #define UART0_ENABLE
@@ -51,29 +75,9 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
-#ifdef ARDUINO
-
-/* ----- Common definitions for building using Arduino  ------ */
-#define PRINTER_DEV    12     // Device code to support a printer on serial (rx/tx) @115200,N,8,1
-#define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
-
-// Map to one of the SD File modes.
-#define FA_READ             FILE_READ
-#define FA_OPEN_EXISTING    0
-#define FA_WRITE            FILE_WRITE
-#define FA_CREATE_NEW       0
-#define FA_CREATE_ALWAYS    0
-#define FA_OPEN_ALWAYS      0
-
-#else
-#define MAX_OPEN_FILES 8
-
-#endif
-
-
 #if CONFIG_HARDWARE_VARIANT == 1
 
-/* ---------- Hardware configuration: HEXTIr v1 or Arduino Nano ---------- */
+/* ---------- Hardware configuration: HEXTIr v1 ---------- */
 #  define HEX_HSK_DDR         DDRC
 #  define HEX_HSK_OUT         PORTC
 #  define HEX_HSK_IN          PINC
@@ -88,8 +92,6 @@
 #  define HEX_DATA_OUT        PORTC
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
-
-#ifndef ARDUINO
 
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
@@ -117,8 +119,6 @@ static inline uint8_t sdcard_detect(void) {
 static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
-
-#endif // build-using-arduino
 
 /* This allows the user to set the drive address to be 100-107 or 108-117) */
 static inline uint8_t device_hw_address(void) {
@@ -152,6 +152,7 @@ static inline void board_init(void) {
 }
 
 #elif CONFIG_HARDWARE_VARIANT == 2
+
 /* ---------- Hardware configuration: HEXTIr Arduino ---------- */
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -167,8 +168,6 @@ static inline void board_init(void) {
 #  define HEX_DATA_OUT        PORTC
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
-
-#ifndef ARDUINO
 
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
@@ -197,10 +196,7 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
-#endif // build-using-arduino
-
-
-/* This allows the user to set the drive address to be 100-107 or 108-117) */
+/* This allows the user to set the drive address to be 100-107 */
 static inline uint8_t device_hw_address(void) {
   return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
 }
@@ -223,6 +219,57 @@ static inline __attribute__((always_inline)) void set_led(uint8_t state) {
 
 static inline void toggle_led(void) {
   PORTD ^= _BV(PIN2);
+}
+
+static inline void board_init(void) {
+}
+
+#elif CONFIG_HARDWARE_VARIANT == 3
+/* ---------- Hardware configuration: Arduino with low power sleep---------- */
+#  define HEX_HSK_DDR         DDRD
+#  define HEX_HSK_OUT         PORTD
+#  define HEX_HSK_IN          PIND
+#  define HEX_HSK_PIN         _BV(PIN3)
+
+#  define HEX_BAV_DDR         DDRD
+#  define HEX_BAV_OUT         PORTD
+#  define HEX_BAV_IN          PIND
+#  define HEX_BAV_PIN         _BV(PIN2)
+
+#  define HEX_DATA_DDR        DDRC
+#  define HEX_DATA_OUT        PORTC
+#  define HEX_DATA_IN         PINC
+#  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
+
+#  define WAKEUP_PIN          2 // BAV on D2
+
+// PB.0/.1 which are SDcard detect and WP for non-Arduino build are
+// repurposed in the Arduino build to be a software serial port using
+// the SoftwareSerial library.
+
+/* This allows the user to set the drive address to be 100-107 or 108-117) */
+static inline uint8_t device_hw_address(void) {
+  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
+}
+
+static inline void device_hw_address_init(void) {
+  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
+  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
+}
+
+static inline void leds_init(void) {
+  DDRD |= _BV(PIN7);
+}
+
+static inline __attribute__((always_inline)) void set_led(uint8_t state) {
+  if (state)
+    PORTD |= _BV(PIN7);
+  else
+    PORTD &= ~_BV(PIN7);
+}
+
+static inline void toggle_led(void) {
+  PORTD ^= _BV(PIN7);
 }
 
 static inline void board_init(void) {

@@ -1,3 +1,4 @@
+
 /*
     HEXTIr-SD - Texas Instruments HEX-BUS SD Mass Storage Device
     Copyright Jim Brain and RETRO Innovations, 2017
@@ -21,30 +22,63 @@
 #include <stddef.h>
 #include <string.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
 #include <util/delay.h>
 #include "config.h"
 #include "hexbus.h"
 #include "led.h"
 #include "timer.h"
 #include "ff.h"
+
+#define FR_EOF     255    // We need an EOF error for hexbus_read.
+
+
 #ifdef ARDUINO
+
 #include <SPI.h>
 #include <SD.h>
 
-const uint8_t chipSelect = 10;
-volatile uint8_t sd_initialized = 0;
 
-uint8_t buffer[256];
+#ifdef INCLUDE_CLOCK
+
+#include <DS3231.h>
+#include <Wire.h>
+
+DS3231            clock_peripheral;       // Our CLOCK : access via the HexBus at device code 233 (E9h = ascii R+T+C)
+volatile uint8_t  clock_open = 0;
+
+#endif
+
+
+#ifdef INCLUDE_SERIAL
+#include <SoftwareSerial.h>
+
+SoftwareSerial    serial_peripheral( 8, 9 );  // either can support interrupts, and are otherwise available.
+volatile uint8_t  serial_open = 0;
+
+#endif
+
+
+#ifdef INCLUDE_PRINTER
+volatile uint8_t  printer_open = 0;
+#endif
+
+
+
+volatile uint8_t  sd_initialized = 0;
+const uint8_t     chipSelect = 10;
+uint8_t buffer[ BUFSIZE ];
 
 #else
 
 #include "diskio.h"
-#include "ff.h"
 
 FATFS fs;
-uint8_t buffer[40];
+uint8_t buffer[BUFSIZE];
 
 #endif
+
 #include "uart.h"
 
 /*
@@ -71,6 +105,9 @@ typedef struct _pab_raw_t {
 #define FILEATTR_PROTECT  4
 #define FILEATTR_DISPLAY  8
 
+typedef uint8_t (*cmd_proc)(pab_t pab);
+
+
 #ifndef ARDUINO
 
 typedef struct _file_t {
@@ -85,9 +122,10 @@ typedef struct _file_t {
   uint8_t attr;
 } file_t;
 
-uint8_t printer_open = 0;
 
-#endif // build-using-arduino
+
+
+#endif // arduino
 
 typedef struct _luntbl_t {
   uint8_t used;
@@ -95,9 +133,38 @@ typedef struct _luntbl_t {
   file_t  file;
 } luntbl_t;
 
-
 uint8_t open_files = 0;
 luntbl_t files[MAX_OPEN_FILES]; // file number to file mapping
+
+
+#ifdef INCLUDE_POWERMGMT
+static void wakeUp(void)
+{
+  sleep_disable();
+  power_all_enable();
+  detachInterrupt(0);
+}
+
+// Power use reduction
+static void sleep_the_system( void )
+{
+  // attach interrupt for wakeup to D2
+  attachInterrupt(0, wakeUp, LOW );
+  set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
+  cli();
+  sleep_enable();
+  sleep_bod_disable();
+  sei();
+  sleep_cpu();
+  // BAV low woke us up. Wait to see if we
+  // get a HSK low, if so, drop our HSK and then proceed.
+  // We do this here, because HSK must be held low after transmitter pulls it low
+  // within a very short window of time (< 8us).
+  hex_capture_hsk();
+  return;
+}
+#endif
+
 
 static file_t* find_file_in_use(uint8_t *lun) {
   uint8_t i;
@@ -155,7 +222,7 @@ static void free_lun(uint8_t lun) {
   }
 }
 
-static void init_files(void) {
+void init_files(void) {
   uint8_t i;
 
   for (i = 0; i < MAX_OPEN_FILES; i++) {
@@ -190,7 +257,7 @@ static uint8_t hex_getdata(uint8_t buf[256], uint16_t len) {
    response message, along with the provided status.
    Returns either HEXERR_BAV for BAV loss, or SUCCESS.
 */
-static uint8_t hex_eat_it(uint16_t length, uint8_t status )
+static void hex_eat_it(uint16_t length, uint8_t status )
 {
   uint16_t i = 0;
   uint8_t  data;
@@ -199,7 +266,7 @@ static uint8_t hex_eat_it(uint16_t length, uint8_t status )
     data = 1;
     if ( receive_byte( &data ) != HEXERR_SUCCESS ) {
       hex_release_bus();
-      return HEXERR_BAV;
+      return;
     }
     i++;
   }
@@ -207,11 +274,27 @@ static uint8_t hex_eat_it(uint16_t length, uint8_t status )
   // low, then go ahead and send a response.
   if (!hex_is_bav()) { // we can send response
     hex_send_final_response( status );
-    return HEXERR_SUCCESS;
   }
-  return HEXERR_BAV;
+  return;
 }
 
+
+static uint8_t hex_receive_options( pab_t pab ) {
+  uint16_t i = 0;
+  uint8_t  data;
+
+  while (i < pab.datalen) {
+    data = 1;   // tells receive byte to release HSK from previous receipt
+    if ( receive_byte( &data ) == HEXERR_SUCCESS ) {
+      buffer[ i ] = data;
+      i++;
+    } else {
+      return HEXERR_BAV;
+    }
+  }
+  buffer[ i ] = 0;
+  return HEXSTAT_SUCCESS;
+}
 
 /*
    https://github.com/m5dk2n comments:
@@ -236,16 +319,16 @@ static uint8_t hex_eat_it(uint16_t length, uint8_t status )
    transmitted in the verify command until sending stops.
 */
 
-static int8_t hex_verify(pab_t pab) {
+static uint8_t hex_verify(pab_t pab) {
   uint16_t len_prog_mem = 0;
   uint16_t len_prog_stored = 0;
   uint8_t  *data = &buffer[ sizeof(buffer) / 2 ]; // split our buffer in half
   // so we do not use all of our limited amount of RAM on buffers...
   UINT     read;
   uint16_t len;
+  uint16_t i;
   file_t*  file;
   BYTE     res = FR_OK;
-  uint8_t  i;
   uint8_t  first_buffer = 1;
 
   uart_putc('>');
@@ -256,25 +339,23 @@ static int8_t hex_verify(pab_t pab) {
   res = (file != NULL ? FR_OK : FR_NO_FILE);
 
   while (len && res == FR_OK) {
-    i = (len >= sizeof(buffer) / 2 ? sizeof(buffer) / 2 : len);
+
+    // figure out how much will fit...
+    i = ( len >= ( sizeof(buffer) / 2 ))  ? ( sizeof(buffer) / 2 ) : len;
+
     if ( hex_getdata(buffer, i) ) { // use front half of buffer for incoming data from the host.
+      hex_release_bus();
       return HEXERR_BAV;
     }
 
     if (res == FR_OK) {
-
       // length of program in memory
       if (first_buffer) {
         len_prog_mem = buffer[2] | ( buffer[3] << 8 );
       }
 
-      i = len_prog_mem - len; // remaing amount to read from file
-      // while it fit into buffer or not?  Only read as much
-      // as we can hold in our buffer.
-      i = ( i > sizeof( buffer ) / 2 ) ? sizeof( buffer ) / 2 : i;
-
 #ifdef ARDUINO
-
+      // grab same amount of data from file that we have received so far on the bus
       read = file->fp.read( (char *)data, i );
       timer_check(0);
       if ( read ) {
@@ -310,9 +391,8 @@ static int8_t hex_verify(pab_t pab) {
         }
       }
     }
-    if (first_buffer) {
-      first_buffer = 0;
-    }
+
+    first_buffer = 0;
     len -= read;
   }
   // If we haven't read the entire incoming message yet, flush it.
@@ -323,18 +403,18 @@ static int8_t hex_verify(pab_t pab) {
     }
 #endif
     hex_eat_it( len, res ); // reports status back.
-    return HEXSTAT_SUCCESS;
+    return HEXERR_BAV;
   } else {
+
     uart_putc('>');
+
     if (!hex_is_bav()) { // we can send response
       hex_send_final_response( res );
-      res = HEXSTAT_SUCCESS;
     } else {
       hex_finish();
-      res = HEXERR_BAV;
     }
   }
-  return res;
+  return HEXERR_SUCCESS;
 }
 
 /*
@@ -367,7 +447,7 @@ static int8_t hex_verify(pab_t pab) {
    what I can tell of the implementation.
 
 */
-static int8_t hex_write(pab_t pab) {
+static uint8_t hex_write(pab_t pab) {
   uint8_t rc = HEXERR_SUCCESS;
   uint16_t len;
   uint16_t i;
@@ -408,7 +488,7 @@ static int8_t hex_write(pab_t pab) {
     }
 #endif
     hex_eat_it( len, res );
-    return HEXSTAT_SUCCESS;
+    return HEXERR_BAV;
   }
 
   if (file != NULL && (file->attr & FILEATTR_DISPLAY)) { // add CRLF to data
@@ -443,7 +523,7 @@ static int8_t hex_write(pab_t pab) {
   } else {
     hex_finish();
   }
-  return rc;
+  return HEXERR_SUCCESS;
 }
 
 /*
@@ -467,33 +547,44 @@ static uint8_t hex_read(pab_t pab) {
   if (file != NULL) {
 
 #ifdef ARDUINO
-    fsize = (uint16_t)file->fp.size();
+    // amount remaining to read from file
+    fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
 #else
     fsize = file->fp.fsize;
 #endif
+    if ( fsize == 0 ) {
+      res = FR_EOF;
+    } else {
+      // size of buffer provided by host (amount to send)
+      len = pab.buflen;
 
+      if ( fsize < pab.buflen ) {
+        fsize = pab.buflen;
+      }
+    }
+    // send how much we are going to send
     rc = transmit_word( fsize );
 
-    while (len < fsize && rc == HEXERR_SUCCESS ) {
+    // while we have data remaining to send.
+    while ( fsize && rc == HEXERR_SUCCESS ) {
 
-#ifdef ARDUINO
-
-      i = fsize - len; // remaing amount to read from file
+      len = fsize;    // remaing amount to read from file
       // while it fit into buffer or not?  Only read as much
       // as we can hold in our buffer.
-      i = ( i > sizeof( buffer ) ) ? sizeof( buffer ) : i;
+      len = ( len > sizeof( buffer ) ) ? sizeof( buffer ) : len;
 
-      read = file->fp.read( (char *)buffer, i );
+#ifdef ARDUINO
+      memset((char *)buffer, 0, sizeof( buffer ));
+      read = file->fp.read( (char *)buffer, len );
       timer_check(0);
       if ( read ) {
         res = FR_OK;
       } else {
         res = FR_RW_ERROR;
       }
-
 #else
 
-      res = f_read(&(file->fp), buffer, sizeof(buffer), &read);
+      res = f_read(&(file->fp), buffer, len, &read);
 
       if (!res) {
         uart_putc(13);
@@ -507,17 +598,21 @@ static uint8_t hex_read(pab_t pab) {
         for (i = 0; i < read; i++) {
           rc = transmit_byte(buffer[i]);
         }
-        len += read;
       }
       else
       {
         rc = FR_RW_ERROR;
       }
+
+      fsize -= read;
     }
 
     switch (res) {
       case FR_OK:
         rc = HEXSTAT_SUCCESS;
+        break;
+      case FR_EOF:
+        rc = HEXSTAT_EOF;
         break;
       default:
         rc = HEXSTAT_DEVICE_ERR;
@@ -528,18 +623,16 @@ static uint8_t hex_read(pab_t pab) {
 
   } else {
     transmit_word(0);      // null file
-    rc = HEXSTAT_NOT_OPEN;
+    rc = HEXSTAT_NOT_FOUND;
 #ifdef ARDUINO
     if ( !sd_initialized ) {
       rc = HEXSTAT_DEVICE_ERR;
     }
 #endif
   }
-  if ( rc != HEXERR_BAV ) {
-    transmit_byte( rc );
-  }
+  transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return 0;
+  return HEXERR_SUCCESS;
 }
 
 /*
@@ -547,10 +640,7 @@ static uint8_t hex_read(pab_t pab) {
    open a file for read or write on the SD card.
 */
 static uint8_t hex_open(pab_t pab) {
-  uint16_t i = 0;
-  uint8_t data;
   uint16_t len = 0;
-  uint16_t index = 0;
   uint8_t att = 0;
   uint8_t rc;
   BYTE    mode = 0;
@@ -561,33 +651,35 @@ static uint8_t hex_open(pab_t pab) {
   uart_putc('>');
 
   len = 0;
-
-  while (i < pab.datalen) {
-    data = 1; // tells receive byte to release HSK from previous receipt
-    rc = receive_byte( &data );
-
-    if ( rc == HEXERR_SUCCESS ) {
-      switch (i) {
-        case 0:
-          len = data;
-          break;
-        case 1:
-          len |= data << 8; // length of buffer to use.
-          break;
-        case 2:
-          att = data;
-          break;
-        default:
-          buffer[ index++ ] = data; // grab additional data into buffer here.
-          break;
-      }
-    } else {
-      hex_release_bus(); // float the bus
-      return rc; // we'll return with a BAV ERR
-    }
-    i++;
+  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS )
+  {
+    len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
+    att = buffer[ 2 ];
+  } else {
+    hex_release_bus();
+    return HEXERR_BAV; // BAV ERR.
   }
+  
+#ifdef ARDUINO
 
+  // for now, until we get rid of SD library in Arduino build.
+  switch (att & (0x80 | 0x40)) {
+    case 0x00:  // append mode
+      mode = FILE_WRITE;
+      break;
+    case OPENMODE_WRITE: // write, truncate if present. Maybe...
+      mode = FILE_WRITE;
+      break;
+    case OPENMODE_WRITE | OPENMODE_READ:
+      mode = FILE_WRITE | FILE_READ;
+      break;
+    default: //OPENMODE_READ
+      mode = FILE_READ;
+      break;
+  }
+  
+#else
+   // map attributes to FatFS file access mode
   switch (att & (0x80 | 0x40)) {
     case 0x00:  // append mode
       mode = FA_WRITE;
@@ -602,15 +694,11 @@ static uint8_t hex_open(pab_t pab) {
       mode = FA_READ;
       break;
   }
-  // ensure potential filename is null terminated
-  buffer[ index ] = 0;
-
-  // Beware.  If len actually does == size of buffer, the buffer below
-  // in the f_open will NOT have a null-terminator as part of the name.
-  // also, if we have NO name, report an error.  Have to have a name to
-  // open something.
-  if ( index == 0 ) {
-    rc = HEXSTAT_OPTION_ERR;
+  
+#endif
+ 
+  if ( !buffer[ 3 ] ) {
+    rc = HEXSTAT_OPTION_ERR; // no name?
   } else {
 #ifdef ARDUINO
     if ( !sd_initialized ) {
@@ -623,14 +711,14 @@ static uint8_t hex_open(pab_t pab) {
     if (file != NULL) {
 #ifdef ARDUINO
       timer_check(0);
-      file->fp = SD.open( (const char *)buffer, mode );
-      if ( SD.exists( (const char *)buffer )) {
+      file->fp = SD.open( (const char *)&buffer[3], mode );
+      if ( SD.exists( (const char *)&buffer[3] )) {
         res = FR_OK;
       } else {
         res = FR_DENIED;
       }
 #else
-      res = f_open(&fs, &(file->fp), (UCHAR *)buffer, mode);
+      res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
 #endif
 
       switch (res) {
@@ -679,20 +767,49 @@ static uint8_t hex_open(pab_t pab) {
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXERR_SUCCESS ) {
       switch (att & (OPENMODE_WRITE | OPENMODE_READ)) {
+
+        // when opening to write...
         default:
-          if (!len) // len = 0 means list "<device>.<filename>" or open #<> for writing, thus we should add CRLF to each line.
+
+          if (!( att & OPENMODE_INTERNAL)) { // if NOT open mode = INTERNAL, let's add CR/LF to end of line (display form).
             file->attr |= FILEATTR_DISPLAY;
-          fsize = len ? len : sizeof(buffer);
-        // fall to break
+          }
+
+          if ( len <= sizeof( buffer ) ) {
+            fsize = len;
+          } else {
+            fsize = sizeof( buffer );
+          }
+          break;
+
         case OPENMODE_READ:
+          // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
+          if (pab.lun != 0 ) {
+            if ( len ) {
+              if ( len <= sizeof( buffer ) ) {
+                fsize = len;
+              } else {
+                fsize = sizeof( buffer );
+              }
+            }
+          }
+          // for len=0 OR lun=0, return fsize.
           break;
       }
-      hex_send_size_response( fsize );
-      return HEXERR_SUCCESS;
+
+      if ( rc == HEXSTAT_SUCCESS ) {
+        transmit_word( 4 );
+        transmit_word( fsize );
+        transmit_word( 0 );      // position
+        transmit_byte( HEXERR_SUCCESS );
+        hex_finish();
+      } else {
+        hex_send_final_response( rc );
+      }
     } else {
       hex_send_final_response( rc );
-      return HEXERR_SUCCESS;
     }
+    return HEXERR_SUCCESS;
   }
   hex_finish();
   return HEXERR_BAV;
@@ -745,9 +862,9 @@ static uint8_t hex_close(pab_t pab) {
     hex_send_final_response( rc );
     return HEXERR_SUCCESS;
   }
+  hex_finish();
   return HEXERR_BAV;
 }
-
 
 #ifdef ARDUINO
 /*
@@ -759,7 +876,6 @@ static uint8_t hex_delete(pab_t pab) {
   uint8_t data;
   uint8_t rc = HEXERR_SUCCESS;
   uint8_t sd_was_not_inited = 0;
-  //BYTE res;
 
   while (i < pab.datalen) {
     data = 1; // tells receive byte to release HSK from previous receipt
@@ -768,7 +884,7 @@ static uint8_t hex_delete(pab_t pab) {
       buffer[ i++ ] = data; // grab additional data into buffer here.
     } else {
       hex_release_bus(); // float the bus
-      return rc; // we'll return with a BAV ERR
+      return HEXERR_BAV; // we'll return with a BAV ERR
     }
   }
 
@@ -810,92 +926,132 @@ static uint8_t hex_delete(pab_t pab) {
   hex_finish();
   return HEXERR_BAV;
 }
-
+#else
+static uint8_t hex_delete(pab_t pab) {
+  hex_eat_it(pab.datalen, HEXSTAT_UNSUPP_CMD );
+  return HEXERR_BAV;
+}
 #endif
 
+
 static uint8_t hex_format(pab_t pab) {
-  uint8_t rc = HEXERR_BAV;
 
   uart_putc('>');
 
-  // get options, if any
-  if (!hex_getdata(buffer, pab.datalen)) {
-
-    // if we were going to do something, here's where we'd do it.
-    // however, since we do NOT actually support formatting SD cards
-    // with either the Arduino SD library, or the FatFS for non-Arduino builds
-    // at this time, the proper response is to return 0000 as the response length
-    // and a status of unsupported command, regardless of any options that may
-    // have been sent to us.
-    if (!hex_is_bav()) { // we can send response
-      hex_send_final_response(HEXSTAT_UNSUPP_CMD);
-      rc = HEXERR_SUCCESS;
-    }
-  }
-  return rc;
+  hex_eat_it(pab.datalen, HEXSTAT_UNSUPP_CMD );
+  return HEXERR_BAV;
 }
 
 
 
+static uint8_t hex_null( pab_t pab ) {
+  hex_release_bus();
+  while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
+    ;
+  return HEXERR_SUCCESS;
+}
+
+
+/*
+   hex_reset_bus() -
+   This command is normally used with device code zero, and must actually
+   do something if files are open (or printer is open).
+   Close any open files to ensure they are sync'd properly.  Close the printer if
+   open, and ensure our file lun tables are reset.
+   There is NO response to this command.
+*/
+static uint8_t hex_reset_bus(pab_t pab) {
+  file_t* file = NULL;
+  uint8_t lun;
+
+  uart_putc(13);
+  uart_putc(10);
+  uart_putc('R');
+
+  if ( open_files ) {
+    // find file(s) that are open, get file pointer and lun number
+    while ( (file = find_file_in_use(&lun) ) != NULL ) {
+      // if we found a file open, silently close it, and free its lun.
 #ifdef ARDUINO
+      timer_check(0);
+      if ( sd_initialized ) {
+        file->fp.close();  // close and sync file.
+      }
+#else
+      f_close(&(file->fp));  // close and sync file.
+#endif
+      free_lun(lun);
+      // continue until we find no additional files open.
+    }
+  }
+
+
+#ifdef INCLUDE_PRINTER
+  printer_open = 0;  // make sure our printer is closed.
+#endif
+
+#ifdef INCLUDE_SERIAL
+  if ( serial_open ) {
+    serial_peripheral.end();
+    serial_open = 0;
+  }
+#endif
+#ifdef INCLDUE_CLOCK
+  if ( clock_open ) {
+    clock_open = 0;
+    Wire.end();
+  }
+#endif
+
+  // release bus ignoring any further action on bus. no response sent.
+  hex_finish();
+  // wait here while bav is low
+  while ( !hex_is_bav() ) {
+#ifdef ARDUINO
+    timer_check(0);
+#else
+    ;
+#endif
+  }
+  return HEXERR_SUCCESS;
+}
+
+
+#ifdef INCLUDE_PRINTER
 /*
    hex_printer_open() -
    "opens" the Serial.object for use as a printer at device code 12 (default PC-324 printer).
 */
 static uint8_t hex_printer_open(pab_t pab) {
-  uint16_t i   = 0;
   uint16_t len = 0;
-  uint8_t  data;
-  uint8_t  rc;
-  uint8_t  att;
-  BYTE     res = HEXERR_SUCCESS;
+  uint8_t  rc = HEXSTAT_SUCCESS;
+  uint8_t  att = 0;
+  BYTE     res = HEXSTAT_SUCCESS;
 
   len = 0;
-
-  while (i < pab.datalen) {
-    data = 1; // tells receive byte to release HSK from previous receipt
-    rc = receive_byte( &data );
-    if ( rc == HEXERR_SUCCESS ) {
-      switch (i) {
-        case 0:
-          len = data;
-          break;
-        case 1:
-          len |= data << 8; // length of buffer to use.
-          break;
-        case 2:
-          att = data;
-          break;
-        default:
-          res = HEXSTAT_TOO_LONG; // we're going to report an error.  too much data sent.
-          break;
-      }
-    } else {
-      hex_release_bus(); // float the bus
-      return rc; // we'll return with a BAV ERR
-    }
-    i++;
+  if ( hex_receive_options( pab ) == HEXSTAT_SUCCESS ) {
+    len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
+    att = buffer[ 2 ];
   }
-  if ( ( att != OPENMODE_WRITE ) || ( len > sizeof(buffer) ) ) {
+
+  if ( (res == HEXSTAT_SUCCESS) && ( att != OPENMODE_WRITE ) ) {
     rc = HEXSTAT_OPTION_ERR;
   }
-  if ( res != HEXERR_SUCCESS ) {
+  if ( res != HEXSTAT_SUCCESS ) {
     rc = res;
   }
   if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXERR_SUCCESS )
+    if ( rc == HEXSTAT_SUCCESS )
     {
       printer_open = 1;  // our printer is NOW officially open.
       len = len ? len : sizeof(buffer);
       hex_send_size_response( len );
-      hex_finish();
-      return HEXERR_SUCCESS;
     }
     else
     {
       hex_send_final_response( rc );
-      return HEXERR_SUCCESS;
     }
+    return HEXERR_SUCCESS;
   }
   hex_finish();
   return HEXERR_BAV;
@@ -908,7 +1064,6 @@ static uint8_t hex_printer_open(pab_t pab) {
 */
 static uint8_t hex_printer_close(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
-  //BYTE    res = 0;
 
   if ( !printer_open ) {
     rc = HEXSTAT_NOT_OPEN;
@@ -917,16 +1072,15 @@ static uint8_t hex_printer_close(pab_t pab) {
   if ( !hex_is_bav() ) {
     // send 0000 response with appropriate status code.
     hex_send_final_response( rc );
-    return HEXERR_SUCCESS;
   }
-  return HEXERR_BAV;
+  return HEXERR_SUCCESS;
 }
 
 /*
     hex_printer_write() -
     write data to serial port when printer is open.
 */
-static int8_t hex_printer_write(pab_t pab) {
+static uint8_t hex_printer_write(pab_t pab) {
   uint16_t len;
   uint16_t i;
   UINT     written = 0;
@@ -957,7 +1111,6 @@ static int8_t hex_printer_write(pab_t pab) {
       */
       written = 1; // indicate we actually wrote some data
     }
-
     len -= i;
   }
 
@@ -982,87 +1135,405 @@ static int8_t hex_printer_write(pab_t pab) {
   */
   if (!hex_is_bav() ) {
     hex_send_final_response( rc );
-    rc = HEXSTAT_SUCCESS;
   } else {
     hex_finish();
-    rc = HEXERR_BAV;
   }
-  return rc;
+  return HEXERR_SUCCESS;
 }
+#endif
 
-#endif // build-using-arduino
 
+#ifdef INCLUDE_SERIAL
+static uint8_t hex_rs232_open(pab_t pab) {
+  uint16_t len;
+  uint8_t  att;
 
-/*
-   hex_reset_bus() -
-   This command is normally used with device code zero, and must actually
-   do something if files are open (or printer is open).
-   Close any open files to ensure they are sync'd properly.  Close the printer if
-   open, and ensure our file lun tables are reset.
-   There is NO response to this command.
-*/
-static uint8_t hex_reset_bus(pab_t pab) {
-  file_t* file = NULL;
-  uint8_t lun;
-  //BYTE    res;
+  len = 0;
+  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS )
+  {
+    len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
+    att = buffer[ 2 ];  // tells us open for read, write or both.
+  } else {
+    hex_release_bus();
+    return HEXERR_BAV; // BAV ERR.
+  }
+  // Now, we need to parse the input buffer and decide on parameters.
+  // realistically, all we can actually support is B=xxx.  Some other
+  // parameters we just pretty much ignore D=, P=, C=, N=, S=.
+  // The E= echo parameter we can act on.
+  // The R= N/C/L we act on (no nl, carriage return, or linefeed.  We also add B for both CR and LF
+  // The T= transfer tpe is also acted on, R/C/W.
+  // The O= data overrun reporting, Yes No is acted on.
+  //--
+  // the ATT ributes we support are: OUTPUT mode 10 (write only), INPUT mode 01 (read only), and UPDATE
+  // mode, 11 (read/write).  Relative/Sequential is always 0.  Fixed/Variable is ignored.
+  // Internal/Display is always 0, other bits not used.
+  //
+  // work in progress... not ready for prime time.
+  if ( !hex_is_bav() ) {
+    if ( !serial_open ) {
 
-  uart_putc(13);
-  uart_putc(10);
-  uart_putc('R');
-
-  if ( open_files ) {
-    // find file(s) that are open, get file pointer and lun number
-    while ( (file = find_file_in_use(&lun) ) != NULL ) {
-      // if we found a file open, silently close it, and free its lun.
-#ifdef ARDUINO
-      timer_check(0);
-      if ( sd_initialized ) {
-        file->fp.close();  // close and sync file.
+      if ( att != 0 ) {
+        len = len ? len : sizeof( buffer );
+        serial_open = att; // 00 attribute = illegal.
+        serial_peripheral.begin(9600);
+        transmit_word( 4 );
+        transmit_word( len );
+        transmit_word( 0 );
+        transmit_byte( HEXSTAT_SUCCESS );
+        return HEXERR_SUCCESS;
+      } else {
+        att = HEXSTAT_ATTR_ERR;
       }
-#else
-      f_close(&(file->fp));  // close and sync file.
-#endif
-      free_lun(lun);
-      // continue until we find no additional files open.
+    } else {
+      att = HEXSTAT_ALREADY_OPEN;
     }
+    hex_send_final_response( att );
+    return HEXERR_SUCCESS;
   }
-
-#ifdef ARDUINO
-  printer_open = 0;  // make sure our printer is closed.
-#endif
-
-  // release bus ignoring any further action on bus. no response sent.
   hex_finish();
-  // wait here while bav is low
-  while ( !hex_is_bav() ) {
-#ifdef ARDUINO
-    timer_check(0);
-#else
-    ;
-#endif
+  return HEXERR_BAV;
+}
+
+
+static uint8_t hex_rs232_close(pab_t pab) {
+  uint8_t rc = HEXSTAT_SUCCESS;
+
+  if ( serial_open ) {
+    serial_peripheral.end();
+    serial_open = 0;
+  } else {
+    rc = HEXSTAT_NOT_OPEN;
+  }
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_final_response( rc );
+    return HEXERR_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
+
+
+static uint8_t hex_rs232_read(pab_t pab) {
+  uint16_t len = pab.buflen;
+  uint16_t bcount = serial_peripheral.available();
+  uint8_t  rc = HEXSTAT_SUCCESS;
+
+  if ( bcount > pab.buflen ) {
+    bcount = pab.buflen;
+  }
+  if ( !hex_is_bav() ) {
+    if ( serial_open & OPENMODE_READ ) {
+      // send how much we are going to send
+      rc = transmit_word( bcount );
+      timer_check(0);
+      // while we have data remaining to send.
+      while ( bcount && rc == HEXERR_SUCCESS ) {
+
+        len = bcount;    // remaing amount to read from file
+        // while it fit into buffer or not?  Only read as much
+        // as we can hold in our buffer.
+        len = ( len > sizeof( buffer ) ) ? sizeof( buffer ) : len;
+
+        bcount -= len;
+        while ( len-- && rc == HEXSTAT_SUCCESS ) {
+          rc = transmit_byte( serial_peripheral.read() );
+        }
+      }
+      if ( rc != HEXERR_BAV ) {
+        transmit_byte( rc );
+      }
+      hex_finish();
+    } else if ( serial_open ) {
+      hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
+    } else {
+      hex_send_final_response( HEXSTAT_NOT_OPEN );
+    }
+    return HEXERR_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
+
+static uint8_t hex_rs232_write(pab_t pab) {
+  uint16_t len;
+  uint16_t i;
+  uint16_t j;
+  uint8_t  rc = HEXERR_SUCCESS;
+
+  len = pab.datalen;
+  if ( serial_open & OPENMODE_WRITE ) {
+    while (len && rc == HEXERR_SUCCESS ) {
+      i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
+      rc = hex_getdata(buffer, i);
+      if (rc == HEXSTAT_SUCCESS) {
+        j  = 0;
+        while (j < len) {
+          serial_peripheral.write( buffer[ j++ ] );
+        }
+        timer_check(0);
+      }
+      len -= i;
+    }
+  } else {
+    rc = HEXSTAT_OUTPUT_MODE_ERR;
   }
 
-  return HEXSTAT_SUCCESS;
+  if ( len ) {
+    hex_eat_it( len, rc );
+    return HEXERR_BAV;
+  }
+
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_final_response( rc );
+    return HEXERR_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
+
+
+static uint8_t hex_rs232_rtn_sta(pab_t pab) {
+  return HEXERR_SUCCESS;
+}
+
+
+static uint8_t hex_rs232_set_opts(pab_t pab) {
+  return HEXERR_SUCCESS;
+}
+#endif
+
+
+#ifdef INCLUDE_CLOCK
+/*
+   Open access to RTC module. Begin Wire, Begin DS3231
+*/
+static uint8_t hex_rtc_open(pab_t pab) {
+  if ( !clock_open ) {
+    Wire.begin();
+    clock_peripheral.setClockMode(false); // 24h
+    clock_open = 1;
+  }
+  return HEXERR_SUCCESS;
+}
+
+/*
+   Close access to RTC module. Shut down Wire.
+*/
+static uint8_t hex_rtc_close(pab_t pab) {
+  if ( clock_open ) {
+    Wire.end();
+    clock_open = 0;
+  }
+  return HEXERR_SUCCESS;
+}
+
+/*
+   Return time in format YYMMDD_HHMMSS in 24h form.
+   When RTC opened in INPUT or UPDATE mode.
+*/
+static uint8_t hex_rtc_read(pab_t pab) {
+  if ( clock_open )
+  {
+
+  }
+  return HEXERR_SUCCESS;
+}
+
+/*
+   Set time when we receive time in format YYMMDD_HHMMSS (13 bytes of data).
+   When RTC opened in OUTPUT or UPDATE mode.
+*/
+static uint8_t hex_rtc_write(pab_t pab) {
+  if ( clock_open ) {
+
+  }
+  return HEXERR_SUCCESS;
+}
+
+#endif // include_clock
+
+
+
+
+// PROGMEM data tables for command processing.
+static const cmd_proc handlers[] PROGMEM = {
+  // All devices
+  hex_reset_bus,
+  hex_null,
+  // disk device operations
+  hex_open,
+  hex_close,
+  hex_read,
+  hex_write,
+  hex_delete,
+  hex_verify,
+  hex_format,
+ #ifdef INCLUDE_PRINTER
+  // printer (PC-324) operations.
+  hex_printer_open,
+  hex_printer_close,
+  hex_printer_write,
+ #endif
+ #ifdef INCLUDE_SERIAL
+  // serial RS232 peripheral (dev code 20) operations.
+  hex_rs232_open,
+  hex_rs232_close,
+  hex_rs232_read,
+  hex_rs232_write,
+  hex_rs232_rtn_sta,
+  hex_rs232_set_opts,
+#endif
+#ifdef INCLUDE_CLOCK
+  // RTC device
+  hex_rtc_open,
+  hex_rtc_close,
+  hex_rtc_read,
+  hex_rtc_write,
+ #endif
+  //
+  // end of table
+  NULL
+};
+
+static const uint8_t command_codes[] PROGMEM = {
+  // All devices
+  HEXCMD_RESET_BUS,
+  HEXCMD_NULL,
+  // disk device operations
+  HEXCMD_OPEN,
+  HEXCMD_CLOSE,
+  HEXCMD_READ,
+  HEXCMD_WRITE,
+  HEXCMD_DELETE,
+  HEXCMD_VERIFY,
+  HEXCMD_FORMAT,
+ #ifdef INCLUDE_PRINTER
+  // printer (PC-324) operations.
+  HEXCMD_OPEN,
+  HEXCMD_CLOSE,
+  HEXCMD_WRITE,
+ #endif
+ #ifdef INCLUDE_SERIAL
+  // serial RS232 peripheral (dev code 20) operations.
+  HEXCMD_OPEN,
+  HEXCMD_CLOSE,
+  HEXCMD_READ,
+  HEXCMD_WRITE,
+  HEXCMD_RETURN_STATUS,
+  HEXCMD_SET_OPTIONS,
+ #endif
+ #ifdef INCLUDE_CLOCK
+  // RTC device
+  HEXCMD_OPEN,
+  HEXCMD_CLOSE,
+  HEXCMD_READ,
+  HEXCMD_WRITE,
+ #endif
+  //
+  // end of table
+  0
+};
+
+
+static const uint8_t device_codes[] PROGMEM = {
+  // All devices
+  ANY_DEV,
+  ANY_DEV,
+  // disk device operations
+  DISK_DEV,
+  DISK_DEV,
+  DISK_DEV,
+  DISK_DEV,
+  DISK_DEV,
+  DISK_DEV,
+  DISK_DEV,
+ #ifdef INCLUDE_PRINTER
+  // printer (PC-324) operations.
+  PRINTER_DEV,
+  PRINTER_DEV,
+  PRINTER_DEV,
+ #endif
+ #ifdef INCLUDE_SERIAL
+  // serial RS232 peripheral (dev code 20) operations.
+  RS232_DEV,
+  RS232_DEV,
+  RS232_DEV,
+  RS232_DEV,
+  RS232_DEV,
+  RS232_DEV,
+ #endif
+ #ifdef INCLUDE_CLOCK
+  // RTC device
+  RTC_DEV,
+  RTC_DEV,
+  RTC_DEV,
+  RTC_DEV,
+ #endif
+  //
+  // end of table
+  0
+};
+
+
+static void execute_command(pab_t pab)
+{
+  uint8_t i = 0;
+  uint8_t cod;
+  uint8_t rup = 0;
+  uint8_t cmd;
+
+  cmd_proc  entry = (cmd_proc)pgm_read_word( &handlers[ i ] );
+
+  while ( entry != NULL ) {
+    cmd = pgm_read_byte( &command_codes[ i ] );
+    if ( pab.cmd == cmd ) {
+      cod = pgm_read_byte( &device_codes[ i ] );
+      if ( cod == DISK_DEV ) {
+        rup = MAX_DISKS;
+      }
+      if ( (( pab.dev >= cod ) &&
+            ( pab.dev <= ( cod + rup ))) ||
+           ( cod == ANY_DEV )
+         ) {
+        (entry)( pab );
+        return;
+      }
+    }
+    i++;
+    entry = (cmd_proc)pgm_read_word( &handlers[ i ] );
+  }
+  // didn't find a handler?  then report as an unsupported command
+  hex_eat_it(pab.datalen, HEXSTAT_UNSUPP_CMD );
+  return;
 }
 
 
 
-/*
-   setup() - In Arduino, this will be run once automatically.
-   Building non-Arduino, we'll call it once at the beginning
-   of the main() function.
-*/
-void setup(void) {
-  //BYTE res;
-
-  board_init();
-  hex_init();
 
 #ifndef ARDUINO
+// Non-Arduino makefile entry point
+int main(void) __attribute__((OS_main));
+int main(void) { 
+#else
+// Arduino entry for running system
+void loop(void) { // Arduino main loop routine.
+
+#endif   // arduino
+
+  // Variables used common to both Arduino and makefile builds
+  uint8_t i = 0;
+  uint8_t ignore_cmd = FALSE;
+  pab_raw_t pabdata;
+  BYTE res;
+
+#ifndef ARDUINO
+
+ // setup stuff for main
+  board_init();
+  hex_init();
   uart_init();
   disk_init();
-#endif
-
   leds_init();
   timer_init();
   device_hw_address_init();
@@ -1070,39 +1541,11 @@ void setup(void) {
 
   sei();
 
-#ifdef ARDUINO
-  printer_open = 0;
-  sd_initialized = 0;
-
-  Serial.begin(115200);
-  // Ensure serial initialized before proceeding.
-  while (!Serial) {
-    ;
-  }
-
-#endif
-}
-
-
-#ifndef ARDUINO
-int main(void) __attribute__((OS_main));
-int main(void) {
-#else
-void loop(void) { // Arduino main loop routine.
-#endif
-
-  uint8_t i = 0;
-  int16_t data = 0;
-  uint8_t ignore_cmd = FALSE;
-  pab_raw_t pabdata;
-  BYTE res;
-
-#ifndef ARDUINO
-  setup();  // non-arduino- lets set up our environment.
-
   res = f_mount(1, &fs);
-
+  
 #endif
+
+  open_files = 0;
 
   pabdata.pab.cmd = 0;
   pabdata.pab.lun = 0;
@@ -1116,28 +1559,36 @@ void loop(void) { // Arduino main loop routine.
 
   while (TRUE) {
 
-    hex_release_bus(); // TODO JLB Is this really hex_hsk_hi();
-    hex_release_data();
 #ifdef ARDUINO
     set_busy_led( FALSE );
     timer_check(1);
 #endif
+
     while (hex_is_bav()) {
+
 #ifdef ARDUINO
       timer_check(0);
 #endif
+
+#ifdef INCLUDE_POWERMGMT
+      sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.
+#endif
+
     }
 
     uart_putc('^');
+    
 #ifdef ARDUINO
     set_busy_led( TRUE );
     timer_check(1);
 #endif
 
     while (!hex_is_bav()) {
+
       while ( i < 9 ) {
         pabdata.raw[ i ] = i;
         res = receive_byte( &pabdata.raw[ i ] );
+
         if ( res == HEXERR_SUCCESS ) {
           i++;
         } else {
@@ -1150,10 +1601,18 @@ void loop(void) { // Arduino main loop routine.
       if ( !ignore_cmd ) {
         if ( !( ( pabdata.pab.dev == 0 ) ||
                 ( pabdata.pab.dev == device_hw_address() )
-#ifdef ARDUINO
+#ifdef INCLUDE_PRINTER
                 ||
-                ( pabdata.pab.dev == PRINTER_DEV )
+                (( pabdata.pab.dev == PRINTER_DEV ) && (device_hw_address() == DISK_DEV) )
 #endif
+#ifdef INCLUDE_CLOCK
+                ||
+                (( pabdata.pab.dev == (RTC_DEV + ((device_hw_address()-DISK_DEV)&3))))
+#endif
+#ifdef INCLUDE_SERIAL
+                ||
+                (( pabdata.pab.dev == (RS232_DEV + ((device_hw_address()-DISK_DEV)&3))))
+#endif 
               )
            )
         {
@@ -1166,7 +1625,7 @@ void loop(void) { // Arduino main loop routine.
           // exec command
           uart_putc(13);
           uart_putc(10);
-#ifdef ARDUINO          
+#ifdef ARDUINO
           timer_check(1);
           /*
              If we are attempting to use the SD card, we
@@ -1187,113 +1646,12 @@ void loop(void) { // Arduino main loop routine.
           if ( pabdata.pab.dev == 0 && pabdata.pab.cmd != HEXCMD_RESET_BUS ) {
             pabdata.pab.cmd = HEXCMD_NULL; // change out to NULL operation and let bus float.
           }
-
-          switch (pabdata.pab.cmd) {
-
-            case HEXCMD_OPEN:
-#ifdef ARDUINO
-              if ( pabdata.pab.dev == PRINTER_DEV ) {
-                hex_printer_open(pabdata.pab);
-              } else {
-                hex_open(pabdata.pab);
-              }
-#else
-              hex_open(pabdata.pab);
-#endif
-              break;
-
-            case HEXCMD_CLOSE:
-#ifdef ARDUINO
-              if ( pabdata.pab.dev == PRINTER_DEV ) {
-                hex_printer_close(pabdata.pab);
-              } else {
-                hex_close(pabdata.pab);
-              }
-#else
-              hex_close(pabdata.pab);
-#endif
-              break;
-
-            case HEXCMD_DELETE_OPEN:
-#ifdef ARDUINO
-              if ( pabdata.pab.dev != PRINTER_DEV ) {
-                // eat the incoming message and report unsupported
-                hex_eat_it(pabdata.pab.datalen, HEXSTAT_UNSUPP_CMD );
-              }
-#endif
-              break;
-
-            case HEXCMD_READ:
-#ifdef ARDUINO
-              if ( pabdata.pab.dev != PRINTER_DEV )
-#endif
-                hex_read(pabdata.pab);
-              break;
-
-            case HEXCMD_WRITE:
-#ifdef ARDUINO
-              if ( pabdata.pab.dev == PRINTER_DEV ) {
-                hex_printer_write(pabdata.pab);
-              } else {
-                hex_write(pabdata.pab);
-              }
-#else
-              hex_write(pabdata.pab);
-#endif
-              break;
-
-#ifdef ARDUINO
-
-            case HEXCMD_DELETE:
-              if ( pabdata.pab.dev != PRINTER_DEV )
-                hex_delete(pabdata.pab); // currently supported on SD only.
-              break;
-
-#endif
-
-
-            case HEXCMD_VERIFY:
-#ifdef ARDUINO
-              if ( pabdata.pab.dev != PRINTER_DEV )
-#endif
-                hex_verify(pabdata.pab);
-              break;
-
-            case HEXCMD_NULL:
-              hex_release_bus();
-              while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
-                ;
-              break;
-
-            case HEXCMD_RESET_BUS:
-              // On a RESET, we should close any files that are OPEN, then simply
-              // abort any further bus operation.  No response.
-              hex_reset_bus(pabdata.pab);
-              break;
-
-            case HEXCMD_FORMAT:
-#ifdef ARDUINO
-              if ( pabdata.pab.dev != PRINTER_DEV )
-#endif
-                hex_format(pabdata.pab);
-              break;
-
-            case HEXCMD_SVC_REQ_POLL:
-              hex_send_final_response( HEXSTAT_NOT_REQUEST );
-              break;
-
-            default:
-              uart_putc(13);
-              uart_putc(10);
-              uart_putc('E');
-              hex_release_bus();
-              break;
-          }
+          execute_command( pabdata.pab );
           ignore_cmd = TRUE;  // in case someone sends more data, ignore it.
         }
       } else {
         uart_putc('%');
-        uart_puthex(data);
+        uart_puthex(pabdata.raw[0]);
         i = 0;
         hex_release_bus();
         while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
@@ -1301,6 +1659,7 @@ void loop(void) { // Arduino main loop routine.
         ignore_cmd = FALSE;
       }
     }
+
     uart_putc(13);
     uart_putc(10);
     i = 0;

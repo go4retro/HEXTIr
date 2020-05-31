@@ -53,7 +53,6 @@
 /                       Improved performance of f_lseek() on moving to the same
 /                       or following cluster.
 /---------------------------------------------------------------------------*/
-
 #ifndef ARDUINO
 #include <string.h>
 #include "config.h"

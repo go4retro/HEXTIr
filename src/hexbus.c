@@ -132,6 +132,42 @@ void hex_finish( void )
 }
 
 /*
+ * hex_wait_for_hsk_lo() -
+ * wait while HSK is high for a low edge. 
+ * If we lose BAV, return err.
+ */
+static uint8_t hex_wait_for_hsk_lo( void ) {
+  do
+  {
+    if (hex_is_bav()) {
+      return HEXERR_BAV;
+    }
+  } while ( hex_is_hsk() );
+  return HEXERR_SUCCESS;
+}
+
+/*
+ * hex_capture_hsk() -
+ * wait for HSK to be brought low, then hold HSK low
+ * and resume.  This is done to satisfy bus timing when
+ * we wake up from a lower power state by BAV being driven
+ * low by host.  We must hold HSK low within 5-6 us of host
+ * driving it low or we run the risk of losing the data.
+ * 
+ * STANDBY mode resumes system operation quickly enough that
+ * we can do this.  LOW POWER mode where it takes many milliseconds
+ * to resume would require additional external logic to capture
+ * and hold the incoming HSK signal for us.  Without that logic,
+ * we cannot use LOW POWER mode; STANDBY is the best we can do.
+ */
+uint8_t hex_capture_hsk( void ) {
+  if ( !hex_wait_for_hsk_lo() ) {
+    hex_hsk_lo();
+  }
+  return HEXERR_SUCCESS;
+}
+
+/*
    receive_byte() -
    incoming byte == 0: do not check for HSK HI. (reading first byte of PAB)
    incoming byte != 0 : release HSK (reading "next" byte of incoming message)
@@ -142,6 +178,11 @@ void hex_finish( void )
 uint8_t receive_byte( uint8_t *inout)
 {
   uint8_t lsn, msn;
+  
+#ifdef INCLUDE_POWERMGMT
+  if ( *inout == 0 ) 
+    goto lowhsk;
+#endif
 
   // reading NEXT byte of message: release HSK
   if ( *inout != 0 ) {
@@ -150,14 +191,13 @@ uint8_t receive_byte( uint8_t *inout)
 
   // monitor BAV (if lose BAV, abort)
   // Waiting for HSK low while BAV is low.
-  do
-  {
-    if (hex_is_bav()) {
-      return HEXERR_BAV;
-    }
-  } while ( hex_is_hsk() );
+  if ( hex_wait_for_hsk_lo() ) {
+    return HEXERR_BAV;
+  }
 
-  // Host has driven HSK low. Peripheral side must now hold it low.
+#ifdef INCLUDE_POWERMGMT
+lowhsk:  // Host has driven HSK low. Peripheral side must now hold it low.
+#endif
   hex_hsk_lo();
 
   // Read lower 4 bits of incoming data.

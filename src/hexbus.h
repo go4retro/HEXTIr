@@ -110,12 +110,13 @@ typedef enum _openmode_t {
               OPENMODE_WRITE =    0x80,
               OPENMODE_RELATIVE = 0x20,
               OPENMODE_FIXED =    0x10,
-              OPENMODE_INTERNAL = 0x08
+              OPENMODE_INTERNAL = 0x08,
             } openmode_t ;
 
 uint8_t hex_is_bav(void);
 void hex_release_data( void );
 void hex_release_bus(void);
+uint8_t hex_capture_hsk( void );
 uint8_t receive_byte( uint8_t *inout);
 uint8_t transmit_byte( uint8_t xmit );
 uint8_t transmit_word( uint16_t value );
@@ -123,6 +124,7 @@ void hex_finish( void );
 void hex_send_size_response( uint16_t len );
 void hex_send_final_response( uint8_t rc );
 void hex_init(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
