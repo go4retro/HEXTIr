@@ -31,7 +31,7 @@
 #include <avr/io.h>
 #include "config.h"
 
-#ifndef BUILD_USING_ARDUINO
+#ifndef ARDUINO
 
 #include "spi.h"
 
@@ -118,4 +118,4 @@ void spi_exchange_block(void *vdata, unsigned int length, uint8_t write) {
   }
 }
 
-#endif // build-using-arduino
+#endif // arduino

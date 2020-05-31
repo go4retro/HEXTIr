@@ -27,8 +27,6 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "config.h"
-#ifndef BUILD_USING_ARDUINO
-
 #include "uart.h"
 
 #ifdef UART0_ENABLE
@@ -352,5 +350,3 @@ void uart_init(void) {
 #  endif
 }
 #endif
-
-#endif // build-using-arduino

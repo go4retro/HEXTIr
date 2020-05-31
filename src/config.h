@@ -22,14 +22,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define BUILD_USING_ARDUINO // COMMENT THIS OUT if NOT BUILDING in Arduino IDE
-
 #include <avr/io.h>
 
-#ifndef BUILD_USING_ARDUINO
-
- #include "autoconf.h"
-
+#ifndef ARDUINO
+# include "autoconf.h"
 #else
 
  #define CONFIG_HARDWARE_VARIANT   2
@@ -37,7 +33,6 @@
  
 #endif
 
-#ifndef BUILD_USING_ARDUINO
 /* ----- Common definitions for all AVR hardware variants ------ */
 
 /* Interrupt handler for system tick */
@@ -56,35 +51,11 @@
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
 
-#define MAX_OPEN_FILES 8
-
-#else
+#ifdef ARDUINO
 
 /* ----- Common definitions for building using Arduino  ------ */
 #define PRINTER_DEV    12     // Device code to support a printer on serial (rx/tx) @115200,N,8,1
 #define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
-
-// We'll map to these from SD file errors as we figure it out.
-typedef enum {
-    FR_OK = 0,          /* 0 */
-    FR_NOT_READY,       /* 1 */
-    FR_NO_FILE,         /* 2 */
-    FR_NO_PATH,         /* 3 */
-    FR_INVALID_NAME,    /* 4 */
-    FR_INVALID_DRIVE,   /* 5 */
-    FR_DENIED,          /* 6 */
-    FR_EXIST,           /* 7 */
-    FR_RW_ERROR,        /* 8 */
-    FR_WRITE_PROTECTED, /* 9 */
-    FR_NOT_ENABLED,     /* 10 */
-    FR_NO_FILESYSTEM,   /* 11 */
-    FR_INVALID_OBJECT,  /* 12 */
-    FR_MKFS_ABORTED,    /* 13 */
-    FR_IS_DIRECTORY,    /* 13 */
-    FR_IS_READONLY,     /* 14 */
-    FR_DIR_NOT_EMPTY,   /* 15 */
-    FR_NOT_DIRECTORY    /* 16 */
-} FRESULT;
 
 // Map to one of the SD File modes.
 #define FA_READ             FILE_READ
@@ -93,6 +64,9 @@ typedef enum {
 #define FA_CREATE_NEW       0
 #define FA_CREATE_ALWAYS    0
 #define FA_OPEN_ALWAYS      0
+
+#else
+#define MAX_OPEN_FILES 8
 
 #endif
 
@@ -115,7 +89,7 @@ typedef enum {
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
-#ifndef BUILD_USING_ARDUINO
+#ifndef ARDUINO
 
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
@@ -194,7 +168,7 @@ static inline void board_init(void) {
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
-#ifndef BUILD_USING_ARDUINO
+#ifndef ARDUINO
 
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
@@ -260,7 +234,7 @@ static inline void board_init(void) {
 
 
 /* ---------------- End of user-configurable options ---------------- */
-#ifndef BUILD_USING_ARDUINO
+#ifndef ARDUINO
 
 /* An interrupt for detecting card changes implies hotplugging capability */
 #if defined(SD_CHANGE_HANDLER) || defined (CF_CHANGE_HANDLER)

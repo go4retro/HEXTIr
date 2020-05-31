@@ -22,9 +22,7 @@
 #include "config.h"
 #include "hexbus.h"
 #include "integer.h"
-#ifndef BUILD_USING_ARDUINO
 #include "uart.h"
-#endif
 
 /*
    hex_is_bav() -

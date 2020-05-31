@@ -32,9 +32,8 @@
 
 */
 
+#ifndef ARDUINO
 #include "config.h"
-#ifndef BUILD_USING_ARDUINO
-
 #include "crc.h"
 #include "diskio.h"
 #include "spi.h"
@@ -297,8 +296,7 @@ static uint8_t send_command(const uint8_t  card,
 void sd_init(void) {
   sdcard_interface_init();
 }
-//void disk_init(void) __attribute__ ((weak, alias("sd_init")));
-#define disk_init  sd_init
+void disk_init(void) __attribute__ ((weak, alias("sd_init")));
 
 /**
  * sd_status - get card status
@@ -332,8 +330,7 @@ DSTATUS sd_status(BYTE drv) {
   else
     return STA_NOINIT | STA_NODISK;
 }
-//DSTATUS disk_status(BYTE drv) __attribute__ ((weak, alias("sd_status")));
-#define disk_status sd_status
+DSTATUS disk_status(BYTE drv) __attribute__ ((weak, alias("sd_status")));
 
 /**
  * sd_initialize - initialize SD card
@@ -476,8 +473,7 @@ DSTATUS sd_initialize(BYTE drv) {
 
   return sd_status(drv);
 }
-//DSTATUS disk_initialize(BYTE drv) __attribute__ ((weak, alias("sd_initialize")));
-#define disk_initialize  sd_initialize
+DSTATUS disk_initialize(BYTE drv) __attribute__ ((weak, alias("sd_initialize")));
 
 /**
  * sd_read - reads sectors from the SD card to buffer
@@ -581,8 +577,7 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 
   return RES_OK;
 }
-//DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_read")));
-#define disk_read  sd_read
+DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_read")));
 
 /**
  * sd_write - writes sectors from buffer to the SD card
@@ -685,8 +680,7 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
 
   return RES_OK;
 }
-//DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_write")));
-#define disk_write  sd_write
+DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_write")));
 
 /**
  * sd_getinfo - read card information
@@ -747,8 +741,5 @@ DRESULT sd_getinfo(BYTE drv, BYTE page, void *buffer) {
 
   return RES_OK;
 }
-//DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer) __attribute__ ((weak, alias("sd_getinfo")));
-#define disk_getinfo  sd_getinfo
-
-
-#endif // build-using-arduino
+DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer) __attribute__ ((weak, alias("sd_getinfo")));
+#endif

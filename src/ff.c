@@ -54,11 +54,9 @@
 /                       or following cluster.
 /---------------------------------------------------------------------------*/
 
+#ifndef ARDUINO
 #include <string.h>
 #include "config.h"
-
-#ifndef BUILD_USING_ARDUINO
-
 #include "ff.h"         /* FatFs declarations */
 #include "diskio.h"     /* Include file for user provided disk functions */
 #include <avr/pgmspace.h>
@@ -3042,5 +3040,4 @@ int fprintf (
 
 #endif /* !_FS_READONLY */
 #endif /* _USE_STRFUNC >= 1*/
-
-#endif /* build-using-arduino */
+#endif

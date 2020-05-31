@@ -37,7 +37,7 @@ volatile tick_t ticks;
 
 
 /* The main timer interrupt */
-#ifndef BUILD_USING_ARDUINO
+#ifndef ARDUINO
 ISR(TIMER1_COMPA_vect) {
 
   ticks++;
@@ -61,6 +61,30 @@ void timer_init(void) {
   TCCR1A = 0;
   TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS11);
   TIMSK1 |= _BV(OCIE1A);
+}
+
+#else
+
+unsigned long t_time;
+
+void timer_init(void) {
+  t_time = millis() + 10;
+  ticks = 0;
+}
+
+void timer_check(uint8_t flag) {
+  unsigned long t = millis();
+  if ( t > t_time || flag ) {
+    t_time = t;
+    ticks++;
+    if (led_state & LED_ERROR) {
+      if ((ticks & 15) == 0) {
+        toggle_led();  // blink LED as error, 1 flash every 150 ms or so.
+      }
+    } else {
+      set_led(led_state & LED_BUSY);
+    }
+  }
 }
 
 #endif

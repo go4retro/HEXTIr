@@ -20,6 +20,9 @@
 
 #ifndef SRC_HEXBUS_H_
 #define SRC_HEXBUS_H_
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 typedef enum _hexcmdtype_t {
                HEXCMD_OPEN = 0,
@@ -120,5 +123,8 @@ void hex_finish( void );
 void hex_send_size_response( uint16_t len );
 void hex_send_final_response( uint8_t rc );
 void hex_init(void);
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* SRC_HEXBUS_H_ */
