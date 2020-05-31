@@ -247,6 +247,51 @@ static int8_t hex_verify(pab_t pab) {
 	}
 }
 
+static uint8_t hex_delete(pab_t pab) {
+
+	uint8_t rc = HEXSTAT_SUCCESS;;
+	FRESULT fr;
+
+	uart_putc('>');
+	hex_release_bus_recv();
+
+	// the file path
+	if(hex_getdata(buffer,pab.datalen))
+		return HEXERR_BAV;
+	buffer[pab.datalen] = 0; // terminate the string
+
+	// remove file
+	fr = f_unlink(&fs, buffer);
+
+	// map return code
+	if(rc == HEXSTAT_SUCCESS) {
+		switch(fr) {
+		case FR_OK:
+			rc = HEXSTAT_SUCCESS;
+			break;
+		case FR_NO_FILE:
+			rc = HEXSTAT_NOT_FOUND;
+			break;
+		default:
+			rc = HEXSTAT_DEVICE_ERR;
+			break;
+		}
+	}
+	uart_putc('>');
+	hex_release_bus_recv();
+	_delay_us(200);
+	if(!hex_is_bav()) { // we can send response
+		hex_puti(0, FALSE);  // zero length data
+		hex_putc(rc, FALSE);    // status code
+		return HEXERR_SUCCESS;
+	} else {
+		return HEXERR_BAV;
+	}
+	return HEXERR_BAV;
+}
+
+
+
 static int8_t hex_write(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
@@ -604,6 +649,9 @@ int main(void) {
               case HEXCMD_VERIFY:
             	hex_verify(pabdata.pab);
             	break;
+              case HEXCMD_DELETE:
+            	  hex_delete(pabdata.pab);
+            	  break;
               case HEXCMD_FORMAT:
                 hex_format(pabdata.pab);
               default:
