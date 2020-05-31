@@ -48,4 +48,3 @@ static inline uint16_t crc_xmodem_block(uint16_t crc, const uint8_t *data, unsig
 
 
 #endif
-

@@ -27,6 +27,8 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "config.h"
+#ifndef BUILD_USING_ARDUINO
+
 #include "uart.h"
 
 #ifdef UART0_ENABLE
@@ -214,6 +216,7 @@ static int ioputc(char c, FILE *stream) {
 static FILE mystdout = FDEV_SETUP_STREAM(ioputc, NULL, _FDEV_SETUP_WRITE);
 #endif
 
+
 #ifdef UART1_ENABLE
 #  if defined UART1_TX_BUFFER_SHIFT && UART1_TX_BUFFER_SHIFT > 0
 ISR(USARTB_UDRE_vect) {
@@ -237,6 +240,7 @@ ISR(USARTB_RXC_vect) {
   rx1_buf[rx1_head] = UDRB; /* Read and store received data */
 }
 #  endif
+
 
 void uart1_putc(char data) {
 #  if defined UART1_TX_BUFFER_SHIFT && UART1_TX_BUFFER_SHIFT > 0
@@ -348,3 +352,5 @@ void uart_init(void) {
 #  endif
 }
 #endif
+
+#endif // build-using-arduino

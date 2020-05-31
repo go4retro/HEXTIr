@@ -22,10 +22,27 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <avr/io.h>
-#include "autoconf.h"
+#define BUILD_USING_ARDUINO // COMMENT THIS OUT if NOT BUILDING in Arduino IDE
 
+#include <avr/io.h>
+
+#ifndef BUILD_USING_ARDUINO
+
+ #include "autoconf.h"
+
+#else
+
+ #define CONFIG_HARDWARE_VARIANT   2
+ #define CONFIG_SD_AUTO_RETRIES    2
+ 
+#endif
+
+#ifndef BUILD_USING_ARDUINO
 /* ----- Common definitions for all AVR hardware variants ------ */
+
+/* Interrupt handler for system tick */
+#define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)
+
 
 #ifdef CONFIG_UART_DEBUG
 #define UART0_ENABLE
@@ -41,11 +58,48 @@
 
 #define MAX_OPEN_FILES 8
 
-/* Interrupt handler for system tick */
-#define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)
+#else
+
+/* ----- Common definitions for building using Arduino  ------ */
+#define PRINTER_DEV    12     // Device code to support a printer on serial (rx/tx) @115200,N,8,1
+#define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
+
+// We'll map to these from SD file errors as we figure it out.
+typedef enum {
+    FR_OK = 0,          /* 0 */
+    FR_NOT_READY,       /* 1 */
+    FR_NO_FILE,         /* 2 */
+    FR_NO_PATH,         /* 3 */
+    FR_INVALID_NAME,    /* 4 */
+    FR_INVALID_DRIVE,   /* 5 */
+    FR_DENIED,          /* 6 */
+    FR_EXIST,           /* 7 */
+    FR_RW_ERROR,        /* 8 */
+    FR_WRITE_PROTECTED, /* 9 */
+    FR_NOT_ENABLED,     /* 10 */
+    FR_NO_FILESYSTEM,   /* 11 */
+    FR_INVALID_OBJECT,  /* 12 */
+    FR_MKFS_ABORTED,    /* 13 */
+    FR_IS_DIRECTORY,    /* 13 */
+    FR_IS_READONLY,     /* 14 */
+    FR_DIR_NOT_EMPTY,   /* 15 */
+    FR_NOT_DIRECTORY    /* 16 */
+} FRESULT;
+
+// Map to one of the SD File modes.
+#define FA_READ             FILE_READ
+#define FA_OPEN_EXISTING    0
+#define FA_WRITE            FILE_WRITE
+#define FA_CREATE_NEW       0
+#define FA_CREATE_ALWAYS    0
+#define FA_OPEN_ALWAYS      0
+
+#endif
+
 
 #if CONFIG_HARDWARE_VARIANT == 1
-/* ---------- Hardware configuration: HEXTIr v1 ---------- */
+
+/* ---------- Hardware configuration: HEXTIr v1 or Arduino Nano ---------- */
 #  define HEX_HSK_DDR         DDRC
 #  define HEX_HSK_OUT         PORTC
 #  define HEX_HSK_IN          PINC
@@ -60,6 +114,8 @@
 #  define HEX_DATA_OUT        PORTC
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
+
+#ifndef BUILD_USING_ARDUINO
 
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
@@ -87,6 +143,8 @@ static inline uint8_t sdcard_detect(void) {
 static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
+
+#endif // build-using-arduino
 
 /* This allows the user to set the drive address to be 100-107 or 108-117) */
 static inline uint8_t device_hw_address(void) {
@@ -136,6 +194,8 @@ static inline void board_init(void) {
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
+#ifndef BUILD_USING_ARDUINO
+
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
 #  define SD_SUPPLY_VOLTAGE     (1L<<21)
@@ -162,6 +222,9 @@ static inline uint8_t sdcard_detect(void) {
 static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
+
+#endif // build-using-arduino
+
 
 /* This allows the user to set the drive address to be 100-107 or 108-117) */
 static inline uint8_t device_hw_address(void) {
@@ -197,6 +260,7 @@ static inline void board_init(void) {
 
 
 /* ---------------- End of user-configurable options ---------------- */
+#ifndef BUILD_USING_ARDUINO
 
 /* An interrupt for detecting card changes implies hotplugging capability */
 #if defined(SD_CHANGE_HANDLER) || defined (CF_CHANGE_HANDLER)
@@ -217,5 +281,7 @@ static inline void board_init(void) {
 #ifndef HAVE_SD_LED
 # define set_sd_led(x) do {} while (0)
 #endif
+
+#endif // build-using-arduino
 
 #endif /*CONFIG_H*/

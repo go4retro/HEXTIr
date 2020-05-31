@@ -56,7 +56,7 @@ CONFIG_UART_BUF_SHIFT=0
 #   2 - Arduino Uno
 CONFIG_HARDWARE_VARIANT=2
 CONFIG_AVRDUDE_PROGRAMMER=arduino
-CONFIG_AVRDUDE_PORT=COM32
+CONFIG_AVRDUDE_PORT=COM6
 
 # Track the stack size
 # Warning: This option increases the code size a lot.

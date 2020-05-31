@@ -56,6 +56,9 @@
 
 #include <string.h>
 #include "config.h"
+
+#ifndef BUILD_USING_ARDUINO
+
 #include "ff.h"         /* FatFs declarations */
 #include "diskio.h"     /* Include file for user provided disk functions */
 #include <avr/pgmspace.h>
@@ -1553,7 +1556,7 @@ FRESULT f_read (
   FRESULT res;
   DWORD clust, sect, remain;
   UINT rcnt, cc;
-  BYTE *rbuff = buff;
+  BYTE *rbuff = (BYTE*)buff;
   FATFS *fs = fp->fs;
 
 
@@ -1627,7 +1630,7 @@ FRESULT f_write (
   FRESULT res;
   DWORD clust, sect;
   UINT wcnt, cc;
-  const BYTE *wbuff = buff;
+  const BYTE *wbuff = (const BYTE *)buff;
   FATFS *fs = fp->fs;
 
 
@@ -1841,7 +1844,7 @@ FRESULT f_lseek (
     fp->fptr = 0; fp->csect = 1;          /* Set file R/W pointer to top of the file */
   }
 #if !_FS_READONLY
-	if (fp->fptr > fp->fsize) {			        /* Set changed flag if the file was extended */
+  if (fp->fptr > fp->fsize) {             /* Set changed flag if the file was extended */
     fp->fsize = fp->fptr;
     fp->flag |= FA__WRITTEN;
   }
@@ -1987,7 +1990,7 @@ FRESULT f_readdir (
 #endif
 
   res = validate(fs /*, dj->id*/);         /* Check validity of the object */
-  if (res != FR_OK) return res;
+  if (res != FR_OK) return (FRESULT)res;
 
   finfo->fname[0] = 0;
   while (dj->sect) {
@@ -3039,3 +3042,5 @@ int fprintf (
 
 #endif /* !_FS_READONLY */
 #endif /* _USE_STRFUNC >= 1*/
+
+#endif /* build-using-arduino */

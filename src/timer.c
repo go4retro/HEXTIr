@@ -29,13 +29,17 @@
 */
 
 #include "config.h"
+
 #include "led.h"
 #include "timer.h"
 
 volatile tick_t ticks;
 
+
 /* The main timer interrupt */
-SYSTEM_TICK_HANDLER {
+#ifndef BUILD_USING_ARDUINO
+ISR(TIMER1_COMPA_vect) {
+
   ticks++;
 
   if (led_state & LED_ERROR) {
@@ -45,6 +49,7 @@ SYSTEM_TICK_HANDLER {
     set_led(led_state & LED_BUSY);
   }
 }
+
 
 void timer_init(void) {
   /* Count F_CPU/8 in timer 0 */
@@ -57,3 +62,5 @@ void timer_init(void) {
   TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS11);
   TIMSK1 |= _BV(OCIE1A);
 }
+
+#endif

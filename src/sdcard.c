@@ -33,6 +33,8 @@
 */
 
 #include "config.h"
+#ifndef BUILD_USING_ARDUINO
+
 #include "crc.h"
 #include "diskio.h"
 #include "spi.h"
@@ -96,6 +98,7 @@
 
 static uint8_t cardtype[MAX_CARDS];
 
+
 /* ------------------------------------------------------------------------- */
 /*  Utility functions                                                        */
 /* ------------------------------------------------------------------------- */
@@ -135,7 +138,7 @@ static inline uint32_t swap_word(uint32_t input) {
  * from the highest-value bit of the first byte of the buffer.
  */
 static uint32_t getbits(void *buffer, uint16_t start, int8_t bits) {
-  uint8_t *buf = buffer;
+  uint8_t *buf = (uint8_t *)buffer;
   uint32_t result = 0;
 
   if ((start % 8) != 0) {
@@ -165,7 +168,8 @@ static uint32_t getbits(void *buffer, uint16_t start, int8_t bits) {
 
 /* Detect changes of SD card 0 */
 #ifdef SD_CHANGE_HANDLER
-SD_CHANGE_HANDLER {
+//SD_CHANGE_HANDLER {
+void sd_change_handler_isr(void) {
   if (sdcard_detect())
     disk_state = DISK_CHANGED;
   else
@@ -251,7 +255,7 @@ static uint8_t send_command(const uint8_t  card,
   errors = 0;
   while (errors < CONFIG_SD_AUTO_RETRIES) {
     /* select card */
-    spi_select_device(card+1);
+    spi_select_device((spi_device_t)(card+1));
     set_sd_led(1);
 
     /* send command */
@@ -293,8 +297,8 @@ static uint8_t send_command(const uint8_t  card,
 void sd_init(void) {
   sdcard_interface_init();
 }
-void disk_init(void) __attribute__ ((weak, alias("sd_init")));
-
+//void disk_init(void) __attribute__ ((weak, alias("sd_init")));
+#define disk_init  sd_init
 
 /**
  * sd_status - get card status
@@ -328,8 +332,8 @@ DSTATUS sd_status(BYTE drv) {
   else
     return STA_NOINIT | STA_NODISK;
 }
-DSTATUS disk_status(BYTE drv) __attribute__ ((weak, alias("sd_status")));
-
+//DSTATUS disk_status(BYTE drv) __attribute__ ((weak, alias("sd_status")));
+#define disk_status sd_status
 
 /**
  * sd_initialize - initialize SD card
@@ -472,8 +476,8 @@ DSTATUS sd_initialize(BYTE drv) {
 
   return sd_status(drv);
 }
-DSTATUS disk_initialize(BYTE drv) __attribute__ ((weak, alias("sd_initialize")));
-
+//DSTATUS disk_initialize(BYTE drv) __attribute__ ((weak, alias("sd_initialize")));
+#define disk_initialize  sd_initialize
 
 /**
  * sd_read - reads sectors from the SD card to buffer
@@ -577,8 +581,8 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) {
 
   return RES_OK;
 }
-DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_read")));
-
+//DRESULT disk_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_read")));
+#define disk_read  sd_read
 
 /**
  * sd_write - writes sectors from buffer to the SD card
@@ -639,7 +643,7 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
       const BYTE *ptr = buffer;
 
       crc = 0;
-      spi_select_device(drv+1);
+      spi_select_device((spi_device_t)(drv+1));
       for (i=0; i<512; i++) {
         SPDR = *ptr;
         crc = crc_xmodem_update(crc, *ptr++);
@@ -681,8 +685,8 @@ DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) {
 
   return RES_OK;
 }
-DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_write")));
-
+//DRESULT disk_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count) __attribute__ ((weak, alias("sd_write")));
+#define disk_write  sd_write
 
 /**
  * sd_getinfo - read card information
@@ -735,7 +739,7 @@ DRESULT sd_getinfo(BYTE drv, BYTE page, void *buffer) {
     while (exponent--) capacity *= 2;
   }
 
-  diskinfo0_t *di = buffer;
+  diskinfo0_t *di = (diskinfo0_t *)buffer;
   di->validbytes  = sizeof(diskinfo0_t);
   di->disktype    = DISK_TYPE_SD;
   di->sectorsize  = 2;
@@ -743,4 +747,8 @@ DRESULT sd_getinfo(BYTE drv, BYTE page, void *buffer) {
 
   return RES_OK;
 }
-DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer) __attribute__ ((weak, alias("sd_getinfo")));
+//DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer) __attribute__ ((weak, alias("sd_getinfo")));
+#define disk_getinfo  sd_getinfo
+
+
+#endif // build-using-arduino

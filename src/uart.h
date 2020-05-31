@@ -37,14 +37,14 @@
 #define B2400   CALC_BPS(2400)
 #define B4800   CALC_BPS(4800)
 #define B9600   CALC_BPS(9600)
-#define B19200	CALC_BPS(19200)
-#define B38400	CALC_BPS(38400)
+#define B19200  CALC_BPS(19200)
+#define B38400  CALC_BPS(38400)
 #define B57600  CALC_BPS(57600)
-#define B76800	CALC_BPS(76800)
-#define B115200	CALC_BPS(115200)
-#define B230400	CALC_BPS(230400)
-#define B460800	CALC_BPS(460800)
-#define B921600	CALC_BPS(921600)
+#define B76800  CALC_BPS(76800)
+#define B115200 CALC_BPS(115200)
+#define B230400 CALC_BPS(230400)
+#define B460800 CALC_BPS(460800)
+#define B921600 CALC_BPS(921600)
 
 #if defined __AVR_ATmega162__ || defined __AVR_ATmega644__ || defined __AVR_ATmega644P__ || defined __AVR_ATmega1281__ || defined __AVR_ATmega2561__ || defined __AVR_ATmega128__
 

@@ -29,6 +29,9 @@
 */
 
 #include "config.h"
+
+#ifndef BUILD_USING_ARDUINO
+
 #include "diskio.h"
 #include "sdcard.h"
 
@@ -168,3 +171,5 @@ DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer) {
 
 
 #endif
+
+#endif // build-using-arduino

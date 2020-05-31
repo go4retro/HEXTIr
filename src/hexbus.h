@@ -111,11 +111,14 @@ typedef enum _openmode_t {
             } openmode_t ;
 
 uint8_t hex_is_bav(void);
-void hex_release_bus_send(void);
-void hex_release_bus_recv(void);
-void hex_puti(uint16_t data, uint8_t hold);
-void hex_putc(uint8_t data, uint8_t hold);
-int16_t hex_getc(uint8_t hold);
+void hex_release_data( void );
+void hex_release_bus(void);
+uint8_t receive_byte( uint8_t *inout);
+uint8_t transmit_byte( uint8_t xmit );
+uint8_t transmit_word( uint16_t value );
+void hex_finish( void );
+void hex_send_size_response( uint16_t len );
+void hex_send_final_response( uint8_t rc );
 void hex_init(void);
 
 #endif /* SRC_HEXBUS_H_ */

@@ -30,6 +30,9 @@
 
 #include <avr/io.h>
 #include "config.h"
+
+#ifndef BUILD_USING_ARDUINO
+
 #include "spi.h"
 
 /* interrupts disabled, SPI enabled, MSB first, master mode */
@@ -114,3 +117,5 @@ void spi_exchange_block(void *vdata, unsigned int length, uint8_t write) {
     data++;
   }
 }
+
+#endif // build-using-arduino
