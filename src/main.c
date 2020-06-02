@@ -18,6 +18,7 @@
     main.c: Main application
 */
 #include <stddef.h>
+#include <string.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "config.h"
@@ -112,6 +113,50 @@ static void init(void) {
   for(i=0;i < MAX_OPEN_FILES; i++) {
     files[i].used = FALSE;
   }
+}
+
+static FRESULT write_catalog()
+{
+	UCHAR path[2];
+    FRESULT res;
+    DIR dir;
+    static FILINFO fno;
+    char buffer[256];
+    UINT first=1;
+
+    FIL cat;        /* catalog file object */
+    UINT written;
+
+    // open the catalog for writing
+    res = f_open(&fs, &cat, (UCHAR*)"CATALOG", FA_OPEN_ALWAYS | FA_WRITE);
+    if (res == FR_OK) {
+    	// catalog start "
+    	f_write(&cat,"\"",1,&written);
+
+    	res = l_opendir(&fs, 0, &dir); // open the directory
+    	if (res == FR_OK) {
+    		for (;;) {
+    			res = f_readdir(&dir, &fno);                   // read a directory item
+    			if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
+    			char *dot = strrchr((const char*)fno.fname, '.');
+    			if (dot && (!strcmp(dot, ".PGM") || !strcmp(dot, ".pgm") ))
+    			{
+    				if (first) {
+    					first = 0;
+    				} else {
+    					f_write(&cat,",",1,&written);
+    				}
+    				memset(buffer,0,sizeof(buffer));
+    				snprintf(buffer, sizeof(buffer)-1,"%s", fno.fname);
+    				f_write(&cat,buffer,strlen(buffer),&written);
+    			}
+
+    		}
+    	}
+    	f_write(&cat,"\"",1,&written);
+    	f_close(&cat);
+    }
+    return res;
 }
 
 static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
@@ -290,6 +335,40 @@ static uint8_t hex_delete(pab_t pab) {
 	return HEXERR_BAV;
 }
 
+static uint8_t hex_catalog(pab_t pab) {
+
+	uint8_t rc = HEXSTAT_SUCCESS;;
+	FRESULT fr = FR_OK;
+
+	fr = write_catalog();
+
+	uart_putc('>');
+	// map return code
+	if(rc == HEXSTAT_SUCCESS) {
+		switch(fr) {
+		case FR_OK:
+			rc = HEXSTAT_SUCCESS;
+			break;
+		default:
+			rc = HEXSTAT_DEVICE_ERR;
+			break;
+		}
+	}
+	uart_putc('>');
+	hex_release_bus_recv();
+	_delay_us(200);
+	if(!hex_is_bav()) { // we can send response
+		hex_puti(0, FALSE);  // zero length data
+		hex_putc(rc, FALSE);    // status code
+		// fr = scan_files("/");
+
+		return HEXERR_SUCCESS;
+
+	} else {
+		return HEXERR_BAV;
+	}
+	return HEXERR_BAV;
+}
 
 
 static int8_t hex_write(pab_t pab) {
@@ -651,6 +730,9 @@ int main(void) {
             	break;
               case HEXCMD_DELETE:
             	  hex_delete(pabdata.pab);
+            	  break;
+              case HEXCMD_CATALOG:
+            	  hex_catalog(pabdata.pab);
             	  break;
               case HEXCMD_FORMAT:
                 hex_format(pabdata.pab);
