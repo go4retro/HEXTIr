@@ -56,7 +56,7 @@ void setup(void) {
 #endif
 
 #ifdef INCLUDE_POWERMGMT
-  pinMode(WAKEUP_PIN, INPUT);
+  wakeup_pin_init();
 #endif
 
 }

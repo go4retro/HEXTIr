@@ -167,6 +167,14 @@ static inline void leds_init(void) {
   DDRD |= _BV(PIN2);
 }
 
+static inline void leds_sleep(void) {
+  ;
+}
+
+static inline void wakeup_pin_init(void) {
+  ;
+}
+
 static inline __attribute__((always_inline)) void set_led(uint8_t state) {
   if (state)
     PORTD |= _BV(PIN2);
@@ -243,6 +251,15 @@ static inline void leds_init(void) {
   DDRD |= _BV(PIN2);
 }
 
+static inline void leds_sleep(void) {
+  PORTD &= ~_BV(PIN2);
+}
+
+static inline void wakeup_pin_init(void) {
+  ;
+}
+
+
 static inline __attribute__((always_inline)) void set_led(uint8_t state) {
   if (state)
     PORTD |= _BV(PIN2);
@@ -274,8 +291,6 @@ static inline void board_init(void) {
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
-#  define WAKEUP_PIN          2 // BAV on D2
-
 // PB.0/.1 which are SDcard detect and WP for non-Arduino build are
 // repurposed in the Arduino build to be a software serial port using
 // the SoftwareSerial library.
@@ -293,6 +308,15 @@ static inline void device_hw_address_init(void) {
 static inline void leds_init(void) {
   DDRD |= _BV(PIN7);
 }
+
+static inline void leds_sleep(void) {
+  PORTD &= ~_BV(PIN7);
+}
+
+static inline void wakeup_pin_init(void) {
+  DDRD &= ~_BV(PIN2);
+}
+
 
 static inline __attribute__((always_inline)) void set_led(uint8_t state) {
   if (state)

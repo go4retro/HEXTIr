@@ -92,13 +92,14 @@ static void wakeUp(void)
 }
 
 
-// Power use reduction
+// Power use reduction - designed for hardware variant 3 only!
 static void sleep_the_system( void )
 {
   // attach interrupt for wakeup to D2
   attachInterrupt(0, wakeUp, LOW );
   set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
   cli();
+  leds_sleep(); // make sure activity LED is not illuminated while we are sleeping.
   sleep_enable();
   // The sleep_bod_disable operation may not be available on all targets!!!
   sleep_bod_disable();
