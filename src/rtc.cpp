@@ -17,6 +17,7 @@
 
     rtc.cpp: DS3231 Clock device functions.
 */
+
 #include "config.h"
 #include "hexbus.h"
 #include "hexops.h"
@@ -34,7 +35,6 @@ extern uint8_t buffer[BUFSIZE];
 DS3231            clock_peripheral;       // Our CLOCK : access via the HexBus at device code 233 (E9h = ascii R+T+C)
 volatile uint8_t  rtc_open = 0;
 #endif
-
 
 
 #ifdef INCLUDE_CLOCK
@@ -98,14 +98,12 @@ static uint8_t hex_rtc_reset(pab_t pab) {
 #endif // include_clock
 
 
-void rtc_init()
-{
+void rtc_init() {
   return;
 }
 
 
-void rtc_reset()
-{
+void rtc_reset() {
 #ifdef INCLUDE_CLOCK
   if ( rtc_open ) {
     Wire.end();
@@ -119,7 +117,6 @@ void rtc_reset()
 /*
  * Command handling registry for device
  */
-extern REGISTRY  registry;
 
 static const cmd_proc fn_table[] PROGMEM = {
   hex_rtc_open,
@@ -140,16 +137,16 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
-void rtc_register(void)
-{
+
+void rtc_register(registry_t *registry) {
 #ifdef INCLUDE_CLOCK
-  uint8_t i = registry.num_devices;
+  uint8_t i = registry->num_devices;
   
-  registry.num_devices++;
-  registry.entry[ i ].device_code_start = RTC_DEV;
-  registry.entry[ i ].device_code_end = RTC_DEV + 9; // support 230-239 as device codes
-  registry.entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry.entry[ i ].command = (uint8_t *)&op_table;
+  registry->num_devices++;
+  registry->entry[ i ].device_code_start = RTC_DEV;
+  registry->entry[ i ].device_code_end = RTC_DEV + 9; // support 230-239 as device codes
+  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
+  registry->entry[ i ].command = (uint8_t *)&op_table;
 #endif
   return;
 }

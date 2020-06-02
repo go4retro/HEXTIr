@@ -17,6 +17,7 @@
 
     printer.cpp: Printer-based (over Serial) device functions.
 */
+
 #include "config.h"
 #include "hexbus.h"
 #include "hexops.h"
@@ -33,9 +34,9 @@
 extern uint8_t buffer[BUFSIZE];
 
 #ifdef INCLUDE_PRINTER
-
 // Global defines
 volatile uint8_t  prn_open = 0;
+
 
 /*
    hex_prn_open() -
@@ -97,6 +98,7 @@ static uint8_t hex_prn_close(__attribute__((unused)) pab_t pab) {
   }
   return HEXERR_SUCCESS;
 }
+
 
 /*
     hex_prn_write() -
@@ -163,6 +165,7 @@ static uint8_t hex_prn_write(pab_t pab) {
   return HEXERR_SUCCESS;
 }
 
+
 static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
   
   prn_reset();
@@ -178,29 +181,10 @@ static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
 
 #endif
 
-void prn_reset( void )
-{
-#ifdef INCLUDE_PRINTER
-  prn_open = 0; // make sure our printer is closed.
-#endif
-  return;
-}
-
-void prn_init( void )
-{
-#ifdef INCLUDE_PRINTER
-  prn_open = 0;
-#endif
-  return;
-}
-
-
 #ifdef INCLUDE_PRINTER
 /*
  * Command handling registry for device
  */
-extern REGISTRY  registry;
-
 static const cmd_proc fn_table[] PROGMEM = {
   hex_prn_open,
   hex_prn_close,
@@ -219,16 +203,32 @@ static const uint8_t op_table[] PROGMEM = {
 #endif
 
 
-void prn_register( void )
-{
+void prn_register(registry_t *registry) {
 #ifdef INCLUDE_PRINTER
-  uint8_t i = registry.num_devices;
+  uint8_t i = registry->num_devices;
   
-  registry.num_devices++;
-  registry.entry[ i ].device_code_start = PRN_DEV;  
-  registry.entry[ i ].device_code_end = PRN_DEV+9; // support 10 thru 19 as device codes.
-  registry.entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry.entry[ i ].command = (uint8_t *)&op_table;
+  registry->num_devices++;
+  registry->entry[ i ].device_code_start = PRN_DEV;
+  registry->entry[ i ].device_code_end = PRN_DEV+9; // support 10 thru 19 as device codes.
+  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
+  registry->entry[ i ].command = (uint8_t *)&op_table;
 #endif
   return;
 }
+
+void prn_reset( void )
+{
+#ifdef INCLUDE_PRINTER
+  prn_open = 0; // make sure our printer is closed.
+#endif
+  return;
+}
+
+void prn_init( void )
+{
+#ifdef INCLUDE_PRINTER
+  prn_open = 0;
+#endif
+  return;
+}
+

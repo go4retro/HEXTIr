@@ -37,15 +37,11 @@
 #include "registry.h"
 
 #ifdef ARDUINO
-
 #include <Arduino.h>
-
 #else
-
 #include "diskio.h"
 
 FATFS fs;
-
 #endif
 
 #include "uart.h"
@@ -54,7 +50,7 @@ extern uint8_t buffer[BUFSIZE];
 
 
 // Our registry of installed devices, built during initialization.
-REGISTRY  registry;
+registry_t  registry;
 
 // Eventually, this is configuration info that will be in EEPROM, in some form, I think...
 // so the #ifdef's would disappear... the system will have a means of informing which group(s)
@@ -119,22 +115,6 @@ static void sleep_the_system( void )
 
 
 /*
- * hex_unsupported() should be used for any command on any device
- * where we provide no support for that command.
- */
-static uint8_t hex_unsupported(pab_t pab) {
-  hex_eat_it(pab.datalen, HEXSTAT_UNSUPP_CMD );
-  return HEXERR_BAV;
-}
-
-static uint8_t hex_null( __attribute__((unused)) pab_t pab ) {
-  hex_release_bus();
-  while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
-    ;
-  return HEXERR_SUCCESS;
-}
-
-/*
    hex_reset_bus() -
    This command is normally used with device code zero, and must actually
    do something if files are open (or printer is open).
@@ -163,7 +143,6 @@ static uint8_t hex_reset_bus(pab_t pab) {
   }
   return HEXERR_SUCCESS;
 }
-
 
 
 static void execute_command(pab_t pab)
@@ -229,6 +208,7 @@ static void execute_command(pab_t pab)
   return;
 }
 
+
 //
 // Default registry for global bus support (device 0).
 //
@@ -254,10 +234,10 @@ void setup_registry(void)
   registry.entry[ 0 ].command = (uint8_t *)&op_table;
 
   // Register any configured peripherals.  if the peripheral type is not included, the call is to an empty routine.
-  drv_register();
-  prn_register();
-  ser_register();
-  rtc_register();
+  drv_register(&registry);
+  prn_register(&registry);
+  ser_register(&registry);
+  rtc_register(&registry);
   return;
 }
 
@@ -295,8 +275,6 @@ void loop(void) { // Arduino main loop routine.
   
   sei();
 
-  res = f_mount(1, &fs);
-  
 #endif
 
   setup_registry();
@@ -331,7 +309,6 @@ void loop(void) { // Arduino main loop routine.
     }
 
     uart_putc('^');
-    
 #ifdef ARDUINO
     set_busy_led( TRUE );
     timer_check(1);
@@ -377,10 +354,10 @@ void loop(void) { // Arduino main loop routine.
       if ( !ignore_cmd ) {
         if (i == 9) {
           // exec command
-          uart_putc(13);
-          uart_putc(10);
+          uart_putcrlf();
 #ifdef ARDUINO
           timer_check(1);
+#endif
           /*
              If we are attempting to use the SD card, we
              initialize it NOW.  If it fails (no card present)
@@ -391,7 +368,6 @@ void loop(void) { // Arduino main loop routine.
           if ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] ) {
             drv_start();
           }
-#endif
 
           if ( pabdata.pab.dev == 0 && pabdata.pab.cmd != HEXCMD_RESET_BUS ) {
             pabdata.pab.cmd = HEXCMD_NULL; // change out to NULL operation and let bus float.

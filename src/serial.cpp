@@ -160,7 +160,6 @@ static uint8_t hex_ser_read(pab_t pab) {
 }
 
 
-
 static uint8_t hex_ser_write(pab_t pab) {
   uint16_t len;
   uint16_t i;
@@ -212,6 +211,7 @@ static uint8_t hex_ser_set_opts(pab_t pab) {
   return HEXERR_SUCCESS;
 } 
 
+
 static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
   
   ser_reset();
@@ -223,33 +223,13 @@ static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
   }
   return HEXERR_SUCCESS;
 }
-
 #endif // include_serial
 
-
-void ser_reset(void)
-{
-#ifdef INCLUDE_SERIAL
-  if ( ser_open ) {
-    serial_peripheral.end();
-    ser_open = 0;
-  } 
-#endif   
-  return;
-}
-
-void ser_init(void)
-{
-#ifdef INCLUDE_SERIAL
-  ser_open = 0;
-#endif
-}
 
 #ifdef INCLUDE_SERIAL
 /*
  * Command handling registry for device
  */
-extern REGISTRY  registry;
 
 static const cmd_proc fn_table[] PROGMEM = {
   hex_ser_open,
@@ -276,16 +256,34 @@ static const uint8_t op_table[] PROGMEM = {
 #endif // include-serial
 
 
-void ser_register(void)
-{
+void ser_register(registry_t *registry) {
 #ifdef INCLUDE_SERIAL
-  uint8_t i = registry.num_devices;
+  uint8_t i = registry->num_devices;
   
-  registry.num_devices++;
-  registry.entry[ i ].device_code_start = SER_DEV;
-  registry.entry[ i ].device_code_end = SER_DEV + 3; // support 20, 21, 22, 23 as device codes
-  registry.entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry.entry[ i ].command = (uint8_t *)&op_table;
+  registry->num_devices++;
+  registry->entry[ i ].device_code_start = SER_DEV;
+  registry->entry[ i ].device_code_end = SER_DEV + 3; // support 20, 21, 22, 23 as device codes
+  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
+  registry->entry[ i ].command = (uint8_t *)&op_table;
   return;
 #endif
 }
+
+
+void ser_reset(void) {
+#ifdef INCLUDE_SERIAL
+  if ( ser_open ) {
+    serial_peripheral.end();
+    ser_open = FALSE;
+  }
+#endif
+  return;
+}
+
+
+void ser_init(void) {
+#ifdef INCLUDE_SERIAL
+  ser_open = FALSE;
+#endif
+}
+

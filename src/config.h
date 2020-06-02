@@ -29,16 +29,11 @@
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
  #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
  // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
- 
-#elif defined ARDUINO_AVR_MEGA2560
- #define CONFIG_HARDWARE_VARIANT   3 // this is for testing the build
 #endif
 
 #ifndef ARDUINO
-
  #include "autoconf.h"
  #define MAX_OPEN_FILES 8
- 
 #else
  #define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
 

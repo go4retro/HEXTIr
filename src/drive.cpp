@@ -15,7 +15,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    drive.cpp: Printer-based device functions.
+    drive.cpp: Drive-based device functions.
 */
 #include <string.h>
 #include "config.h"
@@ -35,13 +35,10 @@
  #include <SPI.h>
  #include <SD.h>
 
- uint8_t sd_initialized = 0;
  const uint8_t  chipSelect = 10;
 #else
-
  FATFS fs;
  #include "diskio.h"
- 
 #endif
 
 // Global references
@@ -50,6 +47,8 @@ extern uint8_t buffer[BUFSIZE];
 // Global defines
 uint8_t open_files = 0;
 luntbl_t files[MAX_OPEN_FILES]; // file number to file mapping
+uint8_t fs_initialized = 0;
+
 
 static file_t* find_file_in_use(uint8_t *lun) {
   uint8_t i;
@@ -62,6 +61,7 @@ static file_t* find_file_in_use(uint8_t *lun) {
   return NULL;
 }
 
+
 static file_t* find_lun(uint8_t lun) {
   uint8_t i;
 
@@ -70,9 +70,9 @@ static file_t* find_lun(uint8_t lun) {
       return &(files[i].file);
     }
   }
-  uart_putc('n');
   return NULL;
 }
+
 
 static file_t* reserve_lun(uint8_t lun) {
   uint8_t i;
@@ -89,6 +89,7 @@ static file_t* reserve_lun(uint8_t lun) {
   return NULL;
 }
 
+
 static void free_lun(uint8_t lun) {
   uint8_t i;
 
@@ -97,16 +98,17 @@ static void free_lun(uint8_t lun) {
       files[i].used = FALSE;
       open_files--;
       set_busy_led(open_files);
-#ifdef ARDUINO
       if ( !open_files ) {
+#ifdef ARDUINO
         SD.end();
-        sd_initialized = 0;
-      }
+#else
+        f_mount(1,NULL);
 #endif
+        fs_initialized = FALSE;
+      }
     }
   }
 }
-
 
 
 /*
@@ -210,11 +212,9 @@ static uint8_t hex_drv_verify(pab_t pab) {
   }
   // If we haven't read the entire incoming message yet, flush it.
   if ( len ) {
-#ifdef ARDUINO
-    if ( !sd_initialized ) {
+    if ( !fs_initialized ) {
       res = HEXSTAT_DEVICE_ERR;
     }
-#endif
     hex_eat_it( len, res ); // reports status back.
     return HEXERR_BAV;
   } else {
@@ -229,6 +229,7 @@ static uint8_t hex_drv_verify(pab_t pab) {
   }
   return HEXERR_SUCCESS;
 }
+
 
 /*
    hex_drv_write() -
@@ -295,11 +296,9 @@ static uint8_t hex_drv_write(pab_t pab) {
   }
 
   if ( len ) {
-#ifdef ARDUINO
-    if ( !sd_initialized ) {
+    if ( !fs_initialized ) {
       res = HEXSTAT_DEVICE_ERR;
     }
-#endif
     hex_eat_it( len, res );
     return HEXERR_BAV;
   }
@@ -338,6 +337,7 @@ static uint8_t hex_drv_write(pab_t pab) {
   }
   return HEXERR_SUCCESS;
 }
+
 
 /*
    hex_drv_read() -
@@ -437,16 +437,15 @@ static uint8_t hex_drv_read(pab_t pab) {
   } else {
     transmit_word(0);      // null file
     rc = HEXSTAT_NOT_FOUND;
-#ifdef ARDUINO
-    if ( !sd_initialized ) {
+    if ( !fs_initialized ) {
       rc = HEXSTAT_DEVICE_ERR;
     }
-#endif
   }
   transmit_byte( rc ); // status byte transmit
   hex_finish();
   return HEXERR_SUCCESS;
 }
+
 
 /*
    hex_drv_open() -
@@ -464,8 +463,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   uart_putc('>');
 
   len = 0;
-  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS )
-  {
+  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
   } else {
@@ -513,12 +511,9 @@ static uint8_t hex_drv_open(pab_t pab) {
   if ( !buffer[ 3 ] ) {
     rc = HEXSTAT_OPTION_ERR; // no name?
   } else {
-#ifdef ARDUINO
-    if ( !sd_initialized ) {
+    if ( !fs_initialized ) {
       file = NULL;
-    } else
-#endif
-    {
+    } else {
       file = reserve_lun(pab.lun);
     }
     if (file != NULL) {
@@ -569,11 +564,9 @@ static uint8_t hex_drv_open(pab_t pab) {
       }
     } else { // too many open files, or file system maybe not initialized?
       rc = HEXSTAT_MAX_LUNS;
-#ifdef ARDUINO
-      if ( !sd_initialized ) {
+      if ( !fs_initialized ) {
         rc = HEXSTAT_DEVICE_ERR;
       }
-#endif
     }
   }
 
@@ -628,6 +621,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   return HEXERR_BAV;
 }
 
+
 /*
    hex_drv_close() -
    close the file associated with the LUN in the PAB.
@@ -664,11 +658,9 @@ static uint8_t hex_drv_close(pab_t pab) {
     }
   } else {
     rc = HEXSTAT_NOT_OPEN; // File not open.
-#ifdef ARDUINO
-    if ( !sd_initialized ) {
+    if ( !fs_initialized ) {
       rc = HEXSTAT_DEVICE_ERR;
     }
-#endif
   }
 
   if ( !hex_is_bav() ) {
@@ -680,45 +672,41 @@ static uint8_t hex_drv_close(pab_t pab) {
 }
 
 
-
-#ifdef ARDUINO
 /*
    hex_drv_delete() -
    delete a file from the SD card.
 */
 static uint8_t hex_drv_delete(pab_t pab) {
-  uint16_t i = 0;
-  uint8_t data;
   uint8_t rc = HEXERR_SUCCESS;
+#ifndef ARDUINO
+  FRESULT fr;
+#else
   uint8_t sd_was_not_inited = 0;
+#endif
 
-  while (i < pab.datalen) {
-    data = 1; // tells receive byte to release HSK from previous receipt
-    rc = receive_byte( &data );
-    if ( rc == HEXERR_SUCCESS ) {
-      buffer[ i++ ] = data; // grab additional data into buffer here.
-    } else {
-      hex_release_bus(); // float the bus
-      return HEXERR_BAV; // we'll return with a BAV ERR
-    }
+  uart_putc('>');
+  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS ) {
+  } else {
+    hex_release_bus();
+    return HEXERR_BAV; // BAV ERR.
   }
-
-  // ensure potential filename is null terminated
-  buffer[ i ] = 0;
   // simplistic removal. doesn't check for much besides
   // existance at this point.  We should be able to know if
   // the file is open or not, and test for that; also should
   // test if it is really a file, or if it is a directory.
   // But for now; this'll do.
-  if ( !sd_initialized ) {
+#ifdef ARDUINO
+  if ( !fs_initialized ) { // TODO why is this done here, when it is done outside for all other functions?
     if ( SD.begin(chipSelect) ) {
-      sd_initialized = 1;
+      fs_initialized = 1;
       sd_was_not_inited = 1;
     } else {
       rc = HEXSTAT_DEVICE_ERR;
     }
   }
-  if ( rc == HEXERR_SUCCESS && sd_initialized ) {
+#endif
+  if ( rc == HEXERR_SUCCESS && fs_initialized ) {
+#ifdef ARDUINO
     if ( SD.exists( (const char *)buffer )) {
       if ( SD.remove( (const char *)buffer )) {
         rc = HEXSTAT_SUCCESS;
@@ -730,23 +718,32 @@ static uint8_t hex_drv_delete(pab_t pab) {
     }
     if ( sd_was_not_inited ) {
       SD.end();
-      sd_initialized = 0;
+      fs_initialized = 0;
     }
-  }
-
-  if (!hex_is_bav()) { // we can send response
-    hex_send_final_response( rc );
-    return HEXERR_SUCCESS;
-  }
-  hex_finish();
-  return HEXERR_BAV;
-}
 #else
-static uint8_t hex_drv_delete(pab_t pab) {
-  hex_eat_it(pab.datalen, HEXSTAT_UNSUPP_CMD );
-  return HEXERR_BAV;
-}
+    // remove file
+   fr = f_unlink(&fs, buffer);
+   switch(fr) {
+   case FR_OK:
+     rc = HEXSTAT_SUCCESS;
+     break;
+   case FR_NO_FILE:
+     rc = HEXSTAT_NOT_FOUND;
+     break;
+   default:
+     rc = HEXSTAT_DEVICE_ERR;
+     break;
+   }
 #endif
+ }
+ if (!hex_is_bav()) { // we can send response
+   hex_send_final_response( rc );
+   return HEXERR_SUCCESS;
+ }
+ hex_finish();
+ return HEXERR_BAV;
+}
+
 
 static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
 
@@ -761,62 +758,22 @@ static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
 }
 
 
-
-void drv_reset( void )
-{
-  file_t* file = NULL;
-  uint8_t lun;
-
-  uart_putc(13);
-  uart_putc(10);
-  uart_putc('R');
-
-  if ( open_files ) {
-    // find file(s) that are open, get file pointer and lun number
-    while ( (file = find_file_in_use(&lun) ) != NULL ) {
-      // if we found a file open, silently close it, and free its lun.
-#ifdef ARDUINO
-      timer_check(0);
-      if ( sd_initialized ) {
-        file->fp.close();  // close and sync file.
-      }
-#else
-      f_close(&(file->fp));  // close and sync file.
-#endif
-      free_lun(lun);
-      // continue until we find no additional files open.
-    }
-  }
-  return;
-}
-
-void drv_init(void) {
-  uint8_t i;
-
-  for (i = 0; i < MAX_OPEN_FILES; i++) {
-    files[i].used = FALSE;
-  }
-  open_files = 0;
-#ifdef ARDUINO
-  sd_initialized = 0;
-#endif
-  return;
-}
-
 /*
- * drv_start - open SD library on Arduino.  
+ * drv_start - open filesystem.
  * make- ignore/ empty function.
  */
 void drv_start(void) {
+  if (!fs_initialized) {
 #ifdef ARDUINO
   // If SD library not initialized, initialize it now
   // and mark it as such.
-  if (!sd_initialized) {
     if (SD.begin( chipSelect ) ) {
-      sd_initialized = 1;
+#else
+      if (!f_mount(1,&fs)) {
+#endif
+      fs_initialized = 1;
     }
   }
-#endif
   return;
 }
 
@@ -824,9 +781,6 @@ void drv_start(void) {
 /*
  * Command handling registry for device
  */
-extern REGISTRY  registry;
-
-
 static const cmd_proc fn_table[] PROGMEM = {
   hex_drv_open,
   hex_drv_close,
@@ -849,14 +803,53 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_INVALID_MARKER
 };
 
-void drv_register(void)
+void drv_register(registry_t *registry)
 {
-  uint8_t i = registry.num_devices;
+  uint8_t i = registry->num_devices;
 
-  registry.num_devices++;
-  registry.entry[ i ].device_code_start = DRV_DEV;
-  registry.entry[ i ].device_code_end = DRV_DEV + 9; // support 100-109 for disks
-  registry.entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry.entry[ i ].command = (uint8_t *)&op_table;
+  registry->num_devices++;
+  registry->entry[ i ].device_code_start = DRV_DEV;
+  registry->entry[ i ].device_code_end = DRV_DEV + 9; // support 100-109 for disks
+  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
+  registry->entry[ i ].command = (uint8_t *)&op_table;
   return;
 }
+
+void drv_reset( void )
+{
+  file_t* file = NULL;
+  uint8_t lun;
+
+  uart_putcrlf();
+  uart_putc('R');
+
+  if ( open_files ) {
+    // find file(s) that are open, get file pointer and lun number
+    while ( (file = find_file_in_use(&lun) ) != NULL ) {
+      // if we found a file open, silently close it, and free its lun.
+#ifdef ARDUINO
+      timer_check(0);
+      if ( fs_initialized ) {
+        file->fp.close();  // close and sync file.
+      }
+#else
+      f_close(&(file->fp));  // close and sync file.
+#endif
+      free_lun(lun);
+      // continue until we find no additional files open.
+    }
+  }
+  return;
+}
+
+void drv_init(void) {
+  uint8_t i;
+
+  for (i = 0; i < MAX_OPEN_FILES; i++) {
+    files[i].used = FALSE;
+  }
+  open_files = 0;
+  fs_initialized = 0;
+  return;
+}
+
