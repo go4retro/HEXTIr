@@ -1,4 +1,14 @@
 /*
+ * drive.h
+ *
+ *  Created on: May 31, 2020
+ *      Author: brain
+ */
+
+#ifndef DRIVE_H
+#define DRIVE_H
+
+/*
     HEXTIr-SD - Texas Instruments HEX-BUS SD Mass Storage Device
     Copyright Jim Brain and RETRO Innovations, 2017
 
@@ -15,48 +25,44 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    src.ino - Stub to allow Arduino project to compile.
+    drive.c: Drive-based HexBus functions.
 */
-
 #include "config.h"
-#include "hexbus.h"
-#include "led.h"
-#include "timer.h"
+#include "hexops.h"
 #include "ff.h"
-#include "drive.h"
-#include "serial.h"
-#include "rtc.h"
-#include "printer.h"
 #include "registry.h"
 
-/*
-   setup() - In Arduino, this will be run once automatically.
-   Building non-Arduino, we'll call it once at the beginning
-   of the main() function.
-*/
-void setup(void) {
-  board_init();
-  hex_init();
-  leds_init();
-  timer_init();
-  device_hw_address_init();
-  drv_init();
-  ser_init();
-  rtc_init();
-  prn_init();
+#ifndef ARDUINO
 
-  sei();
+#include "diskio.h"
 
-#ifdef INCLUDE_PRINTER
-  Serial.begin(115200);
-  // Ensure serial initialized before proceeding.
-  while (!Serial) {
-    ;
-  }
-#endif
+typedef struct _file_t {
+  FIL fp;
+  uint8_t attr;
+} file_t;
 
-#ifdef INCLUDE_POWERMGMT
-  pinMode(WAKEUP_PIN, INPUT);
-#endif
+#else
 
-}
+  #include <SPI.h>
+  #include <SD.h>
+  
+typedef struct _file_t {
+  File fp;
+  uint8_t attr;
+} file_t;
+
+#endif // arduino
+
+typedef struct _luntbl_t {
+  uint8_t used;
+  uint8_t lun;
+  file_t  file;
+} luntbl_t;
+
+
+void drv_start(void);
+void drv_reset(void);
+void drv_register(void);
+void drv_init(void);
+
+#endif /* DRIVE_H */

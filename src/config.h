@@ -26,12 +26,12 @@
 
 #define BUFSIZE       64
 
-#if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO
+#if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
  #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
  // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
+ 
 #elif defined ARDUINO_AVR_MEGA2560
  #define CONFIG_HARDWARE_VARIANT   3 // this is for testing the build
- // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
 #endif
 
 #ifndef ARDUINO
@@ -41,22 +41,59 @@
  
 #else
  #define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
+
  #define INCLUDE_PRINTER
  #define INCLUDE_CLOCK
  #define INCLUDE_SERIAL
- #define INCLUDE_POWERMGMT
+ #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #endif
 
 /* ----- Common definitions  ------ */
+// BASE Device Numbers for peripheral groups (this is the low-end address for a particular group).
 // TODO these 5 should move to a standard hexdev.h or something, since they are defaults, and they should be the same for all
 // boards.
-#define PRINTER_DEV     12    // Device code to support a printer on HW serial (rx/tx) @115200,N,8,1
-#define DISK_DEV       100    // Base disk device code we support
-#define ANY_DEV        255    // used by this implementation to allow the same handler to be used by any/all devices, from the handler table.
-#define RTC_DEV        233    // Device code to support DS3231 RTC on I2C/wire; A5/A4.
-#define RS232_DEV       20    // Device code for RS-232 Serial peripheral using SW serial (def=300 baud)
+#define DRV_DEV       100    // Base disk device code we support
+#define PRN_DEV        10    // Device code to support a printer on HW serial (rx/tx) @115200,N,8,1
+#define SER_DEV        20    // Device code for RS-232 Serial peripheral using SW serial (def=300 baud)
+#define RTC_DEV       230    // Device code to support DS3231 RTC on I2C/wire; A5/A4.
+#define NO_DEV          0
 
-#define MAX_DISKS        7    // Add to DISK_DEV to obtain highest address.  1 less than true number of max disks.
+// Offsets into our device-code map for various peripheral functions.
+#define DRIVE_GROUP       0
+#define PRINTER_GROUP     1
+#define SERIAL_GROUP      2
+#define CLOCK_GROUP       3
+// Can have up to 'MAX_REGISTRY-1' of these (see registry.h)
+
+
+// Configure initial default addressing here.
+#define DEFAULT_DRIVE       (DRV_DEV)
+#define SUPPORT_DRV         (1<<DRIVE_GROUP)
+
+// Other support devices included optionally in build.
+#ifdef INCLUDE_PRINTER
+ #define DEFAULT_PRINTER    (PRN_DEV+2)
+ #define SUPPORT_PRN        (1<<PRINTER_GROUP)
+#else
+ #define DEFAULT_PRINTER    NO_DEV
+ #define SUPPORT_PRN        0
+#endif
+
+#ifdef INCLUDE_CLOCK
+ #define DEFAULT_CLOCK     (RTC_DEV)
+ #define SUPPORT_RTC       (1<<CLOCK_GROUP)
+#else
+ #define DEFAULT_CLOCK     NO_DEV
+ #define SUPPORT_RTC       0
+#endif
+
+#ifdef INCLUDE_SERIAL
+ #define DEFAULT_SERIAL    (SER_DEV)
+ #define SUPPORT_SER       (1<<SERIAL_GROUP)
+#else
+ #define DEFAULT_SERIAL    NO_DEV
+ #define SUPPORT_SER       0
+#endif
 
 /* ----- Common definitions for all AVR hardware variants ------ */
 
@@ -74,6 +111,7 @@
 #ifdef CONFIG_UART_BAUDRATE
 #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
 #endif
+
 
 #if CONFIG_HARDWARE_VARIANT == 1
 

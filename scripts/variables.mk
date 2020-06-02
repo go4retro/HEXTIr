@@ -5,6 +5,7 @@ ASMSRC = crc7asm.S
 
 #---------------- Toolchain ----------------
 CC = avr-gcc
+CPP = avr-g++
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size

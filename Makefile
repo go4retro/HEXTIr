@@ -66,10 +66,16 @@ TARGET = $(OBJDIR)/HEXTIr
 SRC  = main.c
 SRC += ff.c
 SRC += diskio.c
+SRC += drive.c
 SRC += timer.c
 SRC += spi.c
 SRC += hexbus.c
+SRC += hexops.c
 SRC += led.c
+SRC += serial.c
+SRC += rtc.c
+SRC += printer.c
+
 
 ifneq ($(CONFIG_NO_SD),y)
   SRC += sdcard.c
@@ -243,7 +249,7 @@ CSRC := $(patsubst %,src/%,$(sort $(SRC)))
 ASMSRC_DIR := $(patsubst %,src/%,$(ASMSRC))
 
 # Define all object files.
-OBJ := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.o) $(ASMSRC_DIR:.S=.o))
+OBJ := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.o) $(ASMSRC_DIR:.S=.o) $(CSRC_DIR:.cpp=.o))
 
 # Define all listing files.
 LST := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.lst) $(ASMSRC_DIR:.S=.lst))
@@ -330,7 +336,6 @@ $(OBJDIR)/%.bin: $(OBJDIR)/%.elf
 	$(Q)$(OBJCOPY) -O binary -R .eeprom $< $@
 endif
 
-
 $(OBJDIR)/%.hex: $(OBJDIR)/%.elf
 	$(E) "  HEX    $@"
 	$(Q)$(OBJCOPY) -O $(HEXFORMAT) -R .eeprom $< $@
@@ -364,11 +369,18 @@ $(OBJDIR)/%.o : %.c $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(E) "  CC     $<"
 	$(Q)$(CC) -c $(ALL_CFLAGS) $< -o $@
 
+# Compile: create object files from C++ source files.
+$(OBJDIR)/%.o : %.cpp $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
+	$(E) "  CPP    $<"
+	$(Q)$(CPP) -c $(ALL_CFLAGS) $< -o $@
 
 # Compile: create assembler files from C source files.
 $(OBJDIR)/%.s : %.c $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(CC) -S $(ALL_CFLAGS) $< -o $@
 
+# Compile: create assembler files from C++ source files.
+$(OBJDIR)/%.s : %.cpp $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
+	$(CPP) -S $(ALL_CFLAGS) $< -o $@
 
 # Assemble: create object files from assembler source files.
 $(OBJDIR)/%.o : %.S $(OBJDIR)/asmconfig.h $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
