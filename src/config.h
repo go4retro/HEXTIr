@@ -51,6 +51,8 @@
 #define PRN_DEV        10    // Device code to support a printer on HW serial (rx/tx) @115200,N,8,1
 #define SER_DEV        20    // Device code for RS-232 Serial peripheral using SW serial (def=300 baud)
 #define RTC_DEV       230    // Device code to support DS3231 RTC on I2C/wire; A5/A4.
+//
+#define CFG_DEV       222    // Special device code to access configuration and setup port
 #define NO_DEV          0
 
 // Offsets into our device-code map for various peripheral functions.
@@ -58,6 +60,7 @@
 #define PRINTER_GROUP     1
 #define SERIAL_GROUP      2
 #define CLOCK_GROUP       3
+#define CONFIG_GROUP      7
 // Can have up to 'MAX_REGISTRY-1' of these (see registry.h)
 
 
@@ -65,6 +68,8 @@
 #define DEFAULT_DRIVE       (DRV_DEV)
 #define SUPPORT_DRV         (1<<DRIVE_GROUP)
 
+#define DEFAULT_CFGDEV      (CFG_DEV)
+#define SUPPORT_CFG         (1<<CONFIG_GROUP)
 // Other support devices included optionally in build.
 #ifdef INCLUDE_PRINTER
  #define DEFAULT_PRINTER    (PRN_DEV+2)

@@ -33,6 +33,7 @@
 #include "printer.h"
 #include "rtc.h"
 #include "serial.h"
+#include "configure.h"
 #include "timer.h"
 #include "registry.h"
 
@@ -67,7 +68,9 @@ static uint8_t device_address[ MAX_REGISTRY ] = {
   DEFAULT_SERIAL,  // periph 2
   DEFAULT_CLOCK,   // periph 3
   NO_DEV,          // periph 4
-  NO_DEV           // periph 5
+  NO_DEV,          // periph 5
+  NO_DEV,          // periph 6
+  DEFAULT_CFGDEV,  // periph 7
 };
 
 
@@ -77,7 +80,8 @@ static const uint8_t supported_groups PROGMEM = {
     | SUPPORT_PRN
     | SUPPORT_SER
     | SUPPORT_RTC
-//additional group functions may be added later for periph 4 and 5.
+    | SUPPORT_CFG
+//additional group functions may be added later for periph 4, 5, and 6.  Periph 7 is cfg.
 };
 
 
@@ -99,9 +103,9 @@ static void sleep_the_system( void )
   attachInterrupt(0, wakeUp, LOW );
   set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
   cli();
-  leds_sleep(); // make sure activity LED is not illuminated while we are sleeping.
+  leds_sleep(); // make sure activity LED is NOT illuminated while we are sleeping (between messages and while calc is OFF.)
   sleep_enable();
-  // The sleep_bod_disable operation may not be available on all targets!!!
+  // NOTE: The sleep_bod_disable operation may not be available on all targets!!!
   sleep_bod_disable();
   sei();
   sleep_cpu();
@@ -114,6 +118,14 @@ static void sleep_the_system( void )
 }
 #endif
 
+
+/* 
+ *  Make our supported group mask available to callers.
+ */
+uint8_t what_is_the_support_mask(void) {
+  uint8_t mask = pgm_read_byte( &supported_groups );
+  return mask;
+}
 
 /*
    hex_reset_bus() -
@@ -235,6 +247,7 @@ void setup_registry(void)
   registry.entry[ 0 ].command = (uint8_t *)&op_table;
 
   // Register any configured peripherals.  if the peripheral type is not included, the call is to an empty routine.
+  cfg_register(&registry);
   drv_register(&registry);
   prn_register(&registry);
   ser_register(&registry);
@@ -273,6 +286,7 @@ void loop(void) { // Arduino main loop routine.
   ser_init();
   rtc_init();
   prn_init();
+  cfg_init();
   
   sei();
 

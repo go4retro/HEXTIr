@@ -15,50 +15,21 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    src.ino - Stub to allow Arduino project to compile.
+    configure.h: Configuration endpoint defines and prototypes 
+    by s.reid
 */
+
+#ifndef CONFIGURE_H_
+#define CONFIGURE_H_
 
 #include "config.h"
-#include "hexbus.h"
-#include "led.h"
-#include "timer.h"
+#include "hexops.h"
 #include "ff.h"
-#include "drive.h"
-#include "serial.h"
-#include "rtc.h"
-#include "printer.h"
-#include "configure.h"
 #include "registry.h"
 
-/*
-   setup() - In Arduino, this will be run once automatically.
-   Building non-Arduino, we'll call it once at the beginning
-   of the main() function.
-*/
-void setup(void) {
-  board_init();
-  hex_init();
-  leds_init();
-  timer_init();
-  device_hw_address_init();
-  drv_init();
-  ser_init();
-  rtc_init();
-  prn_init();
-  cfg_init();
-  
-  sei();
+void cfg_start(void);
+void cfg_reset(void);
+void cfg_register(registry_t *registry);
+void cfg_init(void);
 
-#ifdef INCLUDE_PRINTER
-  Serial.begin(115200);
-  // Ensure serial initialized before proceeding.
-  while (!Serial) {
-    ;
-  }
-#endif
-
-#ifdef INCLUDE_POWERMGMT
-  wakeup_pin_init();
-#endif
-
-}
+#endif /* CONFIGURE_H_ */
