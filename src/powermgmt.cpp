@@ -65,6 +65,7 @@ void sleep_the_system( void )
   // The sleep_bod_disable operation may not be available on all targets!!!
   sleep_bod_disable();
   sei();
+  leds_sleep(); // make sure LED is not lit when we sleep.
   sleep_cpu();
   // BAV low woke us up. Wait to see if we
   // get a HSK low, if so, drop our HSK and then proceed.
@@ -74,5 +75,3 @@ void sleep_the_system( void )
   return;
 }
 #endif
-
-
