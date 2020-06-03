@@ -101,10 +101,8 @@ static void free_lun(uint8_t lun) {
       if ( !open_files ) {
 #ifdef ARDUINO
         SD.end();
-#else
-        f_mount(1,NULL);
-#endif
         fs_initialized = FALSE;
+#endif
       }
     }
   }
@@ -282,14 +280,13 @@ static uint8_t hex_drv_write(pab_t pab) {
 
 #ifdef ARDUINO
       written = (file->fp).write( buffer, i );
-      if ( written != i ) {
-        res = FR_DENIED;
-      }
       //timer_check(0);
 #else
       res = f_write(&(file->fp), buffer, i, &written);
 #endif
-
+      if ( written != i ) {
+        res = FR_DENIED;
+      }
     }
     len -= i;
   }
@@ -768,7 +765,7 @@ void drv_start(void) {
   // and mark it as such.
     if (SD.begin( chipSelect ) ) {
 #else
-      if (!f_mount(1,&fs)) {
+    if (f_mount(1,&fs) == FR_OK) {
 #endif
       fs_initialized = 1;
     }

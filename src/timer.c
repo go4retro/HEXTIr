@@ -29,26 +29,30 @@
 */
 
 #include "config.h"
-
+#include "integer.h"
 #include "led.h"
+
 #include "timer.h"
 
 volatile tick_t ticks;
 
 /* The main timer interrupt */
 SYSTEM_TICK_HANDLER {
+  uint8_t state;
 
   ticks++;
 
-  if (led_state & LED_ERROR) {
+  state = get_led_state();
+  if (state & LED_ERROR) {
     if ((ticks & 15) == 0)
       toggle_led();
   } else {
-    set_led(led_state & LED_BUSY);
+    set_led(state & LED_BUSY);
   }
 }
 
 
 void timer_init(void) {
   timer_config();
+  //set_error_led(TRUE);  //Just to test LED...
 }

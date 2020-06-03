@@ -112,7 +112,7 @@ static uint8_t hex_ser_close(__attribute__((unused)) pab_t pab) {
 static uint8_t hex_ser_read(pab_t pab) {
   uint16_t len = pab.buflen;
   uint16_t bcount= 0;
-  uint8_t  rc = HEXSTAT_SUCCESS;
+  int8_t  rc = HEXSTAT_SUCCESS;
 
   if ( ser_open ) {
     // protect access via ser_open since serial_peripheral is not present

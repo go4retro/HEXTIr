@@ -38,10 +38,6 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
-#else
-#include "diskio.h"
-
-FATFS fs;
 #endif
 
 #include "uart.h"

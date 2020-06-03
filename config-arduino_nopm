@@ -56,7 +56,7 @@ CONFIG_UART_BUF_SHIFT=0
 #   2 - Arduino Uno
 #   3 - Arduino compiled via INO
 #   4 - Old Arduino Uno (no power management)
-CONFIG_HARDWARE_VARIANT=2
+CONFIG_HARDWARE_VARIANT=4
 CONFIG_AVRDUDE_PROGRAMMER=arduino
 CONFIG_AVRDUDE_PORT=COM6
 
