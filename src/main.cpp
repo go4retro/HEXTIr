@@ -21,9 +21,6 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <avr/power.h>
 #include <util/delay.h>
 #include "config.h"
 #include "drive.h"
@@ -31,6 +28,7 @@
 #include "hexops.h"
 #include "led.h"
 #include "printer.h"
+#include "powermgmt.h"
 #include "rtc.h"
 #include "serial.h"
 #include "timer.h"
@@ -75,39 +73,6 @@ static const uint8_t supported_groups PROGMEM = {
     | SUPPORT_RTC
 //additional group functions may be added later for periph 4 and 5.
 };
-
-
-// TODO should be okaced in powermgmt.c/.h/etc.
-#ifdef INCLUDE_POWERMGMT
-
-static void wakeUp(void)
-{
-  sleep_disable();
-  power_all_enable();
-  detachInterrupt(0);
-}
-
-
-// Power use reduction
-static void sleep_the_system( void )
-{
-  // attach interrupt for wakeup to D2
-  attachInterrupt(0, wakeUp, LOW );
-  set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
-  cli();
-  sleep_enable();
-  // The sleep_bod_disable operation may not be available on all targets!!!
-  sleep_bod_disable();
-  sei();
-  sleep_cpu();
-  // BAV low woke us up. Wait to see if we
-  // get a HSK low, if so, drop our HSK and then proceed.
-  // We do this here, because HSK must be held low after transmitter pulls it low
-  // within a very short window of time (< 8us).
-  hex_capture_hsk();
-  return;
-}
-#endif
 
 
 /*

@@ -75,6 +75,7 @@ SRC += led.c
 SRC += serial.c
 SRC += rtc.c
 SRC += printer.c
+SRC += powermgmt.c
 
 
 ifneq ($(CONFIG_NO_SD),y)

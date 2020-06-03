@@ -40,7 +40,7 @@
  #define INCLUDE_PRINTER
  #define INCLUDE_CLOCK
  #define INCLUDE_SERIAL
- //#define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+ #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #endif
 
 /* ----- Common definitions  ------ */
@@ -189,8 +189,6 @@ static inline void board_init(void) {
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
-#  define WAKEUP_PIN          2 // BAV on D2
-
 #  define LED_BUSY_DDR        DDRD
 #  define LED_BUSY_OUT        PORTD
 #  define LED_BUSY_PIN        _BV(PIN7)
@@ -233,6 +231,18 @@ static inline void device_hw_address_init(void) {
 }
 
 static inline void board_init(void) {
+}
+
+#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+#  define POWER_MGMT_HANDLER  INT0_vect
+
+static inline void pwr_irq_enable(void) {
+  EICRA |= _BV(ISC01);  // trigger power enable on falling IRQ.
+  EIMSK |= _BV(INT0);   // turn on IRQ
+}
+
+static inline void pwr_irq_disable(void) {
+  EIMSK &= ~_BV(INT0);   // turn off IRQ
 }
 
 #elif CONFIG_HARDWARE_VARIANT == 3
