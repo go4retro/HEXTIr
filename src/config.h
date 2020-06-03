@@ -27,7 +27,7 @@
 #define BUFSIZE       64
 
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
- #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
+ #define CONFIG_HARDWARE_VARIANT   2 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
  // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
 #endif
 
@@ -171,27 +171,8 @@ static inline void device_hw_address_init(void) {
 }
 
 
-static inline void leds_init(void) {
-  DDRD |= _BV(PIN2);
-}
-
-static inline void leds_sleep(void) {
-  ;
-}
-
 static inline void wakeup_pin_init(void) {
   ;
-}
-
-static inline __attribute__((always_inline)) void set_led(uint8_t state) {
-  if (state)
-    PORTD |= _BV(PIN2);
-  else
-    PORTD &= ~_BV(PIN2);
-}
-
-static inline void toggle_led(void) {
-  PORTD ^= _BV(PIN2);
 }
 
 
@@ -264,21 +245,10 @@ static inline void board_init(void) {
 }
 
 
-static inline void leds_sleep(void) {
-  PORTD &= ~_BV(PIN2);
-}
-
 static inline void wakeup_pin_init(void) {
   ;
 }
 
-
-static inline __attribute__((always_inline)) void set_led(uint8_t state) {
-  if (state)
-    PORTD |= _BV(PIN2);
-  else
-    PORTD &= ~_BV(PIN2);
-}
 
 #  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #  define POWER_MGMT_HANDLER  INT0_vect
@@ -397,6 +367,10 @@ static inline void device_hw_address_init(void) {
 }
 
 static inline void board_init(void) {
+}
+
+static inline void wakeup_pin_init(void) {
+  ;
 }
 
 #else
