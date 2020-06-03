@@ -103,11 +103,11 @@ static void sleep_the_system( void )
   attachInterrupt(0, wakeUp, LOW );
   set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
   cli();
-  leds_sleep(); // make sure activity LED is NOT illuminated while we are sleeping (between messages and while calc is OFF.)
   sleep_enable();
   // NOTE: The sleep_bod_disable operation may not be available on all targets!!!
   sleep_bod_disable();
   sei();
+  leds_sleep(); // make sure activity LED is NOT illuminated while we are sleeping (between messages and while calc is OFF.)
   sleep_cpu();
   // BAV low woke us up. Wait to see if we
   // get a HSK low, if so, drop our HSK and then proceed.

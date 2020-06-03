@@ -316,6 +316,7 @@ static inline void leds_init(void) {
 
 static inline void leds_sleep(void) {
   PORTD &= ~_BV(PIN7);
+  DDRD |= _BV(PIN7);
 }
 
 static inline void wakeup_pin_init(void) {
