@@ -32,3 +32,24 @@
 #include "led.h"
 
 volatile uint8_t led_state;
+
+inline __attribute__((always_inline)) void set_error_led(uint8_t state) {
+  if (state) {
+    led_state |= LED_ERROR;
+  } else {
+    led_state &= ~LED_ERROR;
+  }
+}
+
+inline __attribute__((always_inline)) void set_busy_led(uint8_t state) {
+  if (state) {
+    led_state |= LED_BUSY;
+  } else {
+    led_state &= ~LED_BUSY;
+  }
+}
+
+inline __attribute__((always_inline)) uint8_t get_led_state(void) {
+  return led_state;
+}
+

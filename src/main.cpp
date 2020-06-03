@@ -21,9 +21,6 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <avr/power.h>
 #include <util/delay.h>
 #include "config.h"
 #include "drive.h"
@@ -31,6 +28,7 @@
 #include "hexops.h"
 #include "led.h"
 #include "printer.h"
+#include "powermgmt.h"
 #include "rtc.h"
 #include "serial.h"
 #include "configure.h"
@@ -39,10 +37,6 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
-#else
-#include "diskio.h"
-
-FATFS fs;
 #endif
 
 #include "uart.h"
@@ -83,40 +77,6 @@ static const uint8_t supported_groups PROGMEM = {
     | SUPPORT_CFG
 //additional group functions may be added later for periph 4, 5, and 6.  Periph 7 is cfg.
 };
-
-
-// TODO should be okaced in powermgmt.c/.h/etc.
-#ifdef INCLUDE_POWERMGMT
-
-static void wakeUp(void)
-{
-  sleep_disable();
-  power_all_enable();
-  detachInterrupt(0);
-}
-
-
-// Power use reduction - designed for hardware variant 3 only!
-static void sleep_the_system( void )
-{
-  // attach interrupt for wakeup to D2
-  attachInterrupt(0, wakeUp, LOW );
-  set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
-  cli();
-  sleep_enable();
-  // NOTE: The sleep_bod_disable operation may not be available on all targets!!!
-  sleep_bod_disable();
-  sei();
-  leds_sleep(); // make sure activity LED is NOT illuminated while we are sleeping (between messages and while calc is OFF.)
-  sleep_cpu();
-  // BAV low woke us up. Wait to see if we
-  // get a HSK low, if so, drop our HSK and then proceed.
-  // We do this here, because HSK must be held low after transmitter pulls it low
-  // within a very short window of time (< 8us).
-  hex_capture_hsk();
-  return;
-}
-#endif
 
 
 /* 
@@ -306,16 +266,9 @@ void loop(void) { // Arduino main loop routine.
 
   while (TRUE) {
 
-#ifdef ARDUINO
-    set_busy_led( FALSE );
-    timer_check(1);
-#endif
+    set_busy_led( FALSE );  // TODO do we need to set busy LED here?
 
     while (hex_is_bav()) {
-
-#ifdef ARDUINO
-      timer_check(0);
-#endif
 
 #ifdef INCLUDE_POWERMGMT
       sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.
@@ -324,10 +277,7 @@ void loop(void) { // Arduino main loop routine.
     }
 
     uart_putc('^');
-#ifdef ARDUINO
-    set_busy_led( TRUE );
-    timer_check(1);
-#endif
+    set_busy_led( TRUE ); // TODO why do we set busy led here?
 
     while (!hex_is_bav()) {
 
@@ -370,9 +320,6 @@ void loop(void) { // Arduino main loop routine.
         if (i == 9) {
           // exec command
           uart_putcrlf();
-#ifdef ARDUINO
-          timer_check(1);
-#endif
           /*
              If we are attempting to use the SD card, we
              initialize it NOW.  If it fails (no card present)

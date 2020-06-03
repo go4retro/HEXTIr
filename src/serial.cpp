@@ -42,7 +42,7 @@ static uint8_t hex_ser_open(pab_t pab) {
   uint8_t  att;
 
   len = 0;
-  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS )
+  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
   {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];  // tells us open for read, write or both.
@@ -112,7 +112,7 @@ static uint8_t hex_ser_close(__attribute__((unused)) pab_t pab) {
 static uint8_t hex_ser_read(pab_t pab) {
   uint16_t len = pab.buflen;
   uint16_t bcount= 0;
-  uint8_t  rc = HEXSTAT_SUCCESS;
+  int8_t  rc = HEXSTAT_SUCCESS;
 
   if ( ser_open ) {
     // protect access via ser_open since serial_peripheral is not present
@@ -128,7 +128,7 @@ static uint8_t hex_ser_read(pab_t pab) {
     if ( ser_open & OPENMODE_READ ) {
       // send how much we are going to send
       rc = transmit_word( bcount );
-      timer_check(0);
+      //timer_check(0);
       // while we have data remaining to send.
       while ( bcount && rc == HEXERR_SUCCESS ) {
 
@@ -170,13 +170,12 @@ static uint8_t hex_ser_write(pab_t pab) {
   if ( ser_open & OPENMODE_WRITE ) {
     while (len && rc == HEXERR_SUCCESS ) {
       i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
-      rc = hex_getdata(buffer, i);
+      rc = hex_get_data(buffer, i);
       if (rc == HEXSTAT_SUCCESS) {
         j  = 0;
         while (j < len) {
           serial_peripheral.write( buffer[ j++ ] );
         }
-        timer_check(0);
       }
       len -= i;
     }
@@ -223,10 +222,8 @@ static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
   }
   return HEXERR_SUCCESS;
 }
-#endif // include_serial
 
 
-#ifdef INCLUDE_SERIAL
 /*
  * Command handling registry for device
  */

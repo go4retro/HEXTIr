@@ -107,11 +107,9 @@ static inline tick_t getticks(void) {
          ((stick_t)(b) - (stick_t)(a) < 0)
 #define time_before(a,b)        time_after(b,a)
 
-#ifdef ARDUINO
-void timer_check(uint8_t flag);
-#endif
 /* Timer initialisation - defined in timer.c */
 void timer_init(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

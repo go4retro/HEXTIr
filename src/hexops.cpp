@@ -30,18 +30,16 @@
 
 uint8_t buffer[BUFSIZE];
 
-uint8_t hex_getdata(uint8_t buf[256], uint16_t len) {
+uint8_t hex_get_data(uint8_t *buf, uint16_t len) {
   uint8_t rc = HEXERR_SUCCESS;
   uint16_t i = 0;
 
-  while (i < len && rc == HEXERR_SUCCESS ) {
+  while (i < len) {
     buf[ i ] = 1;
-    rc = receive_byte( &buf[ i++ ] );
-#ifdef ARDUINO
-    timer_check(0);
-#endif
+    if((rc = receive_byte( &buf[ i++ ] )) != HEXERR_SUCCESS) {
+      return HEXERR_BAV;
+    }
   }
-
   if (len > 0) {
     uart_putcrlf();
     uart_trace(buf, 0, len);
@@ -50,21 +48,14 @@ uint8_t hex_getdata(uint8_t buf[256], uint16_t len) {
 }
 
 
-uint8_t hex_receive_options( pab_t pab ) {
-  uint16_t i = 0;
-  uint8_t  data;
+uint8_t hex_get_options( pab_t pab ) {
+  uint8_t rc;
 
-  while (i < pab.datalen) {
-    data = 1;   // tells receive byte to release HSK from previous receipt
-    if ( receive_byte( &data ) == HEXERR_SUCCESS ) {
-      buffer[ i ] = data;
-      i++;
-    } else {
-      return HEXERR_BAV;
-    }
+  rc = hex_get_data(buffer, pab.datalen);
+  if(rc == HEXERR_SUCCESS) {
+    buffer[ pab.datalen + 1 ] = 0;
   }
-  buffer[ i ] = 0;
-  return HEXSTAT_SUCCESS;
+  return rc;
 }
 
 

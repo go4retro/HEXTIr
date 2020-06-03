@@ -30,29 +30,24 @@
 
 #ifndef LED_H
 #define LED_H
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 #include "config.h"
 
 /* LED-to-bit mapping */
+// TODO make enum.
 #define LED_ERROR      1
 #define LED_BUSY       2
 
-extern volatile uint8_t led_state;
+//extern volatile uint8_t led_state;
 
-static inline __attribute__((always_inline)) void set_error_led(uint8_t state) {
-  if (state) {
-    led_state |= LED_ERROR;
-  } else {
-    led_state &= ~LED_ERROR;
-  }
-}
+void set_error_led(uint8_t state);
+void set_busy_led(uint8_t state);
+uint8_t get_led_state(void);
 
-static inline __attribute__((always_inline)) void set_busy_led(uint8_t state) {
-  if (state) {
-    led_state |= LED_BUSY;
-  } else {
-    led_state &= ~LED_BUSY;
-  }
-}
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif
