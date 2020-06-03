@@ -40,7 +40,7 @@
  #define INCLUDE_PRINTER
  #define INCLUDE_CLOCK
  #define INCLUDE_SERIAL
- #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+ //#define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #endif
 
 /* ----- Common definitions  ------ */

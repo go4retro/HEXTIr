@@ -287,16 +287,9 @@ void loop(void) { // Arduino main loop routine.
 
   while (TRUE) {
 
-#ifdef ARDUINO
     set_busy_led( FALSE );  // TODO do we need to set busy LED here?
-    //timer_check(1);
-#endif
 
     while (hex_is_bav()) {
-
-#ifdef ARDUINO
-      //timer_check(0);
-#endif
 
 #ifdef INCLUDE_POWERMGMT
       sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.
@@ -305,10 +298,7 @@ void loop(void) { // Arduino main loop routine.
     }
 
     uart_putc('^');
-#ifdef ARDUINO
-    set_busy_led( TRUE );
-    //timer_check(1);
-#endif
+    set_busy_led( TRUE ); // TODO why do we set busy led here?
 
     while (!hex_is_bav()) {
 
@@ -351,9 +341,6 @@ void loop(void) { // Arduino main loop routine.
         if (i == 9) {
           // exec command
           uart_putcrlf();
-//#ifdef ARDUINO
-//          timer_check(1);
-//#endif
           /*
              If we are attempting to use the SD card, we
              initialize it NOW.  If it fails (no card present)

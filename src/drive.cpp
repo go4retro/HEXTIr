@@ -156,7 +156,7 @@ static uint8_t hex_drv_verify(pab_t pab) {
     // figure out how much will fit...
     i = ( len >= ( sizeof(buffer) / 2 ))  ? ( sizeof(buffer) / 2 ) : len;
 
-    if ( hex_getdata(buffer, i) ) { // use front half of buffer for incoming data from the host.
+    if ( hex_get_data(buffer, i) ) { // use front half of buffer for incoming data from the host.
       hex_release_bus();
       return HEXERR_BAV;
     }
@@ -170,7 +170,6 @@ static uint8_t hex_drv_verify(pab_t pab) {
 #ifdef ARDUINO
       // grab same amount of data from file that we have received so far on the bus
       read = file->fp.read( (char *)data, i );
-      //timer_check(0);
       if ( read ) {
         res = FR_OK;
       } else {
@@ -274,13 +273,12 @@ static uint8_t hex_drv_write(pab_t pab) {
 
   while (len && rc == HEXERR_SUCCESS && res == FR_OK ) {
     i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
-    rc = hex_getdata(buffer, i);
+    rc = hex_get_data(buffer, i);
 
     if (file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
 
 #ifdef ARDUINO
       written = (file->fp).write( buffer, i );
-      //timer_check(0);
 #else
       res = f_write(&(file->fp), buffer, i, &written);
 #endif
@@ -304,7 +302,6 @@ static uint8_t hex_drv_write(pab_t pab) {
     buffer[1] = 10;
 #ifdef ARDUINO
     written = (file->fp).write( buffer, 2 );
-    //timer_check(0);
 #else
     res = f_write(&(file->fp), buffer, 2, &written);
 #endif
@@ -385,7 +382,6 @@ static uint8_t hex_drv_read(pab_t pab) {
 #ifdef ARDUINO
       memset((char *)buffer, 0, sizeof( buffer ));
       read = file->fp.read( (char *)buffer, len );
-      //timer_check(0);
       if ( read ) {
         res = FR_OK;
       } else {
@@ -459,7 +455,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   uart_putc('>');
 
   len = 0;
-  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_options(pab) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
   } else {
@@ -514,7 +510,6 @@ static uint8_t hex_drv_open(pab_t pab) {
     }
     if (file != NULL) {
 #ifdef ARDUINO
-      //timer_check(0);
       file->fp = SD.open( (const char *)&buffer[3], mode );
       if ( SD.exists( (const char *)&buffer[3] )) {
         res = FR_OK;
@@ -637,7 +632,6 @@ static uint8_t hex_drv_close(pab_t pab) {
 #ifdef ARDUINO
     file->fp.close();
     res = FR_OK;
-    //timer_check(0);
 #else
     res = f_close(&(file->fp));
 #endif
@@ -681,7 +675,7 @@ static uint8_t hex_drv_delete(pab_t pab) {
 #endif
 
   uart_putc('>');
-  if ( hex_receive_options(pab) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_options(pab) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
     return HEXERR_BAV; // BAV ERR.
@@ -788,6 +782,7 @@ static const cmd_proc fn_table[] PROGMEM = {
   NULL // end of table.
 };
 
+
 static const uint8_t op_table[] PROGMEM = {
   HEXCMD_OPEN,
   HEXCMD_CLOSE,
@@ -798,6 +793,7 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
+
 
 void drv_register(registry_t *registry)
 {
@@ -811,6 +807,7 @@ void drv_register(registry_t *registry)
   return;
 }
 
+
 void drv_reset( void )
 {
   file_t* file = NULL;
@@ -823,20 +820,20 @@ void drv_reset( void )
     // find file(s) that are open, get file pointer and lun number
     while ( (file = find_file_in_use(&lun) ) != NULL ) {
       // if we found a file open, silently close it, and free its lun.
-#ifdef ARDUINO
-      //timer_check(0);
       if ( fs_initialized ) {
+#ifdef ARDUINO
         file->fp.close();  // close and sync file.
-      }
 #else
-      f_close(&(file->fp));  // close and sync file.
+        f_close(&(file->fp));  // close and sync file.
 #endif
+      }
       free_lun(lun);
       // continue until we find no additional files open.
     }
   }
   return;
 }
+
 
 void drv_init(void) {
   uint8_t i;
