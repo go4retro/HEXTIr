@@ -331,21 +331,10 @@ static inline void device_hw_address_init(void) {
 static inline void board_init(void) {
 }
 
-static inline void leds_sleep(void) {
-  PORTD &= ~_BV(PIN7);
-  DDRD |= _BV(PIN7);
-}
 
 static inline void wakeup_pin_init(void) {
   DDRD &= ~_BV(PIN2);
 }
-
-
-static inline __attribute__((always_inline)) void set_led(uint8_t state) {
-  if (state)
-    PORTD |= _BV(PIN7);
-  else
-    PORTD &= ~_BV(PIN7);
 
 #elif CONFIG_HARDWARE_VARIANT == 4
 
@@ -418,7 +407,6 @@ static inline void board_init(void) {
 /* ---------------- End of user-configurable options ---------------- */
 
 #ifndef SYSTEM_TICK_HANDLER
-#define SYSTEM_TICK_HANDLER ISR(TIMER0_COMPA_vect)
 
 static inline void timer_config(void) {
   /* Set up a 100Hz interrupt using timer 0 */
@@ -428,6 +416,9 @@ static inline void timer_config(void) {
   TCNT0  = 0;
   TIMSK0 |= _BV(OCIE0A);
 }
+
+#define SYSTEM_TICK_HANDLER ISR(TIMER0_COMPA_vect)
+
 #endif
 
 static inline void leds_init(void) {
@@ -443,6 +434,11 @@ static inline __attribute__((always_inline)) void set_led(uint8_t state) {
 
 static inline void toggle_led(void) {
   LED_BUSY_OUT ^= LED_BUSY_PIN;
+}
+
+static inline void leds_sleep(void) {
+  LED_BUSY_OUT &= ~LED_BUSY_PIN;
+  LED_BUSY_DDR |= LED_BUSY_PIN;
 }
 
 
