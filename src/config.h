@@ -27,7 +27,7 @@
 #define BUFSIZE       64
 
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
- #define CONFIG_HARDWARE_VARIANT   2 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
+ #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
  // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
 #endif
 
