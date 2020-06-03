@@ -172,7 +172,7 @@ static uint8_t hex_drv_verify(pab_t pab) {
 #ifdef ARDUINO
       // grab same amount of data from file that we have received so far on the bus
       read = file->fp.read( (char *)data, i );
-      timer_check(0);
+      //timer_check(0);
       if ( read ) {
         res = FR_OK;
       } else {
@@ -184,8 +184,7 @@ static uint8_t hex_drv_verify(pab_t pab) {
       res = f_read(&(file->fp), data, i, &read);
 
       if (res == FR_OK) {
-        uart_putc(13);
-        uart_putc(10);
+        uart_putcrlf();
         uart_trace(buffer, 0, read);
       }
 
@@ -286,7 +285,7 @@ static uint8_t hex_drv_write(pab_t pab) {
       if ( written != i ) {
         res = FR_DENIED;
       }
-      timer_check(0);
+      //timer_check(0);
 #else
       res = f_write(&(file->fp), buffer, i, &written);
 #endif
@@ -308,7 +307,7 @@ static uint8_t hex_drv_write(pab_t pab) {
     buffer[1] = 10;
 #ifdef ARDUINO
     written = (file->fp).write( buffer, 2 );
-    timer_check(0);
+    //timer_check(0);
 #else
     res = f_write(&(file->fp), buffer, 2, &written);
 #endif
@@ -389,7 +388,7 @@ static uint8_t hex_drv_read(pab_t pab) {
 #ifdef ARDUINO
       memset((char *)buffer, 0, sizeof( buffer ));
       read = file->fp.read( (char *)buffer, len );
-      timer_check(0);
+      //timer_check(0);
       if ( read ) {
         res = FR_OK;
       } else {
@@ -518,7 +517,7 @@ static uint8_t hex_drv_open(pab_t pab) {
     }
     if (file != NULL) {
 #ifdef ARDUINO
-      timer_check(0);
+      //timer_check(0);
       file->fp = SD.open( (const char *)&buffer[3], mode );
       if ( SD.exists( (const char *)&buffer[3] )) {
         res = FR_OK;
@@ -641,7 +640,7 @@ static uint8_t hex_drv_close(pab_t pab) {
 #ifdef ARDUINO
     file->fp.close();
     res = FR_OK;
-    timer_check(0);
+    //timer_check(0);
 #else
     res = f_close(&(file->fp));
 #endif
@@ -828,7 +827,7 @@ void drv_reset( void )
     while ( (file = find_file_in_use(&lun) ) != NULL ) {
       // if we found a file open, silently close it, and free its lun.
 #ifdef ARDUINO
-      timer_check(0);
+      //timer_check(0);
       if ( fs_initialized ) {
         file->fp.close();  // close and sync file.
       }

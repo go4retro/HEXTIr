@@ -37,9 +37,9 @@ uint8_t hex_getdata(uint8_t buf[256], uint16_t len) {
   while (i < len && rc == HEXERR_SUCCESS ) {
     buf[ i ] = 1;
     rc = receive_byte( &buf[ i++ ] );
-#ifdef ARDUINO
-    timer_check(0);
-#endif
+//#ifdef ARDUINO
+//    timer_check(0);
+//#endif
   }
 
   if (len > 0) {

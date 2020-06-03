@@ -93,8 +93,6 @@
 /* ----- Common definitions for all AVR hardware variants ------ */
 
 /* Interrupt handler for system tick */
-#define SYSTEM_TICK_HANDLER ISR(TIMER1_COMPA_vect)
-
 #ifdef CONFIG_UART_DEBUG
 #define UART0_ENABLE
 #endif
@@ -314,6 +312,20 @@ static inline void board_init(void) {
 
 
 /* ---------------- End of user-configurable options ---------------- */
+
+#ifndef SYSTEM_TICK_HANDLER
+#define SYSTEM_TICK_HANDLER ISR(TIMER0_COMPA_vect)
+
+static inline void timer_config(void) {
+  /* Set up a 100Hz interrupt using timer 0 */
+  TCCR0A = _BV(WGM01);
+  TCCR0B = _BV(CS02) | _BV(CS00);
+  OCR0A  = F_CPU / 1024 / 100 - 1;
+  TCNT0  = 0;
+  TIMSK0 |= _BV(OCIE0A);
+}
+#endif
+
 #ifndef ARDUINO
 
 /* An interrupt for detecting card changes implies hotplugging capability */

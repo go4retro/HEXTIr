@@ -128,7 +128,7 @@ static uint8_t hex_ser_read(pab_t pab) {
     if ( ser_open & OPENMODE_READ ) {
       // send how much we are going to send
       rc = transmit_word( bcount );
-      timer_check(0);
+      //timer_check(0);
       // while we have data remaining to send.
       while ( bcount && rc == HEXERR_SUCCESS ) {
 
@@ -176,7 +176,7 @@ static uint8_t hex_ser_write(pab_t pab) {
         while (j < len) {
           serial_peripheral.write( buffer[ j++ ] );
         }
-        timer_check(0);
+        //timer_check(0);
       }
       len -= i;
     }

@@ -115,7 +115,7 @@ static uint8_t hex_prn_write(pab_t pab) {
   while ( len && rc == HEXERR_SUCCESS ) {
     i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
     rc = hex_getdata(buffer, i);
-    timer_check(0);
+    //timer_check(0);
     /*
         printer open? print a buffer of data.  We hold off
         on continuation until we've actually got the data
