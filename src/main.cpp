@@ -24,15 +24,17 @@
 #include <util/delay.h>
 #include "config.h"
 #include "drive.h"
+#include "eeprom.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "led.h"
 #include "printer.h"
 #include "powermgmt.h"
+#include "registry.h"
 #include "rtc.h"
 #include "serial.h"
+#include "swuart.h"
 #include "timer.h"
-#include "registry.h"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -40,8 +42,7 @@
 
 #include "uart.h"
 
-extern uint8_t buffer[BUFSIZE];
-
+config_t *config;
 
 // Our registry of installed devices, built during initialization.
 registry_t  registry;
@@ -234,6 +235,8 @@ void loop(void) { // Arduino main loop routine.
   rtc_init();
   prn_init();
   
+  config = ee_get_config();
+
   sei();
 
 #endif

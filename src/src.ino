@@ -24,10 +24,13 @@
 #include "timer.h"
 #include "ff.h"
 #include "drive.h"
+#include "eeprom.h"
 #include "serial.h"
 #include "rtc.h"
 #include "printer.h"
 #include "registry.h"
+
+extern config_t * config;
 
 /*
    setup() - In Arduino, this will be run once automatically.
@@ -44,6 +47,7 @@ void setup(void) {
   ser_init();
   rtc_init();
   prn_init();
+  config = ee_get_config();
 
   sei();
 
