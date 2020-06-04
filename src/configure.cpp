@@ -23,8 +23,6 @@
 #include "hexops.h"
 #include "timer.h"
 
-#include "configure.h"
-
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif

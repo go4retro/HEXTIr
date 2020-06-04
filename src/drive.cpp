@@ -801,7 +801,7 @@ void drv_register(registry_t *registry)
 
   registry->num_devices++;
   registry->entry[ i ].device_code_start = DRV_DEV;
-  registry->entry[ i ].device_code_end = DRV_DEV + 9; // support 100-109 for disks
+  registry->entry[ i ].device_code_end = MAX_DRV; // support 100-109 for disks
   registry->entry[ i ].operation = (cmd_proc *)&fn_table;
   registry->entry[ i ].command = (uint8_t *)&op_table;
   return;
@@ -845,4 +845,3 @@ void drv_init(void) {
   fs_initialized = 0;
   return;
 }
-

@@ -23,6 +23,7 @@
 #define CONFIG_H
 
 #include <avr/io.h>
+#include "configure.h"
 
 #define BUFSIZE       64
 
@@ -45,57 +46,6 @@
 
 #endif
 
-/* ----- Common definitions  ------ */
-// BASE Device Numbers for peripheral groups (this is the low-end address for a particular group).
-// TODO these 5 should move to a standard hexdev.h or something, since they are defaults, and they should be the same for all
-// boards.
-#define DRV_DEV       100    // Base disk device code we support
-#define PRN_DEV        10    // Device code to support a printer on HW serial (rx/tx) @115200,N,8,1
-#define SER_DEV        20    // Device code for RS-232 Serial peripheral using SW serial (def=300 baud)
-#define RTC_DEV       230    // Device code to support DS3231 RTC on I2C/wire; A5/A4.
-//
-#define CFG_DEV       222    // Special device code to access configuration and setup port
-#define NO_DEV          0
-
-// Offsets into our device-code map for various peripheral functions.
-#define DRIVE_GROUP       0
-#define PRINTER_GROUP     1
-#define SERIAL_GROUP      2
-#define CLOCK_GROUP       3
-#define CONFIG_GROUP      7
-// Can have up to 'MAX_REGISTRY-1' of these (see registry.h)
-
-
-// Configure initial default addressing here.
-#define DEFAULT_DRIVE       (DRV_DEV)
-#define SUPPORT_DRV         (1<<DRIVE_GROUP)
-
-#define DEFAULT_CFGDEV      (CFG_DEV)
-#define SUPPORT_CFG         (1<<CONFIG_GROUP)
-// Other support devices included optionally in build.
-#ifdef INCLUDE_PRINTER
- #define DEFAULT_PRINTER    (PRN_DEV+2)
- #define SUPPORT_PRN        (1<<PRINTER_GROUP)
-#else
- #define DEFAULT_PRINTER    NO_DEV
- #define SUPPORT_PRN        0
-#endif
-
-#ifdef INCLUDE_CLOCK
- #define DEFAULT_CLOCK     (RTC_DEV)
- #define SUPPORT_RTC       (1<<CLOCK_GROUP)
-#else
- #define DEFAULT_CLOCK     NO_DEV
- #define SUPPORT_RTC       0
-#endif
-
-#ifdef INCLUDE_SERIAL
- #define DEFAULT_SERIAL    (SER_DEV)
- #define SUPPORT_SER       (1<<SERIAL_GROUP)
-#else
- #define DEFAULT_SERIAL    NO_DEV
- #define SUPPORT_SER       0
-#endif
 
 /* ----- Common definitions for all AVR hardware variants ------ */
 
@@ -162,21 +112,9 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
-/* This allows the user to set the drive address to be 100-107 or 108-117) */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
-}
-
-
 static inline void wakeup_pin_init(void) {
   ;
 }
-
 
 static inline void board_init(void) {
   // turn on power LED
@@ -233,15 +171,6 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
-/* This allows the user to set the drive address to be 100-107 */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-}
 
 static inline void board_init(void) {
 }
@@ -290,15 +219,6 @@ static inline void pwr_irq_disable(void) {
 // repurposed in the Arduino build to be a software serial port using
 // the SoftwareSerial library.
 
-/* This allows the user to set the drive address to be 100-107 or 108-117) */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-}
 
 static inline void board_init(void) {
 }
@@ -358,15 +278,6 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
-/* This allows the user to set the drive address to be 100-107 */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-}
 
 static inline void board_init(void) {
 }

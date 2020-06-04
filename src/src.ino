@@ -40,7 +40,7 @@ void setup(void) {
   hex_init();
   leds_init();
   timer_init();
-  device_hw_address_init();
+  //device_hw_address_init();
   drv_init();
   ser_init();
   rtc_init();
@@ -57,8 +57,6 @@ void setup(void) {
   }
 #endif
 
-#ifdef INCLUDE_POWERMGMT
   wakeup_pin_init();
-#endif
 
 }

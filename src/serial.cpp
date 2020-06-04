@@ -259,7 +259,7 @@ void ser_register(registry_t *registry) {
   
   registry->num_devices++;
   registry->entry[ i ].device_code_start = SER_DEV;
-  registry->entry[ i ].device_code_end = SER_DEV + 3; // support 20, 21, 22, 23 as device codes
+  registry->entry[ i ].device_code_end = MAX_SER; // support 20, 21, 22, 23 as device codes
   registry->entry[ i ].operation = (cmd_proc *)&fn_table;
   registry->entry[ i ].command = (uint8_t *)&op_table;
   return;

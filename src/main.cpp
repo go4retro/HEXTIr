@@ -163,8 +163,8 @@ static const uint8_t op_table[] PROGMEM = {
 void setup_registry(void)
 {
   registry.num_devices = 1;
-  registry.entry[ 0 ].device_code_start = 0;
-  registry.entry[ 0 ].device_code_end = 255;
+  registry.entry[ 0 ].device_code_start = ALL_DEV;
+  registry.entry[ 0 ].device_code_end = MAX_DEV;
   registry.entry[ 0 ].operation = (cmd_proc *)&fn_table;
   registry.entry[ 0 ].command = (uint8_t *)&op_table;
 
@@ -203,7 +203,6 @@ void loop(void) { // Arduino main loop routine.
   disk_init();
   leds_init();
   timer_init();
-  device_hw_address_init();
   drv_init();
   ser_init();
   rtc_init();
@@ -222,20 +221,12 @@ void loop(void) { // Arduino main loop routine.
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-  uart_puts_P(PSTR("Device ID: 0x"));
-  uart_puthex(device_hw_address());
-  uart_putcrlf();
-
   while (TRUE) {
 
     set_busy_led( FALSE );  // TODO do we need to set busy LED here?
 
     while (hex_is_bav()) {
-
-#ifdef INCLUDE_POWERMGMT
-      sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.
-#endif
-
+      sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.(if power management enabled, if not this is nop)
     }
 
     uart_putc('^');
