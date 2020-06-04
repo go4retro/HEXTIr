@@ -31,7 +31,49 @@
 // Global references
 extern uint8_t buffer[BUFSIZE];
 //
-extern uint8_t what_is_the_support_mask(void);
+// Eventually, this is configuration info that will be in EEPROM, in some form, I think...
+// so the #ifdef's would disappear... the system will have a means of informing which group(s)
+// of peripherals are supported. (probably something like a 8 bit mask because I do not see
+// the system supporting more than maybe 6 unique functions at this time.  Each bit flag would
+// indicate the group being supported; then device address for each group can be defaulted during
+// the build process, and configured via special commands at an address that is always supported.
+//  DRIVE GROUP 0 is always supported.
+//  other groups may be optionally included in the build.
+
+uint8_t device_address[ MAX_REGISTRY ] = {
+  DEFAULT_DRIVE,   // periph 0
+  DEFAULT_PRINTER, // periph 1
+  DEFAULT_SERIAL,  // periph 2
+  DEFAULT_CLOCK,   // periph 3
+  NO_DEV,          // periph 4
+  NO_DEV,          // periph 5
+  NO_DEV,          // periph 6
+  DEFAULT_CFGDEV,  // periph 7
+};
+
+static const PROGMEM uint8_t config_option[6]  = {
+  'D','P','S','C','.','.' 
+};
+
+// Bitmask of supported groups : 1 = drive, etc.
+static const uint8_t supported_groups PROGMEM = {
+      SUPPORT_DRV
+    | SUPPORT_PRN
+    | SUPPORT_SER
+    | SUPPORT_RTC
+//  | SUPPORT_CFG  // This group is NOT indicated in the supported configurable devices
+// additional group functions may be added later for periph 4, 5, and 6.  Periph 7 is reserved for cfg.
+};
+
+
+/* 
+ *  Make our supported group mask available to callers.
+ */
+
+
+static inline uint8_t our_support_mask(void) {
+  return (uint8_t)pgm_read_byte( &supported_groups );
+}
 
 
 /*
@@ -43,9 +85,8 @@ static uint8_t hex_cfg_getmask(pab_t pab) {
   if ( !hex_is_bav() ) {
     // we should only be asked to send one byte.
     if ( pab.buflen == 1 ) {
-
       transmit_word( 1 );
-      transmit_byte( what_is_the_support_mask() );
+      transmit_byte( our_support_mask() );
       transmit_byte( HEXSTAT_SUCCESS );
       hex_finish();
     } else {
@@ -85,23 +126,55 @@ static uint8_t hex_cfg_set(pab_t pab) {
 
 
 static uint8_t hex_cfg_get(pab_t pab) {
+  uint8_t mask = our_support_mask();
+  uint8_t i = 0;
+  uint8_t idx = 0;
+  uint8_t dev;
+  uint8_t val;
+  uint8_t mark = 0;
+  
   if ( !hex_is_bav() ) {
-    hex_send_final_response( HEXSTAT_UNSUPP_CMD );
-    return HEXERR_SUCCESS;
+    for (i = 0; i < MAX_REGISTRY-1; i++ ) {
+      if (( (1<<i) & mask ) != 0 ) {
+        if ( idx ) {
+          buffer[idx++] = ',';
+        }
+        buffer[ idx++ ] = pgm_read_byte( &config_option[ i ] );
+        buffer[ idx++ ] = '=';
+        dev = device_address[ i ];
+        val = dev / 100;
+        if (val != 0 ) {
+          buffer[ idx++ ] = '0'+val;
+          dev %= 100;
+          mark++;
+        }
+        val = dev / 10;
+        if ( val != 0 || mark) {
+          buffer[ idx++ ] = '0'+val;
+          dev %= 10;
+        }
+        buffer[ idx++ ] = '0'+dev;
+        mark = 0;
+      }
+    }
+    if ( idx <= pab.buflen ) {
+      transmit_word( idx ); // number of bytes in buffer to send
+      for (i=0; i<idx; i++ ) {
+        transmit_byte(buffer[i]);
+      }
+      transmit_byte( HEXSTAT_SUCCESS );
+    } else {
+      hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
+      return HEXERR_SUCCESS;
+    }
   }
-  hex_finish();
+  hex_finish(); // bav error, OR normal exit after sending data.
   return HEXERR_BAV;
 }
 
 
-static uint8_t hex_cfg_reset( __attribute__((unused)) pab_t pab) {
-
-  hex_finish();
-  // wait here while bav is low
-  while ( !hex_is_bav() ) {
-    ;
-  }
-  return HEXERR_SUCCESS;
+static uint8_t hex_cfg_reset( pab_t pab) {
+  return hex_null(pab);
 }
 
 
@@ -113,6 +186,7 @@ static uint8_t hex_cfg_reset( __attribute__((unused)) pab_t pab) {
 #define HEXCMD_GETMASK     202
 #define HEXCMD_READCFG     203
 #define HEXCMD_SETCFG      204
+
 
 static const cmd_proc fn_table[] PROGMEM = {
   hex_cfg_getmask,
@@ -143,10 +217,12 @@ void cfg_register(registry_t *registry) {
   return;
 }
 
+
 void cfg_reset( void )
 {
   return;
 }
+
 
 void cfg_init( void )
 {

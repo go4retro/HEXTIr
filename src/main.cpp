@@ -47,45 +47,7 @@ extern uint8_t buffer[BUFSIZE];
 // Our registry of installed devices, built during initialization.
 registry_t  registry;
 
-// Eventually, this is configuration info that will be in EEPROM, in some form, I think...
-// so the #ifdef's would disappear... the system will have a means of informing which group(s)
-// of peripherals are supported. (probably something like a 8 bit mask because I do not see
-// the system supporting more than maybe 6 unique functions at this time.  Each bit flag would
-// indicate the group being supported; then device address for each group can be defaulted during
-// the build process, and configured via special commands at an address that is always supported.
-//  DRIVE GROUP 0 is always supported.
-//  other groups may be optionally included in the build.
 
-static uint8_t device_address[ MAX_REGISTRY ] = {
-  DEFAULT_DRIVE,   // periph 0
-  DEFAULT_PRINTER, // periph 1
-  DEFAULT_SERIAL,  // periph 2
-  DEFAULT_CLOCK,   // periph 3
-  NO_DEV,          // periph 4
-  NO_DEV,          // periph 5
-  NO_DEV,          // periph 6
-  DEFAULT_CFGDEV,  // periph 7
-};
-
-
-// Bitmask of supported groups : 1 = drive, etc.
-static const uint8_t supported_groups PROGMEM = {
-      SUPPORT_DRV
-    | SUPPORT_PRN
-    | SUPPORT_SER
-    | SUPPORT_RTC
-    | SUPPORT_CFG
-//additional group functions may be added later for periph 4, 5, and 6.  Periph 7 is cfg.
-};
-
-
-/* 
- *  Make our supported group mask available to callers.
- */
-uint8_t what_is_the_support_mask(void) {
-  uint8_t mask = pgm_read_byte( &supported_groups );
-  return mask;
-}
 
 /*
    hex_reset_bus() -
@@ -297,6 +259,7 @@ void loop(void) { // Arduino main loop routine.
       if ( !ignore_cmd ) {
         if ( !( ( pabdata.pab.dev == 0 ) ||
                 ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] )
+                || ( pabdata.pab.dev == device_address[ CONFIG_GROUP ] ) 
 #ifdef INCLUDE_PRINTER
                 ||
                 (( pabdata.pab.dev == device_address[ PRINTER_GROUP ] ) )
@@ -308,7 +271,7 @@ void loop(void) { // Arduino main loop routine.
 #ifdef INCLUDE_SERIAL
                 ||
                 (( pabdata.pab.dev == device_address[ SERIAL_GROUP ] ) )
-#endif 
+#endif
               )
            )
         {

@@ -27,6 +27,8 @@
 #include "ff.h"
 #include "registry.h"
 
+extern uint8_t device_address[MAX_REGISTRY];
+
 void cfg_start(void);
 void cfg_reset(void);
 void cfg_register(registry_t *registry);

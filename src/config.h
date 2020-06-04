@@ -35,12 +35,14 @@
  #include "autoconf.h"
  #define MAX_OPEN_FILES 8
 #else
- #define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
+ #define MAX_OPEN_FILES 3      // SD 1.0 and later let us have more than one open file, each additional file uses 30 bytes RAM
+ // 3 files lets us use E/A easily.  source, object, listing.
 
  #define INCLUDE_PRINTER
  #define INCLUDE_CLOCK
  #define INCLUDE_SERIAL
  #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+
 #endif
 
 /* ----- Common definitions  ------ */
