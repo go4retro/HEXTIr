@@ -128,7 +128,7 @@ static uint8_t hex_ser_read(pab_t pab) {
     if ( ser_open & OPENMODE_READ ) {
       // send how much we are going to send
       rc = transmit_word( bcount );
-      //timer_check(0);
+
       // while we have data remaining to send.
       while ( bcount && rc == HEXERR_SUCCESS ) {
 
@@ -283,4 +283,3 @@ void ser_init(void) {
   ser_open = FALSE;
 #endif
 }
-
