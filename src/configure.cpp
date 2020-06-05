@@ -37,7 +37,6 @@ extern uint8_t buffer[BUFSIZE];
 // the build process, and configured via special commands at an address that is always supported.
 //  DRIVE GROUP 0 is always supported.
 //  other groups may be optionally included in the build.
-
 uint8_t device_address[ MAX_REGISTRY ] = {
   DEFAULT_DRIVE,   // periph 0
   DEFAULT_PRINTER, // periph 1
@@ -49,26 +48,45 @@ uint8_t device_address[ MAX_REGISTRY ] = {
   DEFAULT_CFGDEV,  // periph 7
 };
 
-static const PROGMEM uint8_t config_option[6]  = {
-  'D','P','S','C','.','.' 
+static const uint8_t config_option[ MAX_REGISTRY - 1 ] PROGMEM = {
+  'D', 'P', 'S', 'C', ' ', ' ', ' '
 };
 
 // Bitmask of supported groups : 1 = drive, etc.
 static const uint8_t supported_groups PROGMEM = {
-      SUPPORT_DRV
-    | SUPPORT_PRN
-    | SUPPORT_SER
-    | SUPPORT_RTC
-//  | SUPPORT_CFG  // This group is NOT indicated in the supported configurable devices
-// additional group functions may be added later for periph 4, 5, and 6.  Periph 7 is reserved for cfg.
+  SUPPORT_DRV
+  | SUPPORT_PRN
+  | SUPPORT_SER
+  | SUPPORT_RTC
+  //  | SUPPORT_CFG  // This group is NOT indicated in the supported configurable devices
+  // additional group functions may be added later for periph 4, 5, and 6.  Periph 7 is reserved for cfg.
 };
 
+static const uint8_t low_device_address[ MAX_REGISTRY - 1 ] PROGMEM = {
+  DRV_DEV,
+  PRN_DEV,
+  SER_DEV,
+  RTC_DEV,
+  0,
+  0,
+  0
+};
 
-/* 
- *  Make our supported group mask available to callers.
- */
+static const uint8_t high_device_address[ MAX_REGISTRY - 1 ] PROGMEM = {
+  MAX_DRV,
+  MAX_PRN,
+  MAX_SER,
+  MAX_RTC,
+  0,
+  0,
+  0
+};
 
-
+/*
+    Make our supported group mask available to callers.
+    This data (our supported groups) is built during compile time
+    and stored in flash.  does not need to be in eeprom though.
+*/
 static inline uint8_t our_support_mask(void) {
   return (uint8_t)pgm_read_byte( &supported_groups );
 }
@@ -111,18 +129,122 @@ static uint8_t hex_cfg_getmask(pab_t pab) {
    bit 3 set to 1, clock group.  bit 7 will be the configuration device
 */
 static uint8_t hex_cfg_set(pab_t pab) {
-  // need to fetch our options.  then, parse, and set the new device
-  // addresses, unless ANY of them fall outside the valid range for
-  // the group being configured.
+  char    *p = NULL;
+  char    *s;
+  uint16_t len = 0;
+  uint8_t  addresses[MAX_REGISTRY - 1]; // we can parse up to 7 new addresses.
+  uint8_t  ch;
+  uint8_t  i;
+  uint8_t  rc = HEXSTAT_SUCCESS;
+  uint8_t  addr;
+  uint8_t  change_mask = 0;
+
+  len = 0;
+  i = 0;
+  while ( i < MAX_REGISTRY - 1 ) {
+    addresses[ i++ ] = 0;
+  }
+
+  if ( hex_get_options(pab) == HEXSTAT_SUCCESS ) {
+    len = pab.datalen;
+    /* our "data" to parse begins at buffer[0] and is consists of 'len' bytes. */
+    p = (char *)&buffer[0];
+    s = p;
+  } else {
+    hex_release_bus();
+    return HEXERR_BAV; // BAV ERR.
+  }
+
+  while ( (( (unsigned int)p - (unsigned int)s) < len ) && ( rc == HEXSTAT_SUCCESS )) {
+    ch = *p++;
+    if ( *p++ == '=' ) {
+      ch &= ~0x20; // map to uppercase if lower.
+      // Now, is this a valid option?
+      i = 0;
+      do
+      {
+        if ( ch == (uint8_t)pgm_read_byte( &config_option[ i ] )) {
+          break;
+        }
+        i++;
+      } while ( i < MAX_REGISTRY - 1 );
+
+      if ( i >= MAX_REGISTRY - 1 ) {
+        rc = HEXSTAT_OPTION_ERR; // bad or invalid option
+      } else {
+        // i is the index to our "group" now.
+        // p should be pointing to digits that represent the new address.
+        addr = 0;
+        // parse digits to get new address; then check to see if the address is valid for
+        // the selected device.  If so, mark the change mask and store the address in our
+        // change array.
+        // we do not change any addresses until the entire message is parsed.
+        while ( *p >= '0' && *p <= '9' ) {
+          ch = *p - '0';
+          addr *= 10;
+          addr += ch;
+          p++;
+        }
+
+        if ( *p == ',' ) {
+          p++;
+        } else if ( (( (unsigned int)p - (unsigned int)s) < len ) ) {
+          rc = HEXSTAT_OPTION_ERR;
+        }
+        addresses[ i ] = addr; // new address
+        change_mask |= (1 << i); // and our adress "group" number.
+      }
+    } else {
+      rc = HEXSTAT_OPTION_ERR;
+    }
+    // Done parsing incoming options.  If no error, we can now see
+    // if the addresses we were given are any good.
+    if ( rc == HEXSTAT_SUCCESS ) {
+      if ( change_mask != 0 ) {
+        rc = our_support_mask() & change_mask; // check to ensure that we are not trying to set address on unsupported periperhals
+        if ( rc == change_mask ) {
+          rc = HEXSTAT_SUCCESS;
+          // continue
+          i = 0;
+          do
+          {
+            if ( (1 << i) & change_mask ) {
+              if ( addresses[ i ] >= (uint8_t)pgm_read_byte( &low_device_address[ i ] ) &&
+                   addresses[ i ] <= (uint8_t)pgm_read_byte( &high_device_address[ i ] ) )
+              {
+                device_address[ i ] = addresses[ i ]; // this will be a structure that will be updated to EEPROM at some point.
+              } else {
+                rc = HEXSTAT_OPTION_ERR;
+              }
+            }
+            i++;
+          } while ( i < MAX_REGISTRY - 1 && rc == HEXSTAT_SUCCESS );
+        } else {
+          rc = HEXSTAT_DEVICE_ERR;
+        }
+      } else {
+        rc = HEXSTAT_DATA_INVALID;
+      }
+    }
+  }
   if ( !hex_is_bav() ) {
-    hex_send_final_response( HEXSTAT_UNSUPP_CMD );
+    hex_send_final_response( rc );
     return HEXERR_SUCCESS;
   }
   hex_finish();
   return HEXERR_BAV;
 }
 
-
+/*
+   hex_cfg_get() -
+   This routine reads the current address configuation
+   and sends a configuartion string to the host in the
+   form of 'D=xxx,P=xxx,S=xxx,R=xxx' for the supported
+   device(s) in the system, where the xxx is the current
+   address assigned to that device.  The receiving buffer
+   must be large enough to receive the entire message
+   or a buffer size error will be returned.
+*/
 static uint8_t hex_cfg_get(pab_t pab) {
   uint8_t mask = our_support_mask();
   uint8_t i = 0;
@@ -130,10 +252,10 @@ static uint8_t hex_cfg_get(pab_t pab) {
   uint8_t dev;
   uint8_t val;
   uint8_t mark = 0;
-  
+
   if ( !hex_is_bav() ) {
-    for (i = 0; i < MAX_REGISTRY-1; i++ ) {
-      if (( (1<<i) & mask ) != 0 ) {
+    for (i = 0; i < MAX_REGISTRY - 1; i++ ) {
+      if (( (1 << i) & mask ) != 0 ) {
         if ( idx ) {
           buffer[idx++] = ',';
         }
@@ -142,22 +264,22 @@ static uint8_t hex_cfg_get(pab_t pab) {
         dev = device_address[ i ];
         val = dev / 100;
         if (val != 0 ) {
-          buffer[ idx++ ] = '0'+val;
+          buffer[ idx++ ] = '0' + val;
           dev %= 100;
           mark++;
         }
         val = dev / 10;
         if ( val != 0 || mark) {
-          buffer[ idx++ ] = '0'+val;
+          buffer[ idx++ ] = '0' + val;
           dev %= 10;
         }
-        buffer[ idx++ ] = '0'+dev;
+        buffer[ idx++ ] = '0' + dev;
         mark = 0;
       }
     }
     if ( idx <= pab.buflen ) {
       transmit_word( idx ); // number of bytes in buffer to send
-      for (i=0; i<idx; i++ ) {
+      for (i = 0; i < idx; i++ ) {
         transmit_byte(buffer[i]);
       }
       transmit_byte( HEXSTAT_SUCCESS );
@@ -170,7 +292,10 @@ static uint8_t hex_cfg_get(pab_t pab) {
   return HEXERR_BAV;
 }
 
-
+/*
+   hex_cfg_reset() -
+   handle the reset commad if directed to us.
+*/
 static uint8_t hex_cfg_reset( pab_t pab) {
   return hex_null(pab);
 }
@@ -179,8 +304,9 @@ static uint8_t hex_cfg_reset( pab_t pab) {
 /*
    Command handling registry for device
 */
-
 // Peripheral (3rd party) specific command codes.
+// These are custom commands associated with the
+// configuration address of this device.
 #define HEXCMD_GETMASK     202
 #define HEXCMD_READCFG     203
 #define HEXCMD_SETCFG      204
@@ -204,6 +330,13 @@ static const uint8_t op_table[] PROGMEM = {
 };
 
 
+/*
+   Caveat for using CONFIGURATION device:
+   When we register this device, there is only one address
+   that can be used with this function.  So; only run
+   configuration when the peripheral is the ONLY thing connected
+   to the bus.
+*/
 void cfg_register(registry_t *registry) {
   uint8_t i = registry->num_devices;
 
@@ -216,6 +349,9 @@ void cfg_register(registry_t *registry) {
 }
 
 
+/*
+    we may need these when we switch to eeprom...
+*/
 void cfg_reset( void )
 {
   return;

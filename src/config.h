@@ -23,7 +23,6 @@
 #define CONFIG_H
 
 #include <avr/io.h>
-#include "configure.h"
 
 #define BUFSIZE       64
 
@@ -46,7 +45,7 @@
 
 #endif
 
-
+#include "configure.h"
 /* ----- Common definitions for all AVR hardware variants ------ */
 
 /* Interrupt handler for system tick */
