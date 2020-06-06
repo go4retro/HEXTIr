@@ -279,7 +279,6 @@ static uint8_t hex_drv_write(pab_t pab) {
 
 #ifdef ARDUINO
       written = (file->fp).write( buffer, i );
-      _delay_us(1000);
 #else
       res = f_write(&(file->fp), buffer, i, &written);
 #endif
