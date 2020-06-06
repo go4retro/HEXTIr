@@ -32,13 +32,13 @@
 
 #ifdef ARDUINO
 
- #include <SPI.h>
- #include <SD.h>
+#include <SPI.h>
+#include <SD.h>
 
- const uint8_t  chipSelect = 10;
+const uint8_t  chipSelect = 10;
 #else
- FATFS fs;
- #include "diskio.h"
+FATFS fs;
+#include "diskio.h"
 #endif
 
 // Global references
@@ -279,6 +279,7 @@ static uint8_t hex_drv_write(pab_t pab) {
 
 #ifdef ARDUINO
       written = (file->fp).write( buffer, i );
+      _delay_us(1000);
 #else
       res = f_write(&(file->fp), buffer, i, &written);
 #endif
@@ -455,7 +456,8 @@ static uint8_t hex_drv_open(pab_t pab) {
   uart_putc('>');
 
   len = 0;
-  if ( hex_get_options(pab) == HEXSTAT_SUCCESS ) {
+  memset(buffer,0,sizeof(buffer));
+  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
   } else {
@@ -510,14 +512,30 @@ static uint8_t hex_drv_open(pab_t pab) {
     }
     if (file != NULL) {
 #ifdef ARDUINO
-      file->fp = SD.open( (const char *)&buffer[3], mode );
-      if ( SD.exists( (const char *)&buffer[3] )) {
-        res = FR_OK;
+      if ( pab.datalen < BUFSIZE - 1 ) {
+        
+        if ( ( att & (OPENMODE_READ|OPENMODE_WRITE) ) == OPENMODE_WRITE ) {
+          // For now, open for write only, remove pre-existing file.
+          if ( SD.exists( (const char *)&buffer[3] ) ) {
+            SD.remove( (const char *)&buffer[3] );
+          }
+        }
+        // Now, open our file in proper mode. create it if we need to.
+        file->fp = SD.open( (const char *)&buffer[3], mode );
+        if ( SD.exists( (const char *)&buffer[3] )) {
+          res = FR_OK;
+        } else {
+          res = FR_DENIED;
+        }
       } else {
-        res = FR_DENIED;
+        res = FR_INVALID_NAME;
       }
 #else
-      res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
+      if ( pab.datalen < BUFSIZE - 1 ) {
+        res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
+      } else {
+        res = FR_INVALID_NAME;
+      }
 #endif
 
       switch (res) {
@@ -565,20 +583,23 @@ static uint8_t hex_drv_open(pab_t pab) {
     if ( rc == HEXERR_SUCCESS ) {
       switch (att & (OPENMODE_WRITE | OPENMODE_READ)) {
 
-        // when opening to write...
+        // when opening to write, or read/write
         default:
 
-          if (!( att & OPENMODE_INTERNAL)) { // if NOT open mode = INTERNAL, let's add CR/LF to end of line (display form).
+          if (!(( att & OPENMODE_INTERNAL) || (pab.lun != 0))) { // if NOT open mode = INTERNAL, let's add CR/LF to end of line (display form).
             file->attr |= FILEATTR_DISPLAY;
           }
-
-          if ( len <= sizeof( buffer ) ) {
-            fsize = len;
+          // if we don't know how big its going to be... we may need multiple writes.
+          if ( len == 0 ) {
+            fsize = sizeof(buffer);
           } else {
-            fsize = sizeof( buffer );
+            // otherwise, we know. and do NOT allow fileattr display under any circumstance.
+            fsize = len;
+            file->attr &= ~FILEATTR_DISPLAY; 
           }
           break;
 
+        // when opening to read-only
         case OPENMODE_READ:
           // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
           if (pab.lun != 0 ) {
@@ -675,7 +696,9 @@ static uint8_t hex_drv_delete(pab_t pab) {
 #endif
 
   uart_putc('>');
-  if ( hex_get_options(pab) == HEXSTAT_SUCCESS ) {
+  
+  memset(buffer,0,sizeof(buffer));
+  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
     return HEXERR_BAV; // BAV ERR.
@@ -695,43 +718,53 @@ static uint8_t hex_drv_delete(pab_t pab) {
     }
   }
 #endif
-  if ( rc == HEXERR_SUCCESS && fs_initialized ) {
+  if ( rc == HEXERR_SUCCESS
 #ifdef ARDUINO
-    if ( SD.exists( (const char *)buffer )) {
-      if ( SD.remove( (const char *)buffer )) {
-        rc = HEXSTAT_SUCCESS;
-      } else {
-        rc = HEXSTAT_WP_ERR;
-      }
-    } else {
-      rc = HEXSTAT_NOT_FOUND;
-    }
-    if ( sd_was_not_inited ) {
-      SD.end();
-      fs_initialized = 0;
-    }
-#else
-    // remove file
-   fr = f_unlink(&fs, buffer);
-   switch(fr) {
-   case FR_OK:
-     rc = HEXSTAT_SUCCESS;
-     break;
-   case FR_NO_FILE:
-     rc = HEXSTAT_NOT_FOUND;
-     break;
-   default:
-     rc = HEXSTAT_DEVICE_ERR;
-     break;
-   }
+       && fs_initialized
 #endif
- }
- if (!hex_is_bav()) { // we can send response
-   hex_send_final_response( rc );
-   return HEXERR_SUCCESS;
- }
- hex_finish();
- return HEXERR_BAV;
+     ) {
+     
+    // If we did not fill buffer, we have a null at end due to memset before retrieval.
+    if ( pab.datalen < BUFSIZE - 1 ) {
+#ifdef ARDUINO
+      if ( SD.exists( (const char *)buffer )) {
+        if ( SD.remove( (const char *)buffer )) {
+          rc = HEXSTAT_SUCCESS;
+        } else {
+          rc = HEXSTAT_WP_ERR;
+        }
+      } else {
+        rc = HEXSTAT_NOT_FOUND;
+      }
+      if ( sd_was_not_inited ) {
+        SD.end();
+        fs_initialized = 0;
+      }
+#else
+      // remove file
+      fr = f_unlink(&fs, buffer);
+      switch (fr) {
+        case FR_OK:
+          rc = HEXSTAT_SUCCESS;
+          break;
+        case FR_NO_FILE:
+          rc = HEXSTAT_NOT_FOUND;
+          break;
+        default:
+          rc = HEXSTAT_DEVICE_ERR;
+          break;
+      }
+#endif
+    } else {
+      rc = HEXSTAT_FILE_NAME_INVALID;
+    }
+  }
+  if (!hex_is_bav()) { // we can send response
+    hex_send_final_response( rc );
+    return HEXERR_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
 }
 
 
@@ -749,17 +782,17 @@ static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
 
 
 /*
- * drv_start - open filesystem.
- * make- ignore/ empty function.
- */
+   drv_start - open filesystem.
+   make- ignore/ empty function.
+*/
 void drv_start(void) {
   if (!fs_initialized) {
 #ifdef ARDUINO
-  // If SD library not initialized, initialize it now
-  // and mark it as such.
+    // If SD library not initialized, initialize it now
+    // and mark it as such.
     if (SD.begin( chipSelect ) ) {
 #else
-    if (f_mount(1,&fs) == FR_OK) {
+    if (f_mount(1, &fs) == FR_OK) {
 #endif
       fs_initialized = 1;
     }
@@ -769,8 +802,8 @@ void drv_start(void) {
 
 
 /*
- * Command handling registry for device
- */
+   Command handling registry for device
+*/
 static const cmd_proc fn_table[] PROGMEM = {
   hex_drv_open,
   hex_drv_close,
