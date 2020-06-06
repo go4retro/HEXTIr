@@ -377,6 +377,7 @@ static uint8_t hex_drv_read(pab_t pab) {
       {
         File entry = file->fp.openNextFile();
         uint32_t osize = 0;
+        uint8_t flag = 0;
 
         fsize = 0;
         if ( !entry ) {
@@ -385,19 +386,20 @@ static uint8_t hex_drv_read(pab_t pab) {
           memset(buffer, 0, sizeof(buffer));
           strcpy((char *)&buffer[0], entry.name() );
           if ( entry.isDirectory() ) {
-            strcat((char *)buffer, ".$,");
+            flag = F_ISDIRECTORY;
           } else {
-            strcat((char *)buffer, ",");
             osize = entry.size();
           }
-          fsize = strlen((char *)buffer);
           entry.close();
-          if ( sizeof(buffer) - fsize >= 10 ) {
+          // Do we have at least 12 bytes left in buffer?
+          if ( sizeof(buffer) - fsize > 12 ) {
+            strcat((char *)buffer, ",");
+            fsize = strlen((char *)buffer);
             ltoa( osize, (char *)&buffer[fsize], 10);
+            strcat((char *)buffer, ",");
             fsize = strlen((char *)buffer );
-          } else {
-            strcat( (char *)buffer, "#");
-            fsize++;
+            itoa( flag, (char *)&buffer[fsize], 10);
+            fsize = strlen((char *)buffer );
           }
         }
       }

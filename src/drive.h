@@ -26,6 +26,10 @@
 #include "ff.h"
 #include "registry.h"
 
+
+#define F_ISDIRECTORY        1
+
+
 #ifndef ARDUINO
 
 #include "diskio.h"
