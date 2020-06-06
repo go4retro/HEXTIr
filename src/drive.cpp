@@ -81,6 +81,7 @@ static file_t* reserve_lun(uint8_t lun) {
     if (!files[i].used) {
       files[i].used = TRUE;
       files[i].lun = lun;
+      files[i].file.attr = 0; // ensure clear attr before use
       open_files++;
       set_busy_led(TRUE);
       return &(files[i].file);
@@ -351,53 +352,97 @@ static uint8_t hex_drv_read(pab_t pab) {
   file = find_lun(pab.lun);
 
   if (file != NULL) {
+    if ( !(file->attr & FILEATTR_CATALOG ) ) {
+#ifdef ARDUINO
+      // amount remaining to read from file
+      fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
+#else
+      fsize = file->fp.fsize;
+#endif
+      if ( fsize == 0 ) {
+        res = FR_EOF;
+      } else {
+        // size of buffer provided by host (amount to send)
+        len = pab.buflen;
+
+        if ( fsize < pab.buflen ) {
+          fsize = pab.buflen;
+        }
+      }
+    } else {
+
+      // Read next catalog entry.
 
 #ifdef ARDUINO
-    // amount remaining to read from file
-    fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
-#else
-    fsize = file->fp.fsize;
-#endif
-    if ( fsize == 0 ) {
-      res = FR_EOF;
-    } else {
-      // size of buffer provided by host (amount to send)
-      len = pab.buflen;
+      {
+        File entry = file->fp.openNextFile();
+        uint32_t osize = 0;
 
-      if ( fsize < pab.buflen ) {
-        fsize = pab.buflen;
+        fsize = 0;
+        if ( !entry ) {
+          res = FR_EOF;
+        } else {
+          memset(buffer, 0, sizeof(buffer));
+          strcpy((char *)&buffer[0], entry.name() );
+          if ( entry.isDirectory() ) {
+            strcat((char *)buffer, ".$,");
+          } else {
+            strcat((char *)buffer, ",");
+            osize = entry.size();
+          }
+          fsize = strlen((char *)buffer);
+          entry.close();
+          if ( sizeof(buffer) - fsize >= 10 ) {
+            ltoa( osize, (char *)&buffer[fsize], 10);
+            fsize = strlen((char *)buffer );
+          } else {
+            strcat( (char *)buffer, "#");
+            fsize++;
+          }
+        }
       }
+#else
+      // TODO: read next available directory entry using FatFS
+      res = FR_EOF;
+      fsize = 0;
+#endif
     }
+
     // send how much we are going to send
     rc = transmit_word( fsize );
 
     // while we have data remaining to send.
     while ( fsize && rc == HEXERR_SUCCESS ) {
 
-      len = fsize;    // remaing amount to read from file
+      len = fsize;    // remaining amount to read from file
       // while it fit into buffer or not?  Only read as much
       // as we can hold in our buffer.
       len = ( len > sizeof( buffer ) ) ? sizeof( buffer ) : len;
 
+      if ( !(file->attr & FILEATTR_CATALOG )) {
 #ifdef ARDUINO
-      memset((char *)buffer, 0, sizeof( buffer ));
-      read = file->fp.read( (char *)buffer, len );
-      if ( read ) {
-        res = FR_OK;
-      } else {
-        res = FR_RW_ERROR;
-      }
+        memset((char *)buffer, 0, sizeof( buffer ));
+        read = file->fp.read( (char *)buffer, len );
+        if ( read ) {
+          res = FR_OK;
+        } else {
+          res = FR_RW_ERROR;
+        }
 #else
 
-      res = f_read(&(file->fp), buffer, len, &read);
+        res = f_read(&(file->fp), buffer, len, &read);
 
-      if (!res) {
-        uart_putc(13);
-        uart_putc(10);
-        uart_trace(buffer, 0, read);
-      }
+        if (!res) {
+          uart_putc(13);
+          uart_putc(10);
+          uart_trace(buffer, 0, read);
+        }
 
 #endif
+      } else {
+        // catalog entry, if that's what we're reading, is already in buffer.
+        read = fsize; // 0 if no entry, else size of entry in buffer.
+      }
 
       if (FR_OK == res) {
         for (i = 0; i < read; i++) {
@@ -455,7 +500,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   uart_putc('>');
 
   len = 0;
-  memset(buffer,0,sizeof(buffer));
+  memset(buffer, 0, sizeof(buffer));
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
@@ -510,41 +555,60 @@ static uint8_t hex_drv_open(pab_t pab) {
       file = reserve_lun(pab.lun);
     }
     if (file != NULL) {
-#ifdef ARDUINO
+
       if ( pab.datalen < BUFSIZE - 1 ) {
-        
-        if ( ( att & (OPENMODE_READ|OPENMODE_WRITE) ) == OPENMODE_WRITE ) {
+
+
+        if ( ( att & OPENMODE_READ ) == OPENMODE_READ ) {
+          if ( buffer[ pab.datalen - 1 ] == '$' ) {
+            // Are we attempting to open a catalog?
+            buffer[ pab.datalen - 1 ] = '/';
+            file->attr |= FILEATTR_CATALOG;
+          }
+        }
+
+#ifdef ARDUINO
+
+        if ( ( att & (OPENMODE_READ | OPENMODE_WRITE) ) == OPENMODE_WRITE ) {
           // For now, open for write only, remove pre-existing file.
           if ( SD.exists( (const char *)&buffer[3] ) ) {
             SD.remove( (const char *)&buffer[3] );
           }
         }
+        res = FR_OK; // presume success.
         // Now, open our file in proper mode. create it if we need to.
         file->fp = SD.open( (const char *)&buffer[3], mode );
-        if ( SD.exists( (const char *)&buffer[3] )) {
-          res = FR_OK;
-        } else {
-          res = FR_DENIED;
+
+        if ( !(file->attr & FILEATTR_CATALOG ) ) {
+          if ( !SD.exists( (const char *)&buffer[3] )) {
+            res = FR_DENIED;
+          }
         }
-      } else {
-        res = FR_INVALID_NAME;
-      }
+
 #else
-      if ( pab.datalen < BUFSIZE - 1 ) {
-        res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
-      } else {
-        res = FR_INVALID_NAME;
-      }
+        // TODO: manage open of a directory if file->attr == FILEATTR_CATALOG
+        if ( pab.datalen < BUFSIZE - 1 ) {
+          res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
+        }
+
 #endif
+
+        // common.
+      } else {
+        res = FR_INVALID_NAME; // if the incoming buffer is full, we can't stuff the null.
+      }
 
       switch (res) {
         case FR_OK:
           rc = HEXSTAT_SUCCESS;
+          fsize = 0;
+          if ( !(file->attr & FILEATTR_CATALOG) ) {
 #ifdef ARDUINO
-          fsize = file->fp.size();
+            fsize = file->fp.size();
 #else
-          fsize = file->fp.fsize;
+            fsize = file->fp.fsize;
 #endif
+          }
           break;
 
         case FR_IS_READONLY:
@@ -594,7 +658,7 @@ static uint8_t hex_drv_open(pab_t pab) {
           } else {
             // otherwise, we know. and do NOT allow fileattr display under any circumstance.
             fsize = len;
-            file->attr &= ~FILEATTR_DISPLAY; 
+            file->attr &= ~FILEATTR_DISPLAY;
           }
           break;
 
@@ -602,12 +666,10 @@ static uint8_t hex_drv_open(pab_t pab) {
         case OPENMODE_READ:
           // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
           if (pab.lun != 0 ) {
-            if ( len ) {
-              if ( len <= sizeof( buffer ) ) {
-                fsize = len;
-              } else {
-                fsize = sizeof( buffer );
-              }
+            if (len) {
+              fsize = len; // non zero length requested, use it.
+            } else {
+              fsize = sizeof(buffer);  // on zero length request, return buffer size we use.
             }
           }
           // for len=0 OR lun=0, return fsize.
@@ -695,8 +757,8 @@ static uint8_t hex_drv_delete(pab_t pab) {
 #endif
 
   uart_putc('>');
-  
-  memset(buffer,0,sizeof(buffer));
+
+  memset(buffer, 0, sizeof(buffer));
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
@@ -722,7 +784,7 @@ static uint8_t hex_drv_delete(pab_t pab) {
        && fs_initialized
 #endif
      ) {
-     
+
     // If we did not fill buffer, we have a null at end due to memset before retrieval.
     if ( pab.datalen < BUFSIZE - 1 ) {
 #ifdef ARDUINO
