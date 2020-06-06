@@ -6,7 +6,7 @@
 #ifndef REGISTRY_H
 #define REGISTRY_H
 
-#define MAX_REGISTRY      6
+#define MAX_REGISTRY      8
 
 typedef uint8_t (*cmd_proc)(pab_t pab);
 

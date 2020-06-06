@@ -35,61 +35,17 @@
  #include "autoconf.h"
  #define MAX_OPEN_FILES 8
 #else
- #define MAX_OPEN_FILES 4      // SD 1.0 and later let us have more than one open file.
+ #define MAX_OPEN_FILES 3      // SD 1.0 and later let us have more than one open file, each additional file uses 30 bytes RAM
+ // 3 files lets us use E/A easily.  source, object, listing.
 
  #define INCLUDE_PRINTER
  #define INCLUDE_CLOCK
  #define INCLUDE_SERIAL
  #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+
 #endif
 
-/* ----- Common definitions  ------ */
-// BASE Device Numbers for peripheral groups (this is the low-end address for a particular group).
-// TODO these 5 should move to a standard hexdev.h or something, since they are defaults, and they should be the same for all
-// boards.
-#define DRV_DEV       100    // Base disk device code we support
-#define PRN_DEV        10    // Device code to support a printer on HW serial (rx/tx) @115200,N,8,1
-#define SER_DEV        20    // Device code for RS-232 Serial peripheral using SW serial (def=300 baud)
-#define RTC_DEV       230    // Device code to support DS3231 RTC on I2C/wire; A5/A4.
-#define NO_DEV          0
-
-// Offsets into our device-code map for various peripheral functions.
-#define DRIVE_GROUP       0
-#define PRINTER_GROUP     1
-#define SERIAL_GROUP      2
-#define CLOCK_GROUP       3
-// Can have up to 'MAX_REGISTRY-1' of these (see registry.h)
-
-
-// Configure initial default addressing here.
-#define DEFAULT_DRIVE       (DRV_DEV)
-#define SUPPORT_DRV         (1<<DRIVE_GROUP)
-
-// Other support devices included optionally in build.
-#ifdef INCLUDE_PRINTER
- #define DEFAULT_PRINTER    (PRN_DEV+2)
- #define SUPPORT_PRN        (1<<PRINTER_GROUP)
-#else
- #define DEFAULT_PRINTER    NO_DEV
- #define SUPPORT_PRN        0
-#endif
-
-#ifdef INCLUDE_CLOCK
- #define DEFAULT_CLOCK     (RTC_DEV)
- #define SUPPORT_RTC       (1<<CLOCK_GROUP)
-#else
- #define DEFAULT_CLOCK     NO_DEV
- #define SUPPORT_RTC       0
-#endif
-
-#ifdef INCLUDE_SERIAL
- #define DEFAULT_SERIAL    (SER_DEV)
- #define SUPPORT_SER       (1<<SERIAL_GROUP)
-#else
- #define DEFAULT_SERIAL    NO_DEV
- #define SUPPORT_SER       0
-#endif
-
+#include "configure.h"
 /* ----- Common definitions for all AVR hardware variants ------ */
 
 /* Interrupt handler for system tick */
@@ -155,14 +111,8 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
-/* This allows the user to set the drive address to be 100-107 or 108-117) */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7));
+static inline void wakeup_pin_init(void) {
+  ;
 }
 
 static inline void board_init(void) {
@@ -220,18 +170,15 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
-/* This allows the user to set the drive address to be 100-107 */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-}
 
 static inline void board_init(void) {
 }
+
+
+static inline void wakeup_pin_init(void) {
+  ;
+}
+
 
 #  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #  define POWER_MGMT_HANDLER  INT0_vect
@@ -262,27 +209,22 @@ static inline void pwr_irq_disable(void) {
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
-#  define WAKEUP_PIN          2 // BAV on D2
-
 #  define LED_BUSY_DDR        DDRD
 #  define LED_BUSY_OUT        PORTD
 #  define LED_BUSY_PIN        _BV(PIN7)
+
 
 // PB.0/.1 which are SDcard detect and WP for non-Arduino build are
 // repurposed in the Arduino build to be a software serial port using
 // the SoftwareSerial library.
 
-/* This allows the user to set the drive address to be 100-107 or 108-117) */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-}
 
 static inline void board_init(void) {
+}
+
+
+static inline void wakeup_pin_init(void) {
+  DDRD &= ~_BV(PIN2);
 }
 
 #elif CONFIG_HARDWARE_VARIANT == 4
@@ -335,17 +277,12 @@ static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
-/* This allows the user to set the drive address to be 100-107 */
-static inline uint8_t device_hw_address(void) {
-  return 100 + !((PIND & (_BV(PIN4) | _BV(PIN5) | _BV(PIN6))) >> 4);
-}
-
-static inline void device_hw_address_init(void) {
-  DDRD  &= ~(_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-  PORTD |=  (_BV(PIN4) | _BV(PIN5) | _BV(PIN6));
-}
 
 static inline void board_init(void) {
+}
+
+static inline void wakeup_pin_init(void) {
+  ;
 }
 
 #else
@@ -356,7 +293,6 @@ static inline void board_init(void) {
 /* ---------------- End of user-configurable options ---------------- */
 
 #ifndef SYSTEM_TICK_HANDLER
-#define SYSTEM_TICK_HANDLER ISR(TIMER0_COMPA_vect)
 
 static inline void timer_config(void) {
   /* Set up a 100Hz interrupt using timer 0 */
@@ -366,6 +302,9 @@ static inline void timer_config(void) {
   TCNT0  = 0;
   TIMSK0 |= _BV(OCIE0A);
 }
+
+#define SYSTEM_TICK_HANDLER ISR(TIMER0_COMPA_vect)
+
 #endif
 
 static inline void leds_init(void) {
@@ -381,6 +320,11 @@ static inline __attribute__((always_inline)) void set_led(uint8_t state) {
 
 static inline void toggle_led(void) {
   LED_BUSY_OUT ^= LED_BUSY_PIN;
+}
+
+static inline void leds_sleep(void) {
+  LED_BUSY_OUT &= ~LED_BUSY_PIN;
+  LED_BUSY_DDR |= LED_BUSY_PIN;
 }
 
 

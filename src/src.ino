@@ -19,6 +19,7 @@
 */
 
 #include "config.h"
+#include "configure.h"
 #include "hexbus.h"
 #include "led.h"
 #include "timer.h"
@@ -28,6 +29,7 @@
 #include "serial.h"
 #include "rtc.h"
 #include "printer.h"
+#include "configure.h"
 #include "registry.h"
 
 extern config_t * config;
@@ -42,11 +44,12 @@ void setup(void) {
   hex_init();
   leds_init();
   timer_init();
-  device_hw_address_init();
+  //device_hw_address_init();
   drv_init();
   ser_init();
   rtc_init();
   prn_init();
+  cfg_init();
   config = ee_get_config();
 
   sei();
@@ -59,8 +62,6 @@ void setup(void) {
   }
 #endif
 
-#ifdef INCLUDE_POWERMGMT
-  pinMode(WAKEUP_PIN, INPUT);
-#endif
+  wakeup_pin_init();
 
 }

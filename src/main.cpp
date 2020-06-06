@@ -23,6 +23,7 @@
 #include <string.h>
 #include <util/delay.h>
 #include "config.h"
+#include "configure.h"
 #include "drive.h"
 #include "eeprom.h"
 #include "hexbus.h"
@@ -33,7 +34,7 @@
 #include "registry.h"
 #include "rtc.h"
 #include "serial.h"
-//#include "swuart.h"
+#include "configure.h"
 #include "timer.h"
 
 #ifdef ARDUINO
@@ -47,33 +48,6 @@ config_t *config;
 // Our registry of installed devices, built during initialization.
 registry_t  registry;
 
-// Eventually, this is configuration info that will be in EEPROM, in some form, I think...
-// so the #ifdef's would disappear... the system will have a means of informing which group(s)
-// of peripherals are supported. (probably something like a 8 bit mask because I do not see
-// the system supporting more than maybe 6 unique functions at this time.  Each bit flag would
-// indicate the group being supported; then device address for each group can be defaulted during
-// the build process, and configured via special commands at an address that is always supported.
-//  DRIVE GROUP 0 is always supported.
-//  other groups may be optionally included in the build.
-
-static uint8_t device_address[ MAX_REGISTRY ] = {
-  DEFAULT_DRIVE,   // periph 0
-  DEFAULT_PRINTER, // periph 1
-  DEFAULT_SERIAL,  // periph 2
-  DEFAULT_CLOCK,   // periph 3
-  NO_DEV,          // periph 4
-  NO_DEV           // periph 5
-};
-
-
-// Bitmask of supported groups : 1 = drive, etc.
-static const uint8_t supported_groups PROGMEM = {
-      SUPPORT_DRV
-    | SUPPORT_PRN
-    | SUPPORT_SER
-    | SUPPORT_RTC
-//additional group functions may be added later for periph 4 and 5.
-};
 
 
 /*
@@ -190,12 +164,13 @@ static const uint8_t op_table[] PROGMEM = {
 void setup_registry(void)
 {
   registry.num_devices = 1;
-  registry.entry[ 0 ].device_code_start = 0;
-  registry.entry[ 0 ].device_code_end = 255;
+  registry.entry[ 0 ].device_code_start = ALL_DEV;
+  registry.entry[ 0 ].device_code_end = MAX_DEV;
   registry.entry[ 0 ].operation = (cmd_proc *)&fn_table;
   registry.entry[ 0 ].command = (uint8_t *)&op_table;
 
   // Register any configured peripherals.  if the peripheral type is not included, the call is to an empty routine.
+  cfg_register(&registry);
   drv_register(&registry);
   prn_register(&registry);
   ser_register(&registry);
@@ -229,11 +204,11 @@ void loop(void) { // Arduino main loop routine.
   disk_init();
   leds_init();
   timer_init();
-  device_hw_address_init();
   drv_init();
   ser_init();
   rtc_init();
   prn_init();
+  cfg_init();
   
   config = ee_get_config();
 
@@ -249,20 +224,12 @@ void loop(void) { // Arduino main loop routine.
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-  uart_puts_P(PSTR("Device ID: 0x"));
-  uart_puthex(device_hw_address());
-  uart_putcrlf();
-
   while (TRUE) {
 
     set_busy_led( FALSE );  // TODO do we need to set busy LED here?
 
     while (hex_is_bav()) {
-
-#ifdef INCLUDE_POWERMGMT
-      sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.
-#endif
-
+      sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.(if power management enabled, if not this is nop)
     }
 
     uart_putc('^');
@@ -286,6 +253,7 @@ void loop(void) { // Arduino main loop routine.
       if ( !ignore_cmd ) {
         if ( !( ( pabdata.pab.dev == 0 ) ||
                 ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] )
+                || ( pabdata.pab.dev == device_address[ CONFIG_GROUP ] ) 
 #ifdef INCLUDE_PRINTER
                 ||
                 (( pabdata.pab.dev == device_address[ PRINTER_GROUP ] ) )
@@ -297,7 +265,7 @@ void loop(void) { // Arduino main loop routine.
 #ifdef INCLUDE_SERIAL
                 ||
                 (( pabdata.pab.dev == device_address[ SERIAL_GROUP ] ) )
-#endif 
+#endif
               )
            )
         {

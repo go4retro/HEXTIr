@@ -49,6 +49,7 @@ static uint8_t hex_prn_open(pab_t pab) {
   BYTE     res = HEXSTAT_SUCCESS;
 
   len = 0;
+  memset( buffer, 0, sizeof( buffer ) );
   if ( hex_get_data( buffer, pab.datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
@@ -230,4 +231,3 @@ void prn_init( void )
 #endif
   return;
 }
-

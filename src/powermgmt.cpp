@@ -32,12 +32,15 @@
 
 #ifdef INCLUDE_POWERMGMT
 
+volatile uint8_t  led_pwr_enable = 0;
+
 #ifndef ARDUINO
 
 ISR(POWER_MGMT_HANDLER) {
   sleep_disable();
   power_all_enable();
   pwr_irq_disable();
+  led_pwr_enable = 0xff;
 }
 
 #else
@@ -46,6 +49,7 @@ void wakeUp(void)
   sleep_disable();
   power_all_enable();
   detachInterrupt(0);
+  led_pwr_enable = 0xff;
 }
 #endif
 
@@ -61,10 +65,14 @@ void sleep_the_system( void )
 #endif
   set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
   cli();
+  led_pwr_enable = 0;
   sleep_enable();
   // The sleep_bod_disable operation may not be available on all targets!!!
   sleep_bod_disable();
   sei();
+  
+  leds_sleep(); // make sure LED is not lit when we sleep.
+  
   sleep_cpu();
   // BAV low woke us up. Wait to see if we
   // get a HSK low, if so, drop our HSK and then proceed.
@@ -74,5 +82,3 @@ void sleep_the_system( void )
   return;
 }
 #endif
-
-

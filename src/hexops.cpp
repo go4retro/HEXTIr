@@ -48,17 +48,6 @@ uint8_t hex_get_data(uint8_t *buf, uint16_t len) {
 }
 
 
-uint8_t hex_get_options( pab_t pab ) {
-  uint8_t rc;
-
-  rc = hex_get_data(buffer, pab.datalen);
-  if(rc == HEXERR_SUCCESS) {
-    buffer[ pab.datalen + 1 ] = 0;
-  }
-  return rc;
-}
-
-
 void hex_eat_it(uint16_t length, uint8_t status )
 {
   uint16_t i = 0;
@@ -97,4 +86,3 @@ uint8_t hex_null( __attribute__((unused)) pab_t pab ) {
     ;
   return HEXERR_SUCCESS;
 }
-

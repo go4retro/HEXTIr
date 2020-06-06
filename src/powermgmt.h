@@ -30,6 +30,8 @@ extern "C"{
 void wakeUp(void);
 void sleep_the_system( void );
 
+#else
+#define sleep_the_system()  do {} while (0)
 #endif
 
 

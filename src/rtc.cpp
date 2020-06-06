@@ -144,7 +144,7 @@ void rtc_register(registry_t *registry) {
   
   registry->num_devices++;
   registry->entry[ i ].device_code_start = RTC_DEV;
-  registry->entry[ i ].device_code_end = RTC_DEV + 9; // support 230-239 as device codes
+  registry->entry[ i ].device_code_end = MAX_RTC; // support 230-239 as device codes
   registry->entry[ i ].operation = (cmd_proc *)&fn_table;
   registry->entry[ i ].command = (uint8_t *)&op_table;
 #endif

@@ -42,6 +42,7 @@ static uint8_t hex_ser_open(pab_t pab) {
   uint8_t  att;
 
   len = 0;
+  memset( buffer, 0, sizeof(buffer) );
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
   {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
@@ -128,7 +129,7 @@ static uint8_t hex_ser_read(pab_t pab) {
     if ( ser_open & OPENMODE_READ ) {
       // send how much we are going to send
       rc = transmit_word( bcount );
-      //timer_check(0);
+
       // while we have data remaining to send.
       while ( bcount && rc == HEXERR_SUCCESS ) {
 
@@ -259,7 +260,7 @@ void ser_register(registry_t *registry) {
   
   registry->num_devices++;
   registry->entry[ i ].device_code_start = SER_DEV;
-  registry->entry[ i ].device_code_end = SER_DEV + 3; // support 20, 21, 22, 23 as device codes
+  registry->entry[ i ].device_code_end = MAX_SER; // support 20, 21, 22, 23 as device codes
   registry->entry[ i ].operation = (cmd_proc *)&fn_table;
   registry->entry[ i ].command = (uint8_t *)&op_table;
   return;
@@ -283,4 +284,3 @@ void ser_init(void) {
   ser_open = FALSE;
 #endif
 }
-
