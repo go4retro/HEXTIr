@@ -33,7 +33,7 @@
 #include "registry.h"
 #include "rtc.h"
 #include "serial.h"
-#include "swuart.h"
+//#include "swuart.h"
 #include "timer.h"
 
 #ifdef ARDUINO
