@@ -46,7 +46,6 @@ typedef struct _pab_raw_t {
 #define FILEATTR_DISPLAY  8
 
 uint8_t hex_get_data(uint8_t buf[256], uint16_t len);
-uint8_t hex_get_options( pab_t pab );
 void hex_eat_it(uint16_t length, uint8_t status );
 uint8_t hex_unsupported(pab_t pab);
 uint8_t hex_null( __attribute__((unused)) pab_t pab );

@@ -42,6 +42,7 @@ static uint8_t hex_ser_open(pab_t pab) {
   uint8_t  att;
 
   len = 0;
+  memset( buffer, 0, sizeof(buffer) );
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
   {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
