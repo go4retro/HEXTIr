@@ -145,7 +145,7 @@ static uint8_t hex_cfg_set(pab_t pab) {
     addresses[ i++ ] = 0;
   }
 
-  if ( hex_get_options(pab) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_data(buffer,pab.datalen) == HEXSTAT_SUCCESS ) {
     len = pab.datalen;
     /* our "data" to parse begins at buffer[0] and is consists of 'len' bytes. */
     p = (char *)&buffer[0];
@@ -292,6 +292,49 @@ static uint8_t hex_cfg_get(pab_t pab) {
   return HEXERR_BAV;
 }
 
+static uint8_t hex_cfg_getmask74( __attribute__((unused)) pab_t pab ) {
+  uint8_t rc = our_support_mask();
+  hex_send_final_response( rc );  // we return the mask as our status for TI-74
+  return HEXERR_SUCCESS;
+}
+
+/*
+ * common support code for incrementing device codes for various supported
+ * peripherals, using only the simplest form of the CALL IO() routine.
+ *   
+ *   CALL IO( device, command, status ) - available on both CC-40 and TI-74.
+ *   The more complex form sending PAB$ is only available on CC-40.  TI-74
+ *   has a much simpler use form and cannot do the more advanced PAB structures.
+ *   
+ */
+static uint8_t hex_cfg_inc_common( uint8_t index ) {
+  uint8_t rc = 0;
+  if ( our_support_mask() & (1 << index) ) {
+    rc = device_address[ index ];
+    rc = ( rc >= pgm_read_byte( &high_device_address[ index ] ) ) ? pgm_read_byte( &low_device_address[ index ] ) : rc + 1;
+    device_address[ index ] = rc;
+  }
+  hex_send_final_response( rc );
+  return HEXERR_SUCCESS;
+}
+
+static uint8_t hex_cfg_incdrv74( __attribute__((unused)) pab_t pab ) {
+  return hex_cfg_inc_common( DRIVE_GROUP );
+}
+
+static uint8_t hex_cfg_incprn74( __attribute__((unused)) pab_t pab ) {
+  return hex_cfg_inc_common( PRINTER_GROUP );
+}
+
+static uint8_t hex_cfg_incser74( __attribute__((unused)) pab_t pab ) {
+  return hex_cfg_inc_common( SERIAL_GROUP );
+}
+
+static uint8_t hex_cfg_incrtc74( __attribute__((unused)) pab_t pab ) {
+  return hex_cfg_inc_common( CLOCK_GROUP );
+}
+
+
 /*
    hex_cfg_reset() -
    handle the reset commad if directed to us.
@@ -310,12 +353,24 @@ static uint8_t hex_cfg_reset( pab_t pab) {
 #define HEXCMD_GETMASK     202
 #define HEXCMD_READCFG     203
 #define HEXCMD_SETCFG      204
+#define HEXCMD_GETMASK74   205
+#define HEXCMD_INCDRV74    206
+#define HEXCMD_INCPRN74    207
+#define HEXCMD_INCSER74    208
+#define HEXCMD_INCRTC74    209
+
+
 
 
 static const cmd_proc fn_table[] PROGMEM = {
   hex_cfg_getmask,
   hex_cfg_get,
   hex_cfg_set,
+  hex_cfg_getmask74,
+  hex_cfg_incdrv74,
+  hex_cfg_incprn74,
+  hex_cfg_incser74,
+  hex_cfg_incrtc74,
   hex_cfg_reset,
   NULL // end of table.
 };
@@ -325,6 +380,11 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_GETMASK,
   HEXCMD_READCFG,
   HEXCMD_SETCFG,
+  HEXCMD_GETMASK74,
+  HEXCMD_INCDRV74,
+  HEXCMD_INCPRN74,
+  HEXCMD_INCSER74,
+  HEXCMD_INCRTC74,
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
