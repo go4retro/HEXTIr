@@ -75,6 +75,7 @@ static uint8_t hex_ser_open(pab_t pab) {
         transmit_word( len );
         transmit_word( 0 );
         transmit_byte( HEXSTAT_SUCCESS );
+        hex_finish();
         return HEXERR_SUCCESS;
       } else {
         att = HEXSTAT_ATTR_ERR;
