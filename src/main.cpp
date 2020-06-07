@@ -70,6 +70,7 @@ static uint8_t hex_reset_bus(pab_t pab) {
     prn_reset();
     ser_reset();
     rtc_reset();
+    cfg_reset();
   }
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();

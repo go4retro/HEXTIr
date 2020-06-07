@@ -30,6 +30,7 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
+
 // Global references
 extern uint8_t buffer[BUFSIZE];
 //
@@ -88,6 +89,12 @@ static const uint8_t high_device_address[ MAX_REGISTRY - 1 ] PROGMEM = {
 
 
 /*
+ * Configuration port open status, 0 = closed.
+ */
+static volatile uint8_t cfg_open = 0;
+
+
+/*
     Make our supported group mask available to callers.
     This data (our supported groups) is built during compile time
     and stored in flash.  does not need to be in eeprom though.
@@ -97,23 +104,77 @@ static inline uint8_t our_support_mask(void) {
 }
 
 
+
+
 /*
-   hex_cfg_getmask() -
-   returns the current configuration mask indicating which peripheral
-   groups are currently supported.
+   hex_cfg_open() -
+
+   Open the configuration device to allow reconfiguration
+   of the supported peripheral's addresses.
+
+   If mask is retrieved via command, the bit mask values 
+   tell which peripheral(s) are supported by the system.
+   
+   REC 0 = drive
+   REC 1 = printer
+   REC 2 = serial
+   REC 3 = clock
+   REC 4 = unused/reserved
+   REC 5 = unused/reserved
+   REC 6 = unused/reserved
+
+   OPEN #n,"222",RELATIVE[,INPUT | OUTPUT | UPDATE]
+   INPUT #1,REC n,A$
+   PRINT #1,REC n,A$
+   CALL IO(222,238,STATUS) ! 238 = command to update EEPROM with current data
+   CALL IO(222,202,STATUS) ! 202 = command to retrieve support mask (tells us which devices are supported) STATUS=mask
+   CLOSE #1
 */
-static uint8_t hex_cfg_getmask(pab_t pab) {
+static uint8_t hex_cfg_open( pab_t pab ) {
+  uint16_t len = 0;
+  uint8_t  att = 0;
+  uint8_t  rc;
+
+  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
+    len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
+    att = buffer[ 2 ];
+  } else {
+    hex_release_bus();
+    return HEXERR_BAV; // BAV ERR.
+  }
+
+  if ( cfg_open ) {
+    rc = HEXSTAT_ALREADY_OPEN;
+  } else {
+    if ( att & OPENMODE_RELATIVE ) { // we have to be opened in RELATIVE mode.
+      if ( (att & OPENMODE_READ | OPENMODE_WRITE) != 0 ) { // append NOT allowed.
+        if ( !( att & (OPENMODE_INTERNAL | OPENMODE_FIXED) ) ) { // internal and fixed are illegal.
+          cfg_open = att; // we're open for use.
+          if ( !len ) {
+            len = sizeof(buffer);
+          }
+          rc = HEXSTAT_SUCCESS;
+        } else {
+          rc = HEXSTAT_FILE_TYPE_INT_DISP_ERR;
+        }
+      } else {
+        rc = HEXSTAT_APPEND_MODE_ERR;
+      }
+    } else {
+      rc = HEXSTAT_FILE_TYPE_ERR;
+    }
+  }
   if ( !hex_is_bav() ) {
-    // we should only be asked to send one byte.
-    if ( pab.buflen == 1 ) {
-      transmit_word( 1 );
-      transmit_byte( our_support_mask() );
-      transmit_byte( HEXSTAT_SUCCESS );
+    if ( rc == HEXSTAT_SUCCESS ) {
+      transmit_word( 4 );
+      transmit_word( len );
+      transmit_word( 0 );      // position at record 0
+      transmit_byte( HEXERR_SUCCESS );
       hex_finish();
     } else {
-      hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
+      hex_send_final_response( rc );
     }
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
   return HEXERR_BAV;
@@ -121,37 +182,126 @@ static uint8_t hex_cfg_getmask(pab_t pab) {
 
 
 /*
-   hex_cfg_set() -
-   receives a set of options consisting of a string buffer with option
-   codes and new device numbers.  Parse and check for correct range of
-   valid device numbers for a given group. Settings are separated by
-   commas...
-   "D=100,P=12,S=20,C=233" : sets DISK DRIVE to device 100, Printer
-   to device 12, serial port to device 20, and clock to device 233.
+ * hex_cfg_close() - 
+ * Close an open configuration port
+ */
+static uint8_t hex_cfg_close( pab_t pab ) {
+  uint8_t rc = HEXSTAT_SUCCESS;
 
-   This assumes the support mask has bit 0 set to 1 (disk group),
-   bit 1 set to 1, printer group, bit 2 set to 1, serial group, and
-   bit 3 set to 1, clock group.  bit 7 will be the configuration device
-*/
-static uint8_t hex_cfg_set(pab_t pab) {
+  if ( cfg_open ) {
+    cfg_open = 0;
+  } else {
+    rc = HEXSTAT_NOT_OPEN;
+  }
+
+  if ( !hex_is_bav() ) {
+    hex_send_final_response( rc );
+    return HEXSTAT_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
+
+
+/*
+ * hex_cfg_read() - 
+ * Reads the specified RECORD from configuration as
+ * given by the pab.record field.  Response is in form
+ * of a string such as 'D=100' or 'P=12'.
+ * 
+ */
+static uint8_t hex_cfg_read( pab_t pab ) {
+  uint16_t len = 0;
+  uint8_t mask = our_support_mask();
+  uint8_t  rc = HEXSTAT_SUCCESS;
+  uint8_t  i = 0;
+  uint8_t  dev;
+
+  if ( !hex_is_bav() ) {
+    if ( ( cfg_open & (OPENMODE_READ | OPENMODE_RELATIVE) ) == (OPENMODE_READ | OPENMODE_RELATIVE) ) {
+      if ( pab.record > (MAX_REGISTRY - 1) ) {
+        rc = HEXSTAT_EOF;
+      } else {
+        memset((char*)buffer, 0, sizeof(buffer));
+        if (( (1 << pab.record ) & mask ) != 0 ) {
+          buffer[ len++ ] = pgm_read_byte( &config_option[ pab.record ] );
+          buffer[ len++ ] = '=';
+          dev = device_address[ pab.record ];
+          itoa( dev, (char *)&buffer[ len ], 10 ) ;
+          len = strlen((char *)buffer);
+        }
+        rc = HEXSTAT_SUCCESS;
+      }
+    } else {
+      if ( cfg_open & OPENMODE_READ  ) {
+        rc = HEXSTAT_INPUT_MODE_ERR;
+      } else if ( cfg_open ) {
+        rc = HEXSTAT_NOT_READ;
+      } else {
+        rc = HEXSTAT_NOT_OPEN;
+      }
+    }
+    if ( len && rc == HEXSTAT_SUCCESS ) {
+      transmit_word( len );
+      for ( i = 0; i < len; i++ ) {
+        transmit_byte( buffer[ i ] );
+      }
+      transmit_byte( rc );
+      hex_finish();
+      return HEXSTAT_SUCCESS;
+    } else {
+      hex_send_final_response( rc );
+      return HEXSTAT_SUCCESS;
+    }
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
+
+
+/*
+ * hex_cfg_restore() -
+ * minimal "restore" support.
+ */
+static uint8_t hex_cfg_restore( pab_t pab ) {
+  uint8_t rc;
+
+  if ( !hex_is_bav() ) {
+    if ( cfg_open ) {
+      rc = HEXSTAT_SUCCESS;
+    } else {
+      rc = HEXSTAT_NOT_OPEN;
+    }
+    hex_send_final_response( rc );
+    return HEXSTAT_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
+
+
+/*
+ * hex_cfg_write() -
+ * write and update address in use for specified peripheral by
+ * record number provided in pab.record and the data buffer, 
+ * which must contain an appropriate option string for the
+ * given device, matching format of the read operation.
+ * 
+ * D=100, P=12, etc.
+ * 
+ * Record number in pab specifies which peripheral to affect.
+ */
+static uint8_t hex_cfg_write( pab_t pab ) {
   char    *p = NULL;
   char    *s;
-  uint16_t len = 0;
-  uint8_t  addresses[MAX_REGISTRY - 1]; // we can parse up to 7 new addresses.
   uint8_t  ch;
   uint8_t  i;
   uint8_t  rc = HEXSTAT_SUCCESS;
-  uint8_t  addr;
+  uint8_t  addr = 0;
   uint8_t  change_mask = 0;
 
-  len = 0;
-  i = 0;
-  while ( i < MAX_REGISTRY - 1 ) {
-    addresses[ i++ ] = 0;
-  }
 
-  if ( hex_get_data(buffer,pab.datalen) == HEXSTAT_SUCCESS ) {
-    len = pab.datalen;
+  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
     /* our "data" to parse begins at buffer[0] and is consists of 'len' bytes. */
     p = (char *)&buffer[0];
     s = p;
@@ -160,74 +310,66 @@ static uint8_t hex_cfg_set(pab_t pab) {
     return HEXERR_BAV; // BAV ERR.
   }
 
-  while ( (( (unsigned int)p - (unsigned int)s) < len ) && ( rc == HEXSTAT_SUCCESS )) {
+  if ( (cfg_open & (OPENMODE_WRITE | OPENMODE_RELATIVE) ) == (OPENMODE_WRITE | OPENMODE_RELATIVE) ) {
     ch = *p++;
     if ( *p++ == '=' ) {
       ch &= ~0x20; // map to uppercase if lower.
-      // Now, is this a valid option?
-      i = 0;
-      do
-      {
-        if ( ch == (uint8_t)pgm_read_byte( &config_option[ i ] )) {
-          break;
-        }
-        i++;
-      } while ( i < MAX_REGISTRY - 1 );
-
-      if ( i >= MAX_REGISTRY - 1 ) {
-        rc = HEXSTAT_OPTION_ERR; // bad or invalid option
+      // Now, is this a valid option given the record we are writing?
+      if ( ch != (uint8_t)pgm_read_byte( &config_option[ pab.record ] )) {
+        rc = HEXSTAT_OPTION_ERR; // bad or invalid option for this record
       } else {
-        // i is the index to our "group" now.
-        // p should be pointing to digits that represent the new address.
-        addr = 0;
         // parse digits to get new address; then check to see if the address is valid for
         // the selected device.  If so, mark the change mask and store the address in our
         // change array.
         // we do not change any addresses until the entire message is parsed.
-
+        // skip any leading spaces if present
+        while ( *p == ' ' ) {
+          p++;
+        }
         while ( isdigit( *p ) ) {
           addr = ( addr * 10 ) + ((*p++) - '0');
         }
-        
-        if ( *p == ',' ) {
+        // and skip any trailing spaces if present
+        while ( *p == ' ' ) {
           p++;
-        } else if ( (( (unsigned int)p - (unsigned int)s) < len ) ) {
+        }
+        // At this point, we should be at end of input data...
+        if ( (( (unsigned int)p - (unsigned int)s) < pab.datalen ) ) {
           rc = HEXSTAT_OPTION_ERR;
         }
-        addresses[ i ] = addr; // new address
-        change_mask |= (1 << i); // and our adress "group" number.
+        change_mask = (1 << pab.record); // and our address "group" number.
       }
     } else {
       rc = HEXSTAT_OPTION_ERR;
     }
+
     // Done parsing incoming options.  If no error, we can now see
     // if the addresses we were given are any good.
     if ( rc == HEXSTAT_SUCCESS ) {
       if ( change_mask != 0 ) {
-        rc = our_support_mask() & change_mask; // check to ensure that we are not trying to set address on unsupported periperhals
-        if ( rc == change_mask ) {
-          rc = HEXSTAT_SUCCESS;
-          // continue
-          i = 0;
-          do
-          {
-            if ( (1 << i) & change_mask ) {
-              if ( addresses[ i ] >= (uint8_t)pgm_read_byte( &low_device_address[ i ] ) &&
-                   addresses[ i ] <= (uint8_t)pgm_read_byte( &high_device_address[ i ] ) )
-              {
-                device_address[ i ] = addresses[ i ]; // this will be a structure that will be updated to EEPROM at some point.
-              } else {
-                rc = HEXSTAT_OPTION_ERR;
-              }
+        rc = HEXSTAT_OPTION_ERR;
+        ch = our_support_mask() & change_mask; // check to ensure that we are not trying to set address on unsupported periperhals
+        if ( ch == change_mask ) {
+          if ( (1 << pab.record) & change_mask ) {
+            if ( addr >= (uint8_t)pgm_read_byte( &low_device_address[ pab.record ] ) &&
+                 addr <= (uint8_t)pgm_read_byte( &high_device_address[ pab.record ] ) )
+            {
+              device_address[ pab.record ] = addr; // this will be a structure that will be updated to EEPROM at some point.
+              rc = HEXSTAT_SUCCESS;
             }
-            i++;
-          } while ( i < MAX_REGISTRY - 1 && rc == HEXSTAT_SUCCESS );
-        } else {
-          rc = HEXSTAT_DEVICE_ERR;
+          }
         }
       } else {
         rc = HEXSTAT_DATA_INVALID;
       }
+    }
+  } else {
+    if ( cfg_open & OPENMODE_WRITE ) {
+      rc = HEXSTAT_OUTPUT_MODE_ERR;
+    } else if ( cfg_open ) {
+      rc = HEXSTAT_NOT_WRITE;
+    } else {
+      rc = HEXSTAT_NOT_OPEN;
     }
   }
   if ( !hex_is_bav() ) {
@@ -239,114 +381,51 @@ static uint8_t hex_cfg_set(pab_t pab) {
 }
 
 
-
 /*
-   hex_cfg_get() -
-   This routine reads the current address configuation
-   and sends a configuartion string to the host in the
-   form of 'D=xxx,P=xxx,S=xxx,R=xxx' for the supported
-   device(s) in the system, where the xxx is the current
-   address assigned to that device.  The receiving buffer
-   must be large enough to receive the entire message
-   or a buffer size error will be returned.
+   hex_cfg_getmask() -
+   returns the current configuration mask indicating which peripheral
+   groups are currently supported.
 */
-static uint8_t hex_cfg_get(pab_t pab) {
-  uint8_t mask = our_support_mask();
-  uint8_t i = 0;
-  uint8_t index = 0;
-  uint8_t dev;
-  uint8_t val;
+static uint8_t hex_cfg_getmask(pab_t pab) {
+  uint8_t mask;
 
   if ( !hex_is_bav() ) {
-    memset((char*)buffer,0,sizeof(buffer));
-    for (i = 0; i < MAX_REGISTRY - 1; i++ ) {
-      if (( (1 << i) & mask ) != 0 ) {
-        if ( index ) {
-          buffer[index++] = ',';
-        }
-        buffer[ index++ ] = pgm_read_byte( &config_option[ i ] );
-        buffer[ index++ ] = '=';
-        dev = device_address[ i ];
-        itoa( dev, (char *)&buffer[ index ], 10 );
-        index = strlen((char*)buffer );
-      }
-    }
-    if ( index <= pab.buflen ) {
-      transmit_word( index ); // number of bytes in buffer to send
-      for (i = 0; i < index; i++ ) {
-        transmit_byte(buffer[i]);
-      }
+    // we should only be asked to send one byte; if zero bytes, then send mask as return status
+    // if > 1 byte, send buffer size error response.
+    mask = our_support_mask();
+    if ( pab.buflen == 1 ) {
+      transmit_word( 1 );
+      transmit_byte( mask );
       transmit_byte( HEXSTAT_SUCCESS );
+      hex_finish();
     } else {
-      hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
-      return HEXERR_SUCCESS;
+      // regardless of buffer size sent, respond with the mask value as status.
+      hex_send_final_response( mask );
     }
+    return HEXERR_SUCCESS;
   }
-  hex_finish(); // bav error, OR normal exit after sending data.
+  hex_finish();
   return HEXERR_BAV;
 }
 
 
-static uint8_t hex_cfg_getmask74( __attribute__((unused)) pab_t pab ) {
-  uint8_t rc = our_support_mask();
-  hex_send_final_response( rc );  // we return the mask as our status for TI-74
-  return HEXERR_SUCCESS;
-}
-
-
 /*
- * common support code for incrementing device codes for various supported
- * peripherals, using only the simplest form of the CALL IO() routine.
- *   
- *   CALL IO( device, command, status ) - available on both CC-40 and TI-74.
- *   The more complex form sending PAB$ is only available on CC-40.  TI-74
- *   has a much simpler use form and cannot do the more advanced PAB structures.
- *   
+ * hex_cfg_write_eeprom() -
+ * update the content of EEPROM with the current device address block
+ * of supported peripherals.
  */
-static uint8_t hex_cfg_inc_common( uint8_t index ) {
-  uint8_t rc = 0;
-  if ( our_support_mask() & (1 << index) ) {
-    rc = device_address[ index ];
-    rc = ( rc >= pgm_read_byte( &high_device_address[ index ] ) ) ? pgm_read_byte( &low_device_address[ index ] ) : rc + 1;
-    device_address[ index ] = rc;
-  }
-  hex_send_final_response( rc );  // RC=0: nothing done.  RC !=0 : status returned is the "newly" updated device address.
-  return HEXERR_SUCCESS;
-}
-
-
-static uint8_t hex_cfg_incdrv74( __attribute__((unused)) pab_t pab ) {
-  return hex_cfg_inc_common( DRIVE_GROUP );
-}
-
-
-static uint8_t hex_cfg_incprn74( __attribute__((unused)) pab_t pab ) {
-  return hex_cfg_inc_common( PRINTER_GROUP );
-}
-
-
-static uint8_t hex_cfg_incser74( __attribute__((unused)) pab_t pab ) {
-  return hex_cfg_inc_common( SERIAL_GROUP );
-}
-
-
-static uint8_t hex_cfg_incrtc74( __attribute__((unused)) pab_t pab ) {
-  return hex_cfg_inc_common( CLOCK_GROUP );
-}
-
-
 static uint8_t hex_cfg_write_eeprom( __attribute__((unused)) pab_t pab ) {
   // TODO: Write the 'device_address' data block to EEPROM.
   hex_send_final_response( HEXSTAT_SUCCESS );
   return HEXSTAT_SUCCESS;
 }
 
-
 /*
    hex_cfg_reset() -
    handle the reset commad if directed to us.
 */
 static uint8_t hex_cfg_reset( pab_t pab) {
+  cfg_open = 0;
   return hex_null(pab);
 }
 
@@ -358,42 +437,35 @@ static uint8_t hex_cfg_reset( pab_t pab) {
 // These are custom commands associated with the
 // configuration address of this device.
 
-#define HEXCMD_GETMASK     202  // read support mask
-#define HEXCMD_READCFG     203  // read current setup configuration
-#define HEXCMD_SETCFG      204  // set new setup configuration
-#define HEXCMD_GETMASK74   205  // read support mask from TI-74 CALL IO
-#define HEXCMD_INCDRV74    206  // increment drive address (TI-74)
-#define HEXCMD_INCPRN74    207
-#define HEXCMD_INCSER74    208
-#define HEXCMD_INCRTC74    209
-#define HEXCMD_WRITE_EE    210  // update current address settings to EEPROM
+#define HEXCMD_GETMASK     237  // read support mask = EDh
+#define HEXCMD_WRITE_EE    238  // update current address settings to EEPROM 238d = EEh
 
 
 static const cmd_proc fn_table[] PROGMEM = {
+  hex_cfg_open,
+  hex_cfg_close,
+  hex_cfg_read,
+  hex_cfg_write,
+  hex_cfg_restore,
+  //
   hex_cfg_getmask,
-  hex_cfg_get,
-  hex_cfg_set,
-  hex_cfg_getmask74,
-  hex_cfg_incdrv74,
-  hex_cfg_incprn74,
-  hex_cfg_incser74,
-  hex_cfg_incrtc74,
   hex_cfg_write_eeprom,
+  //
   hex_cfg_reset,
   NULL // end of table.
 };
 
 
 static const uint8_t op_table[] PROGMEM = {
+  HEXCMD_OPEN,
+  HEXCMD_CLOSE,
+  HEXCMD_READ,
+  HEXCMD_WRITE,
+  HEXCMD_RESTORE,
+  //
   HEXCMD_GETMASK,
-  HEXCMD_READCFG,
-  HEXCMD_SETCFG,
-  HEXCMD_GETMASK74,
-  HEXCMD_INCDRV74,
-  HEXCMD_INCPRN74,
-  HEXCMD_INCSER74,
-  HEXCMD_INCRTC74,
   HEXCMD_WRITE_EE, // write current RAM-based configuration to EEPROM.
+  //
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
@@ -423,16 +495,19 @@ void cfg_register(registry_t *registry) {
 */
 void cfg_reset( void )
 {
+  cfg_open = 0;
   return;
 }
 
 
 void cfg_init( void )
 {
+  cfg_open = 0;
 
   // TODO: read the EEPROM configuration, if it exists, into the 'device_address' block
   // loading our current default device addresses for supported devices in the build.
   // Load only the addresses for the devices supported by the build configuration.
   // call 'our_support_mask()' to get this information.
+  
   return;
 }
