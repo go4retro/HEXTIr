@@ -227,6 +227,18 @@ static inline void wakeup_pin_init(void) {
   DDRD &= ~_BV(PIN2);
 }
 
+#define POWER_MGMT_HANDLER  INT0_vect
+
+static inline void pwr_irq_enable(void) {
+  EICRA |= _BV(ISC01);  // trigger power enable on falling IRQ.
+  EIMSK |= _BV(INT0);   // turn on IRQ
+}
+
+static inline void pwr_irq_disable(void) {
+  EIMSK &= ~_BV(INT0);   // turn off IRQ
+}
+
+
 #elif CONFIG_HARDWARE_VARIANT == 4
 
 /* ---------- Hardware configuration: Old HEXTIr Arduino ---------- */

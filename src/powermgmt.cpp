@@ -34,7 +34,6 @@
 
 volatile uint8_t  led_pwr_enable = 0;
 
-#ifndef ARDUINO
 
 ISR(POWER_MGMT_HANDLER) {
   sleep_disable();
@@ -43,26 +42,11 @@ ISR(POWER_MGMT_HANDLER) {
   led_pwr_enable = 0xff;
 }
 
-#else
-void wakeUp(void)
-{
-  sleep_disable();
-  power_all_enable();
-  detachInterrupt(0);
-  led_pwr_enable = 0xff;
-}
-#endif
-
 
 // Power use reduction
 void sleep_the_system( void )
 {
-#ifdef ARDUINO
-  // attach interrupt for wakeup to D2
-  attachInterrupt(0, wakeUp, LOW );
-#else
   pwr_irq_enable();
-#endif
   set_sleep_mode( SLEEP_MODE_STANDBY ); // cuts measured current use in about half or so...
   cli();
   led_pwr_enable = 0;
@@ -70,10 +54,9 @@ void sleep_the_system( void )
   // The sleep_bod_disable operation may not be available on all targets!!!
   sleep_bod_disable();
   sei();
-  
   leds_sleep(); // make sure LED is not lit when we sleep.
-  
   sleep_cpu();
+
   // BAV low woke us up. Wait to see if we
   // get a HSK low, if so, drop our HSK and then proceed.
   // We do this here, because HSK must be held low after transmitter pulls it low
@@ -81,4 +64,5 @@ void sleep_the_system( void )
   hex_capture_hsk();
   return;
 }
+
 #endif

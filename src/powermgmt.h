@@ -27,7 +27,6 @@ extern "C"{
 
 #ifdef INCLUDE_POWERMGMT
 
-void wakeUp(void);
 void sleep_the_system( void );
 
 #else
