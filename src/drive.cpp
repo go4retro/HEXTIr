@@ -744,17 +744,53 @@ static uint8_t hex_drv_close(pab_t pab) {
   return HEXERR_BAV;
 }
 
+/*
+   hex_drv_restore() -
+   reset file to beginning
+   valid for update, input mode open files.
+*/
+static uint8_t hex_drv_restore( pab_t pab ) {
+  uint8_t  rc = HEXSTAT_SUCCESS;
+  file_t*  file = NULL;
+  BYTE     res = 0;
+
+  if ( open_files ) {
+    file = find_lun(pab.lun);
+    if ( file == NULL ) {
+      rc = HEXSTAT_DEVICE_ERR;
+    }
+  } else {
+    rc = HEXSTAT_NOT_OPEN;
+  }
+
+  if (!hex_is_bav() ) {
+    if ( rc == HEXSTAT_SUCCESS ) {
+#ifdef ARDUINO
+      // If we are restore on an open directory...rewind to start
+      if ( file->attr & FILEATTR_CATALOG ) {
+        file->fp.rewindDirectory();
+      } else {
+        // if we are a normal file, rewind to starting position.
+        file->fp.seek( 0 ); // restore back to start of file.
+      }
+#else
+      rc = HEXSTAT_UNSUPP_CMD;
+#endif
+    }
+    hex_send_final_response( rc );
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
 
 /*
    hex_drv_delete() -
    delete a file from the SD card.
 */
 static uint8_t hex_drv_delete(pab_t pab) {
-  uint8_t rc = HEXERR_SUCCESS;
+  uint8_t rc = HEXSTAT_SUCCESS;
 #ifndef ARDUINO
   FRESULT fr;
-#else
-  //uint8_t sd_was_not_inited = 0;
 #endif
 
   uart_putc('>');
@@ -772,7 +808,7 @@ static uint8_t hex_drv_delete(pab_t pab) {
   // test if it is really a file, or if it is a directory.
   // But for now; this'll do.
 
-  if ( rc == HEXERR_SUCCESS
+  if ( rc == HEXSTAT_SUCCESS
 #ifdef ARDUINO
        && fs_initialized
 #endif
@@ -869,6 +905,7 @@ static const cmd_proc fn_table[] PROGMEM = {
   hex_drv_close,
   hex_drv_read,
   hex_drv_write,
+  hex_drv_restore,
   hex_drv_delete,
   hex_drv_verify,
   hex_drv_reset,
@@ -881,6 +918,7 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_CLOSE,
   HEXCMD_READ,
   HEXCMD_WRITE,
+  HEXCMD_RESTORE,
   HEXCMD_DELETE,
   HEXCMD_VERIFY,
   HEXCMD_RESET_BUS,
