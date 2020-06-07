@@ -19,16 +19,20 @@
 */
 
 #include "config.h"
+#include "configure.h"
 #include "hexbus.h"
 #include "led.h"
 #include "timer.h"
 #include "ff.h"
 #include "drive.h"
+#include "eeprom.h"
 #include "serial.h"
 #include "rtc.h"
 #include "printer.h"
 #include "configure.h"
 #include "registry.h"
+
+extern config_t * config;
 
 /*
    setup() - In Arduino, this will be run once automatically.
@@ -40,13 +44,14 @@ void setup(void) {
   hex_init();
   leds_init();
   timer_init();
-  //device_hw_address_init();
   drv_init();
   ser_init();
   rtc_init();
   prn_init();
   cfg_init();
-  
+
+  config = ee_get_config();
+
   sei();
 
 #ifdef INCLUDE_PRINTER

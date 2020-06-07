@@ -76,6 +76,9 @@ SRC += serial.c
 SRC += rtc.c
 SRC += printer.c
 SRC += powermgmt.c
+SRC += eeprom.c
+SRC += configure.c
+#SRC += swuart.c
 
 
 ifneq ($(CONFIG_NO_SD),y)

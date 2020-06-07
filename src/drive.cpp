@@ -502,7 +502,9 @@ static uint8_t hex_drv_open(pab_t pab) {
   uart_putc('>');
 
   len = 0;
+
   memset(buffer, 0, sizeof(buffer));
+
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
@@ -570,7 +572,6 @@ static uint8_t hex_drv_open(pab_t pab) {
         }
 
 #ifdef ARDUINO
-
         if ( ( att & (OPENMODE_READ | OPENMODE_WRITE) ) == OPENMODE_WRITE ) {
           // For now, open for write only, remove pre-existing file.
           if ( SD.exists( (const char *)&buffer[3] ) ) {
@@ -586,13 +587,11 @@ static uint8_t hex_drv_open(pab_t pab) {
             res = FR_DENIED;
           }
         }
-
 #else
         // TODO: manage open of a directory if file->attr == FILEATTR_CATALOG
         if ( pab.datalen < BUFSIZE - 1 ) {
           res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
         }
-
 #endif
 
         // common.
@@ -755,12 +754,13 @@ static uint8_t hex_drv_delete(pab_t pab) {
 #ifndef ARDUINO
   FRESULT fr;
 #else
-  uint8_t sd_was_not_inited = 0;
+  //uint8_t sd_was_not_inited = 0;
 #endif
 
   uart_putc('>');
 
   memset(buffer, 0, sizeof(buffer));
+
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
@@ -771,35 +771,32 @@ static uint8_t hex_drv_delete(pab_t pab) {
   // the file is open or not, and test for that; also should
   // test if it is really a file, or if it is a directory.
   // But for now; this'll do.
-#ifdef ARDUINO
-  if ( !fs_initialized ) { // TODO why is this done here, when it is done outside for all other functions?
-    if ( SD.begin(chipSelect) ) {
-      fs_initialized = 1;
-      sd_was_not_inited = 1;
-    } else {
-      rc = HEXSTAT_DEVICE_ERR;
-    }
-  }
-#endif
+
   if ( rc == HEXERR_SUCCESS
 #ifdef ARDUINO
        && fs_initialized
 #endif
      ) {
-
     // If we did not fill buffer, we have a null at end due to memset before retrieval.
     if ( pab.datalen < BUFSIZE - 1 ) {
 #ifdef ARDUINO
       if ( SD.exists( (const char *)buffer )) {
         if ( SD.remove( (const char *)buffer )) {
           rc = HEXSTAT_SUCCESS;
+          if ( SD.exists((const char*)buffer )) {
+            rc = HEXSTAT_WP_ERR;
+          }
         } else {
-          rc = HEXSTAT_WP_ERR;
+          rc = HEXSTAT_DEVICE_ERR;
         }
       } else {
         rc = HEXSTAT_NOT_FOUND;
       }
-      if ( sd_was_not_inited ) {
+      // Now, if we have no open files, go ahead and shut down SD
+      // We shut down SD when nothing is open so we can detect a card change if there
+      // is no CD logic present.  Once we have known CD logic in place, we don't need
+      // to close SD down, unless we get a CD change (i.e.removal of card or insertion).
+      if ( !open_files ) {
         SD.end();
         fs_initialized = 0;
       }

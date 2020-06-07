@@ -18,6 +18,10 @@
     configure.cpp: Configuration peripheral device functions.
     by s.reid
 */
+
+
+#include <stddef.h>
+#include <avr/pgmspace.h>
 #include "config.h"
 #include "hexbus.h"
 #include "hexops.h"
@@ -180,9 +184,11 @@ static uint8_t hex_cfg_set(pab_t pab) {
         // the selected device.  If so, mark the change mask and store the address in our
         // change array.
         // we do not change any addresses until the entire message is parsed.
+
         while ( isdigit( *p ) ) {
           addr = ( addr * 10 ) + ((*p++) - '0');
         }
+        
         if ( *p == ',' ) {
           p++;
         } else if ( (( (unsigned int)p - (unsigned int)s) < len ) ) {
@@ -231,6 +237,7 @@ static uint8_t hex_cfg_set(pab_t pab) {
   hex_finish();
   return HEXERR_BAV;
 }
+
 
 
 /*
@@ -333,6 +340,8 @@ static uint8_t hex_cfg_write_eeprom( __attribute__((unused)) pab_t pab ) {
   hex_send_final_response( HEXSTAT_SUCCESS );
   return HEXSTAT_SUCCESS;
 }
+
+
 /*
    hex_cfg_reset() -
    handle the reset commad if directed to us.
@@ -348,6 +357,7 @@ static uint8_t hex_cfg_reset( pab_t pab) {
 // Peripheral (3rd party) specific command codes.
 // These are custom commands associated with the
 // configuration address of this device.
+
 #define HEXCMD_GETMASK     202  // read support mask
 #define HEXCMD_READCFG     203  // read current setup configuration
 #define HEXCMD_SETCFG      204  // set new setup configuration
@@ -357,7 +367,6 @@ static uint8_t hex_cfg_reset( pab_t pab) {
 #define HEXCMD_INCSER74    208
 #define HEXCMD_INCRTC74    209
 #define HEXCMD_WRITE_EE    210  // update current address settings to EEPROM
-
 
 
 static const cmd_proc fn_table[] PROGMEM = {
@@ -420,6 +429,7 @@ void cfg_reset( void )
 
 void cfg_init( void )
 {
+
   // TODO: read the EEPROM configuration, if it exists, into the 'device_address' block
   // loading our current default device addresses for supported devices in the build.
   // Load only the addresses for the devices supported by the build configuration.

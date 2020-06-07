@@ -34,14 +34,12 @@
 
 volatile uint8_t  led_pwr_enable = 0;
 
-
 ISR(POWER_MGMT_HANDLER) {
   sleep_disable();
   power_all_enable();
   pwr_irq_disable();
   led_pwr_enable = 0xff;
 }
-
 
 // Power use reduction
 void sleep_the_system( void )
