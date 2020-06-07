@@ -207,7 +207,7 @@ void loop(void) { // Arduino main loop routine.
   ser_init();
   rtc_init();
   prn_init();
-  cfg_init();
+  cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
   
   sei();
 

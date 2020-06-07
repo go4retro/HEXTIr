@@ -82,6 +82,7 @@ static const uint8_t high_device_address[ MAX_REGISTRY - 1 ] PROGMEM = {
   0
 };
 
+
 /*
     Make our supported group mask available to callers.
     This data (our supported groups) is built during compile time
@@ -179,13 +180,9 @@ static uint8_t hex_cfg_set(pab_t pab) {
         // the selected device.  If so, mark the change mask and store the address in our
         // change array.
         // we do not change any addresses until the entire message is parsed.
-        while ( *p >= '0' && *p <= '9' ) {
-          ch = *p - '0';
-          addr *= 10;
-          addr += ch;
-          p++;
+        while ( isdigit( *p ) ) {
+          addr = ( addr * 10 ) + ((*p++) - '0');
         }
-
         if ( *p == ',' ) {
           p++;
         } else if ( (( (unsigned int)p - (unsigned int)s) < len ) ) {
@@ -235,6 +232,7 @@ static uint8_t hex_cfg_set(pab_t pab) {
   return HEXERR_BAV;
 }
 
+
 /*
    hex_cfg_get() -
    This routine reads the current address configuation
@@ -248,38 +246,27 @@ static uint8_t hex_cfg_set(pab_t pab) {
 static uint8_t hex_cfg_get(pab_t pab) {
   uint8_t mask = our_support_mask();
   uint8_t i = 0;
-  uint8_t idx = 0;
+  uint8_t index = 0;
   uint8_t dev;
   uint8_t val;
-  uint8_t mark = 0;
 
   if ( !hex_is_bav() ) {
+    memset((char*)buffer,0,sizeof(buffer));
     for (i = 0; i < MAX_REGISTRY - 1; i++ ) {
       if (( (1 << i) & mask ) != 0 ) {
-        if ( idx ) {
-          buffer[idx++] = ',';
+        if ( index ) {
+          buffer[index++] = ',';
         }
-        buffer[ idx++ ] = pgm_read_byte( &config_option[ i ] );
-        buffer[ idx++ ] = '=';
+        buffer[ index++ ] = pgm_read_byte( &config_option[ i ] );
+        buffer[ index++ ] = '=';
         dev = device_address[ i ];
-        val = dev / 100;
-        if (val != 0 ) {
-          buffer[ idx++ ] = '0' + val;
-          dev %= 100;
-          mark++;
-        }
-        val = dev / 10;
-        if ( val != 0 || mark) {
-          buffer[ idx++ ] = '0' + val;
-          dev %= 10;
-        }
-        buffer[ idx++ ] = '0' + dev;
-        mark = 0;
+        itoa( dev, (char *)&buffer[ index ], 10 );
+        index = strlen((char*)buffer );
       }
     }
-    if ( idx <= pab.buflen ) {
-      transmit_word( idx ); // number of bytes in buffer to send
-      for (i = 0; i < idx; i++ ) {
+    if ( index <= pab.buflen ) {
+      transmit_word( index ); // number of bytes in buffer to send
+      for (i = 0; i < index; i++ ) {
         transmit_byte(buffer[i]);
       }
       transmit_byte( HEXSTAT_SUCCESS );
@@ -292,11 +279,13 @@ static uint8_t hex_cfg_get(pab_t pab) {
   return HEXERR_BAV;
 }
 
+
 static uint8_t hex_cfg_getmask74( __attribute__((unused)) pab_t pab ) {
   uint8_t rc = our_support_mask();
   hex_send_final_response( rc );  // we return the mask as our status for TI-74
   return HEXERR_SUCCESS;
 }
+
 
 /*
  * common support code for incrementing device codes for various supported
@@ -314,27 +303,36 @@ static uint8_t hex_cfg_inc_common( uint8_t index ) {
     rc = ( rc >= pgm_read_byte( &high_device_address[ index ] ) ) ? pgm_read_byte( &low_device_address[ index ] ) : rc + 1;
     device_address[ index ] = rc;
   }
-  hex_send_final_response( rc );
+  hex_send_final_response( rc );  // RC=0: nothing done.  RC !=0 : status returned is the "newly" updated device address.
   return HEXERR_SUCCESS;
 }
+
 
 static uint8_t hex_cfg_incdrv74( __attribute__((unused)) pab_t pab ) {
   return hex_cfg_inc_common( DRIVE_GROUP );
 }
 
+
 static uint8_t hex_cfg_incprn74( __attribute__((unused)) pab_t pab ) {
   return hex_cfg_inc_common( PRINTER_GROUP );
 }
 
+
 static uint8_t hex_cfg_incser74( __attribute__((unused)) pab_t pab ) {
   return hex_cfg_inc_common( SERIAL_GROUP );
 }
+
 
 static uint8_t hex_cfg_incrtc74( __attribute__((unused)) pab_t pab ) {
   return hex_cfg_inc_common( CLOCK_GROUP );
 }
 
 
+static uint8_t hex_cfg_write_eeprom( __attribute__((unused)) pab_t pab ) {
+  // TODO: Write the 'device_address' data block to EEPROM.
+  hex_send_final_response( HEXSTAT_SUCCESS );
+  return HEXSTAT_SUCCESS;
+}
 /*
    hex_cfg_reset() -
    handle the reset commad if directed to us.
@@ -350,15 +348,15 @@ static uint8_t hex_cfg_reset( pab_t pab) {
 // Peripheral (3rd party) specific command codes.
 // These are custom commands associated with the
 // configuration address of this device.
-#define HEXCMD_GETMASK     202
-#define HEXCMD_READCFG     203
-#define HEXCMD_SETCFG      204
-#define HEXCMD_GETMASK74   205
-#define HEXCMD_INCDRV74    206
+#define HEXCMD_GETMASK     202  // read support mask
+#define HEXCMD_READCFG     203  // read current setup configuration
+#define HEXCMD_SETCFG      204  // set new setup configuration
+#define HEXCMD_GETMASK74   205  // read support mask from TI-74 CALL IO
+#define HEXCMD_INCDRV74    206  // increment drive address (TI-74)
 #define HEXCMD_INCPRN74    207
 #define HEXCMD_INCSER74    208
 #define HEXCMD_INCRTC74    209
-
+#define HEXCMD_WRITE_EE    210  // update current address settings to EEPROM
 
 
 
@@ -371,6 +369,7 @@ static const cmd_proc fn_table[] PROGMEM = {
   hex_cfg_incprn74,
   hex_cfg_incser74,
   hex_cfg_incrtc74,
+  hex_cfg_write_eeprom,
   hex_cfg_reset,
   NULL // end of table.
 };
@@ -385,6 +384,7 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_INCPRN74,
   HEXCMD_INCSER74,
   HEXCMD_INCRTC74,
+  HEXCMD_WRITE_EE, // write current RAM-based configuration to EEPROM.
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
@@ -420,5 +420,9 @@ void cfg_reset( void )
 
 void cfg_init( void )
 {
+  // TODO: read the EEPROM configuration, if it exists, into the 'device_address' block
+  // loading our current default device addresses for supported devices in the build.
+  // Load only the addresses for the devices supported by the build configuration.
+  // call 'our_support_mask()' to get this information.
   return;
 }
