@@ -34,41 +34,126 @@ extern uint8_t buffer[BUFSIZE];
 // Global defines
 DS3231            clock_peripheral;       // Our CLOCK : access via the HexBus at device code 233 (E9h = ascii R+T+C)
 volatile uint8_t  rtc_open = 0;
-#endif
 
-
-#ifdef INCLUDE_CLOCK
 /*
-   Open access to RTC module. Begin Wire, Begin DS3231  
+   Open access to RTC module. Begin Wire, Begin DS3231
    WORK IN MAJOR PROGRESS.
    These routines will currently flag an unused parameter 'pab' warning...
 */
-static uint8_t hex_rtc_open(pab_t pab) {
-  if ( !rtc_open ) {
-    Wire.begin();
-    clock_peripheral.setClockMode(false); // 24h
-    rtc_open = 1;
+static uint8_t hex_rtc_open( pab_t pab ) {
+  uint16_t len;
+  uint8_t  att;
+
+  len = 0;
+  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
+  {
+    len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
+    att = buffer[ 2 ];    // tells us open for read, write or both.
+  } else {
+    hex_release_bus();
+    return HEXERR_BAV; // BAV ERR.
   }
-  return HEXERR_SUCCESS;
+
+  if ( !hex_is_bav() ) {
+    if ( !rtc_open ) {
+      if ( att & OPENMODE_READ | OPENMODE_WRITE ) {
+        len = len ? len : sizeof(buffer);
+        Wire.begin();
+        clock_peripheral.setClockMode(false);
+        rtc_open = att;
+        transmit_word( 4 );
+        transmit_word( len );
+        transmit_word( 0 );
+        transmit_byte( HEXSTAT_SUCCESS );
+        hex_finish();
+        return HEXERR_SUCCESS;
+      } else {
+        att = HEXSTAT_ATTR_ERR;
+      }
+    } else {
+      att = HEXSTAT_ALREADY_OPEN;
+    }
+    hex_send_final_response( att );
+    return HEXERR_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
 }
 
 /*
-   Close access to RTC module. Shut down Wire.
+   Close access to RTC module. Shuts down Wire.
 */
 static uint8_t hex_rtc_close(pab_t pab) {
-  rtc_reset();
+  uint8_t rc = HEXSTAT_SUCCESS;
+  if ( rtc_open ) {
+    rtc_reset();
+  } else {
+    rc = HEXSTAT_NOT_OPEN;
+  }
+  hex_send_final_response(rc);
   return HEXERR_SUCCESS;
 }
 
 /*
-   Return time in format YYMMDD_HHMMSS in 24h form.
+   Return time in format YY,MM,DD,HH,MM,SS in 24h form.
    When RTC opened in INPUT or UPDATE mode.
 */
 static uint8_t hex_rtc_read(pab_t pab) {
+  uint16_t len = 0;
+  uint8_t rc = HEXSTAT_SUCCESS;
+  uint8_t i;
+  RTClib RTC;
+  char buf[8];
+
+  memset( (char *)buffer, 0, sizeof(buffer) );
   if ( rtc_open )
   {
+    DateTime now = RTC.now();
+    buf[0] = 0;
 
+    itoa( now.year(), buf, 10 );
+    strcpy((char *)buffer, buf );
+    strcat((char *)buffer, "," );
+    buf[0] = 0;
+
+    itoa( now.month(), buf, 10 );
+    strcpy((char *)buffer, buf );
+    strcat((char *)buffer, "," );
+    buf[0] = 0;
+
+    itoa( now.day(), buf, 10 );
+    strcpy((char *)buffer, buf );
+    strcat((char *)buffer, "," );
+    buf[0] = 0;
+
+    itoa( now.hour(), buf, 10 );
+    strcpy((char *)buffer, buf );
+    strcat((char *)buffer, "," );
+    buf[0] = 0;
+    itoa( now.minute(), buf, 10 );
+    strcpy((char *)buffer, buf );
+    strcat((char *)buffer, "," );
+    buf[0] = 0;
+    itoa( now.second(), buf, 10 );
+    strcpy((char *)buffer, buf );
+    len = strlen( (char *)buffer );
+  } else {
+    rc = HEXSTAT_NOT_OPEN;
   }
+  if ( !hex_is_bav() ) {
+    if ( rc == HEXSTAT_SUCCESS ) {
+      len = (len > pab.buflen) ? pab.buflen : len;
+      transmit_word( len );
+      for ( i = 0; i < len; i++ ) {
+        transmit_byte( buffer[ i ] );
+      }
+      transmit_byte( rc );
+    } else {
+      hex_send_final_response( rc );
+    }
+    return HEXSTAT_SUCCESS;
+  }
+  hex_finish();
   return HEXERR_SUCCESS;
 }
 
@@ -115,8 +200,8 @@ void rtc_reset() {
 
 #ifdef INCLUDE_CLOCK
 /*
- * Command handling registry for device
- */
+   Command handling registry for device
+*/
 
 static const cmd_proc fn_table[] PROGMEM = {
   hex_rtc_open,
@@ -141,7 +226,7 @@ static const uint8_t op_table[] PROGMEM = {
 void rtc_register(registry_t *registry) {
 #ifdef INCLUDE_CLOCK
   uint8_t i = registry->num_devices;
-  
+
   registry->num_devices++;
   registry->entry[ i ].device_code_start = RTC_DEV;
   registry->entry[ i ].device_code_end = MAX_RTC; // support 230-239 as device codes
