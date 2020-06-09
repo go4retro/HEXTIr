@@ -863,6 +863,55 @@ static uint8_t hex_drv_delete(pab_t pab) {
   return HEXERR_BAV;
 }
 
+/*
+    hex_drv_status() -
+    initial simplistic implementation
+*/
+static uint8_t hex_drv_status( pab_t pab ) {
+  uint8_t rc = HEXSTAT_SUCCESS;
+  request_status_t st = 0;
+  file_t* file = NULL;
+
+  if ( pab.lun == 0 ) {
+    st = open_files ? FILE_DEV_IS_OPEN : 0;
+    st |= FILE_IO_MODE_READWRITE; // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
+  } else {
+    file = find_lun(pab.lun);
+    if ( file == NULL ) {
+      st = FILE_IO_MODE_READWRITE | FILE_DEV_TYPE_INTERNAL | FILE_SUPPORTS_RELATIVE;
+    } else {
+      // TODO: we need to cache the file's "open" mode (read-only, write-only, read/write/append and report that properly here.
+      //       ... relative or sequential access as well)
+      st = FILE_DEV_IS_OPEN | FILE_SUPPORTS_RELATIVE | FILE_IO_MODE_READWRITE;
+#ifdef ARDUINO
+      if ( !( file->attr & FILEATTR_CATALOG )) {
+        if ( file->fp.position() == file->fp.size() ) {
+          st |= FILE_EOF_REACHED;
+        }
+      }
+#else
+      // TODO: FatFS EOF check on file
+      // We also need to deal properly here and in SD with the CATALOG being open.
+#endif
+    }
+  }
+  if ( !hex_is_bav() ) {
+    if ( pab.buflen >= 1 )
+    {
+      transmit_word( 1 );
+      transmit_byte( (uint8_t)st );
+      transmit_byte( HEXSTAT_SUCCESS );
+      hex_finish();
+      return HEXSTAT_SUCCESS;
+    } else {
+      hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
+      return HEXSTAT_SUCCESS;
+    }
+  }
+  hex_finish();
+  return HEXERR_BAV;
+}
+
 
 static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
 
@@ -906,6 +955,7 @@ static const cmd_proc fn_table[] PROGMEM = {
   hex_drv_read,
   hex_drv_write,
   hex_drv_restore,
+  hex_drv_status,
   hex_drv_delete,
   hex_drv_verify,
   hex_drv_reset,
@@ -919,6 +969,7 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_READ,
   HEXCMD_WRITE,
   HEXCMD_RESTORE,
+  HEXCMD_RETURN_STATUS,
   HEXCMD_DELETE,
   HEXCMD_VERIFY,
   HEXCMD_RESET_BUS,
