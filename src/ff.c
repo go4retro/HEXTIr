@@ -1862,7 +1862,7 @@ fk_error: /* Abort this file due to an unrecoverable error */
 /* Create a directroy object                                             */
 /*-----------------------------------------------------------------------*/
 
-#if 0
+#if 1
 FRESULT f_opendir (
 #if _USE_DRIVE_PREFIX == 0
   FATFS *fs,          /* Pointer to file system object */

@@ -28,6 +28,7 @@
 #include "led.h"
 #include "timer.h"
 #include "uart.h"
+#include "catalog.h"
 
 FATFS fs;
 uint8_t buffer[40];
@@ -115,47 +116,30 @@ static void init(void) {
   }
 }
 
-static FRESULT write_catalog()
+static FRESULT write_catalog(const UCHAR* catpath, const UCHAR* dirpath)
 {
-	UCHAR path[2];
     FRESULT res;
     DIR dir;
     static FILINFO fno;
-    char buffer[256];
-    UINT first=1;
-
-    FIL cat;        /* catalog file object */
-    UINT written;
+	char line[1+13+1+11+1+3+1+1]; //32
 
     // open the catalog for writing
-    res = f_open(&fs, &cat, (UCHAR*)"CATALOG", FA_OPEN_ALWAYS | FA_WRITE);
+    res = catalog_open(&fs, catpath);
+
     if (res == FR_OK) {
-    	// catalog start "
-    	f_write(&cat,"\"",1,&written);
-
-    	res = l_opendir(&fs, 0, &dir); // open the directory
-    	if (res == FR_OK) {
-    		for (;;) {
-    			res = f_readdir(&dir, &fno);                   // read a directory item
-    			if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
-    			char *dot = strrchr((const char*)fno.fname, '.');
-    			if (dot && (!strcmp(dot, ".PGM") || !strcmp(dot, ".pgm") ))
-    			{
-    				if (first) {
-    					first = 0;
-    				} else {
-    					f_write(&cat,",",1,&written);
-    				}
-    				memset(buffer,0,sizeof(buffer));
-    				snprintf(buffer, sizeof(buffer)-1,"%s", fno.fname);
-    				f_write(&cat,buffer,strlen(buffer),&written);
-    			}
-
-    		}
+      res = f_opendir(&fs, &dir, dirpath); // open the directory
+      if (res == FR_OK) {
+    	for (;;) {
+    	  res = f_readdir(&dir, &fno);                   // read a directory item
+    	  if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
+		  memset(line,0,sizeof(line));
+		  snprintf(line,sizeof(line)-1,": %d %s %s", (int)fno.fsize, fno.fname,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
+		  catalog_write(line);
     	}
-    	f_write(&cat,"\"",1,&written);
-    	f_close(&cat);
+      }
     }
+
+    catalog_close();
     return res;
 }
 
@@ -335,40 +319,6 @@ static uint8_t hex_delete(pab_t pab) {
 	return HEXERR_BAV;
 }
 
-static uint8_t hex_catalog(pab_t pab) {
-
-	uint8_t rc = HEXSTAT_SUCCESS;;
-	FRESULT fr = FR_OK;
-
-	fr = write_catalog();
-
-	uart_putc('>');
-	// map return code
-	if(rc == HEXSTAT_SUCCESS) {
-		switch(fr) {
-		case FR_OK:
-			rc = HEXSTAT_SUCCESS;
-			break;
-		default:
-			rc = HEXSTAT_DEVICE_ERR;
-			break;
-		}
-	}
-	uart_putc('>');
-	hex_release_bus_recv();
-	_delay_us(200);
-	if(!hex_is_bav()) { // we can send response
-		hex_puti(0, FALSE);  // zero length data
-		hex_putc(rc, FALSE);    // status code
-		// fr = scan_files("/");
-
-		return HEXERR_SUCCESS;
-
-	} else {
-		return HEXERR_BAV;
-	}
-	return HEXERR_BAV;
-}
 
 
 static int8_t hex_write(pab_t pab) {
@@ -479,6 +429,7 @@ static uint8_t hex_open(pab_t pab) {
   file_t* file;
   BYTE res;
 
+
   uart_putc('>');
   hex_release_bus_recv();
   while(i < 3) {
@@ -503,6 +454,16 @@ static uint8_t hex_open(pab_t pab) {
     return HEXERR_BAV;
   buffer[pab.datalen - 3] = 0; // terminate the string
 
+  //*****************************************************
+
+  char* path=(buffer[0]=='$' ? "$" : buffer);
+  if (pab.lun == 0 && buffer[0]=='$') {
+   	char* dirpath = (strlen((char*)buffer)>1 ? &(buffer[1]) : "/");
+   	write_catalog("$", dirpath);
+  }
+
+  //*******************************************************
+
   switch (att & (0x80 | 0x40)) {
     case 0x00:  // append mode
       mode = FA_WRITE;
@@ -519,7 +480,7 @@ static uint8_t hex_open(pab_t pab) {
   }
   file = reserve_lun(pab.lun);
   if(file != NULL) {
-    res = f_open(&fs,&(file->fp),(UCHAR *)buffer,mode);
+    res = f_open(&fs,&(file->fp),(UCHAR *)path,mode);
     switch(res) {
       case FR_OK:
         rc = HEXSTAT_SUCCESS;
@@ -730,9 +691,6 @@ int main(void) {
             	break;
               case HEXCMD_DELETE:
             	  hex_delete(pabdata.pab);
-            	  break;
-              case HEXCMD_CATALOG:
-            	  hex_catalog(pabdata.pab);
             	  break;
               case HEXCMD_FORMAT:
                 hex_format(pabdata.pab);
