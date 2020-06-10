@@ -365,7 +365,7 @@ static uint8_t hex_drv_read(pab_t pab) {
         // size of buffer provided by host (amount to send)
         len = pab.buflen;
 
-        if ( fsize < pab.buflen ) {
+        if ( fsize > pab.buflen ) {
           fsize = pab.buflen;
         }
       }
@@ -516,15 +516,17 @@ static uint8_t hex_drv_open(pab_t pab) {
 #ifdef ARDUINO
 
   // for now, until we get rid of SD library in Arduino build.
-  switch (att & (0x80 | 0x40)) {
+  switch (att & OPENMODE_UPDATE) {
     case 0x00:  // append mode
       mode = FILE_WRITE;
       break;
+      
     case OPENMODE_WRITE: // write, truncate if present. Maybe...
-      mode = FILE_WRITE;
+      mode = FILE_WRITE_NEW; // our own, does not include O_APPEND attribute.
       break;
+      
     case OPENMODE_WRITE | OPENMODE_READ:
-      mode = FILE_WRITE | FILE_READ;
+      mode = FILE_WRITE; // In SD lib, FILE_WRITE includes the O_READ attribute.
       break;
     default: //OPENMODE_READ
       mode = FILE_READ;
@@ -533,7 +535,7 @@ static uint8_t hex_drv_open(pab_t pab) {
 
 #else
   // map attributes to FatFS file access mode
-  switch (att & (0x80 | 0x40)) {
+  switch (att & OPENMODE_UPDATE) {
     case 0x00:  // append mode
       mode = FA_WRITE;
       break;
@@ -572,12 +574,14 @@ static uint8_t hex_drv_open(pab_t pab) {
         }
 
 #ifdef ARDUINO
+        /*
         if ( ( att & (OPENMODE_READ | OPENMODE_WRITE) ) == OPENMODE_WRITE ) {
           // For now, open for write only, remove pre-existing file.
           if ( SD.exists( (const char *)&buffer[3] ) ) {
             SD.remove( (const char *)&buffer[3] );
           }
         }
+        */
         res = FR_OK; // presume success.
         // Now, open our file in proper mode. create it if we need to.
         file->fp = SD.open( (const char *)&buffer[3], mode );
@@ -585,6 +589,9 @@ static uint8_t hex_drv_open(pab_t pab) {
         if ( !(file->attr & FILEATTR_CATALOG ) ) {
           if ( !SD.exists( (const char *)&buffer[3] )) {
             res = FR_DENIED;
+          }
+          if ( (att & OPENMODE_UPDATE) == OPENMODE_APPEND ) {
+            file->fp.seek( file->fp.size() ); // position for append.
           }
         }
 #else
@@ -645,7 +652,7 @@ static uint8_t hex_drv_open(pab_t pab) {
 
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXERR_SUCCESS ) {
-      switch (att & (OPENMODE_WRITE | OPENMODE_READ)) {
+      switch (att & OPENMODE_UPDATE) {
 
         // when opening to write, or read/write
         default:
@@ -869,12 +876,12 @@ static uint8_t hex_drv_delete(pab_t pab) {
 */
 static uint8_t hex_drv_status( pab_t pab ) {
   uint8_t rc = HEXSTAT_SUCCESS;
-  request_status_t st = 0;
+  uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
   if ( pab.lun == 0 ) {
-    st = open_files ? FILE_DEV_IS_OPEN : 0;
-    st |= FILE_IO_MODE_READWRITE; // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
+    st = open_files ? FILE_DEV_IS_OPEN : FILE_REQ_STATUS_NONE;
+    st |= FILE_IO_MODE_READWRITE;  // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
   } else {
     file = find_lun(pab.lun);
     if ( file == NULL ) {
@@ -899,7 +906,7 @@ static uint8_t hex_drv_status( pab_t pab ) {
     if ( pab.buflen >= 1 )
     {
       transmit_word( 1 );
-      transmit_byte( (uint8_t)st );
+      transmit_byte( st );
       transmit_byte( HEXSTAT_SUCCESS );
       hex_finish();
       return HEXSTAT_SUCCESS;

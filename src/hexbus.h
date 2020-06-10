@@ -117,20 +117,21 @@ typedef enum _openmode_t {
               OPENMODE_INTERNAL = 0x08, // internal type files store data in native form rather than ASCII (ie. numbers are stored in internal format.
             } openmode_t ;
 
-typedef enum _req_status_t {
-              FILE_EOF_REACHED        = 0x80,
-              FILE_SUPPORTS_RELATIVE  = 0x40,
-              FILE_IS_PROTECTED       = 0x20,
-              FILE_DEV_IS_OPEN        = 0x10,
-              FILE_DEV_TYPE_MASK      = 0x0C,
-              FILE_DEV_TYPE_DISPLAY   = 0x00,
-              FILE_DEV_TYPE_INTERNAL  = 0x04,
-              FILE_DEV_TYPE_DATACOM   = 0x08,
-              FILE_IO_MODES_MASK      = 0x03,
-              FILE_IO_MODE_WRITEONLY  = 0x02,
-              FILE_IO_MODE_READONLY   = 0x01,
-              FILE_IO_MODE_READWRITE  = 0x03
-} request_status_t;
+
+#define    FILE_EOF_REACHED        0x80
+#define    FILE_SUPPORTS_RELATIVE  0x40
+#define    FILE_IS_PROTECTED       0x20
+#define    FILE_DEV_IS_OPEN        0x10
+#define    FILE_DEV_TYPE_MASK      0x0C
+#define    FILE_DEV_TYPE_DATACOM   0x08
+#define    FILE_DEV_TYPE_INTERNAL  0x04
+#define    FILE_DEV_TYPE_DISPLAY   0x00
+#define    FILE_IO_MODE_MASK       0x03
+#define    FILE_IO_MODE_READWRITE  0x03
+#define    FILE_IO_MODE_WRITEONLY  0x02
+#define    FILE_IO_MODE_READONLY   0x01
+#define    FILE_REQ_STATUS_NONE    0x00
+
 
 
 uint8_t hex_is_bav(void);
