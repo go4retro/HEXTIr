@@ -34,6 +34,37 @@
 
 extern config_t * config;
 
+#ifdef INCLUDE_CLOCK
+
+#include <DS3231.h>
+#include <Wire.h>
+
+extern DS3231 clock_peripheral;       // Our CLOCK : access via the HexBus at device code 230-239
+
+void dateTime(uint16_t* date, uint16_t* time)
+{
+  DateTime now;
+  RTClib RTC;
+  unsigned int year;
+  byte month,day,hour,minute,second;
+    
+  clock_peripheral.setClockMode(false);
+ 
+  now = RTC.now(); // get our time.
+  year = now.year() + 2000;
+  month = now.month();
+  day = now.day();
+  hour= now.hour();
+  minute = now.minute();
+  second = now.second();
+  
+  *date = FAT_DATE(year, month, day);
+  *time = FAT_TIME(hour, minute, second);
+  return;
+}
+
+#endif
+
 /*
    setup() - In Arduino, this will be run once automatically.
    Building non-Arduino, we'll call it once at the beginning
@@ -62,6 +93,10 @@ void setup(void) {
   }
 #endif
 
-  wakeup_pin_init();
+#ifdef INCLUDE_CLOCK
+  SdFile::dateTimeCallback(dateTime);
+#endif
 
+  wakeup_pin_init();
+  
 }

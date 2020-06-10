@@ -32,7 +32,7 @@
 // Global references
 extern uint8_t buffer[BUFSIZE];
 // Global defines
-DS3231            clock_peripheral;       // Our CLOCK : access via the HexBus at device code 233 (E9h = ascii R+T+C)
+DS3231            clock_peripheral;       // Our CLOCK : access via the HexBus at device code 230-239
 volatile uint8_t  rtc_open = 0;
 
 /*
@@ -58,7 +58,6 @@ static uint8_t hex_rtc_open( pab_t pab ) {
     if ( !rtc_open ) {
       if ( att & OPENMODE_READ | OPENMODE_WRITE ) {
         len = len ? len : sizeof(buffer);
-        Wire.begin();
         clock_peripheral.setClockMode(false);
         rtc_open = att;
         transmit_word( 4 );
@@ -68,7 +67,7 @@ static uint8_t hex_rtc_open( pab_t pab ) {
         hex_finish();
         return HEXERR_SUCCESS;
       } else {
-        att = HEXSTAT_ATTR_ERR;
+        att = HEXSTAT_ATTR_ERR; // append not allowed on RTC.  INPUT|OUTPUT|UPDATE is OK.
       }
     } else {
       att = HEXSTAT_ALREADY_OPEN;
@@ -106,7 +105,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
   char buf[8];
 
   memset( (char *)buffer, 0, sizeof(buffer) );
-  if ( rtc_open )
+  if ( rtc_open & OPENMODE_READ )
   {
     DateTime now = RTC.now();
     buf[0] = 0;
@@ -137,6 +136,9 @@ static uint8_t hex_rtc_read(pab_t pab) {
     itoa( now.second(), buf, 10 );
     strcpy((char *)buffer, buf );
     len = strlen( (char *)buffer );
+    
+  } else if ( rtc_open ) { // not open for INPUT?
+    rc = HEXSTAT_ATTR_ERR;
   } else {
     rc = HEXSTAT_NOT_OPEN;
   }
@@ -158,7 +160,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
 }
 
 /*
-   Set time when we receive time in format YYMMDD_HHMMSS (13 bytes of data).
+   Set time when we receive time in format YY,MM,DD,HH,MM,SS
    When RTC opened in OUTPUT or UPDATE mode.
 */
 static uint8_t hex_rtc_write(pab_t pab) {
@@ -184,6 +186,9 @@ static uint8_t hex_rtc_reset(pab_t pab) {
 
 
 void rtc_init() {
+#ifdef ARDUINO
+  Wire.begin();  // bring up the I2C interface
+#endif
   return;
 }
 
@@ -191,7 +196,6 @@ void rtc_init() {
 void rtc_reset() {
 #ifdef INCLUDE_CLOCK
   if ( rtc_open ) {
-    Wire.end();
     rtc_open = 0;
   }
 #endif
