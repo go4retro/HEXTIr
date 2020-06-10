@@ -47,11 +47,10 @@ void dateTime(uint16_t* date, uint16_t* time)
   RTClib RTC;
   unsigned int year;
   byte month,day,hour,minute,second;
-    
-  clock_peripheral.setClockMode(false);
- 
+
+  // get the current time.
   now = RTC.now(); // get our time.
-  year = now.year() + 2000;
+  year = now.year();
   month = now.month();
   day = now.day();
   hour= now.hour();

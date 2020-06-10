@@ -101,6 +101,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
   uint16_t len = 0;
   uint8_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
+  uint16_t y;
   RTClib RTC;
   char buf[8];
 
@@ -108,36 +109,39 @@ static uint8_t hex_rtc_read(pab_t pab) {
   if ( rtc_open & OPENMODE_READ )
   {
     DateTime now = RTC.now();
+    
     buf[0] = 0;
-
-    itoa( now.year(), buf, 10 );
+    y = now.year();
+    itoa( y, buf, 10 );
     strcpy((char *)buffer, buf );
     strcat((char *)buffer, "," );
     buf[0] = 0;
-
-    itoa( now.month(), buf, 10 );
-    strcpy((char *)buffer, buf );
+    i = now.month();
+    itoa( i, buf, 10 );
+    strcat((char *)buffer, buf );
     strcat((char *)buffer, "," );
     buf[0] = 0;
-
-    itoa( now.day(), buf, 10 );
-    strcpy((char *)buffer, buf );
+    i = now.day();
+    itoa( i, buf, 10 );
+    strcat((char *)buffer, buf );
     strcat((char *)buffer, "," );
     buf[0] = 0;
-
-    itoa( now.hour(), buf, 10 );
-    strcpy((char *)buffer, buf );
+    i = now.hour();
+    itoa( i, buf, 10 );
+    strcat((char *)buffer, buf );
     strcat((char *)buffer, "," );
     buf[0] = 0;
-    itoa( now.minute(), buf, 10 );
-    strcpy((char *)buffer, buf );
+    i = now.minute();
+    itoa( i, buf, 10 );
+    strcat((char *)buffer, buf );
     strcat((char *)buffer, "," );
     buf[0] = 0;
-    itoa( now.second(), buf, 10 );
-    strcpy((char *)buffer, buf );
+    i = now.second();
+    itoa( i, buf, 10 );
+    strcat((char *)buffer, buf );
     len = strlen( (char *)buffer );
     
-  } else if ( rtc_open ) { // not open for INPUT?
+   } else if ( rtc_open ) { // not open for INPUT?
     rc = HEXSTAT_ATTR_ERR;
   } else {
     rc = HEXSTAT_NOT_OPEN;
@@ -150,6 +154,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
         transmit_byte( buffer[ i ] );
       }
       transmit_byte( rc );
+      hex_finish();
     } else {
       hex_send_final_response( rc );
     }
@@ -187,7 +192,24 @@ static uint8_t hex_rtc_reset(pab_t pab) {
 
 void rtc_init() {
 #ifdef ARDUINO
+  RTClib RTC;
+  DateTime now;
+  
   Wire.begin();  // bring up the I2C interface
+
+  clock_peripheral.setClockMode(false);
+  now = RTC.now();
+
+  // If clock is not set; let's init to a base date/time for now.
+  if ( now.year() == 2000 && now.month() == 1 && now.day() == 1 ) {
+    clock_peripheral.setYear(20);
+    clock_peripheral.setMonth(6);
+    clock_peripheral.setDate(10);
+    clock_peripheral.setHour(17);
+    clock_peripheral.setMinute(30);
+    clock_peripheral.setSecond(00);
+  }
+  
 #endif
   return;
 }
