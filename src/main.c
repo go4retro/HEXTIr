@@ -116,30 +116,34 @@ static void init(void) {
   }
 }
 
-static FRESULT write_catalog(const UCHAR* catpath, const UCHAR* dirpath)
+static FRESULT write_catalog(const char* catpath, const char* dirpath)
 {
     FRESULT res;
     DIR dir;
     static FILINFO fno;
-	char line[1+13+1+11+1+3+1+1]; //32
+	char line[1+1+13+1+11+1+3+1]; //32
+	Catalog catalog;
 
     // open the catalog for writing
-    res = catalog_open(&fs, catpath);
+	Catalog_init(&catalog);
+    res = Catalog_open(&catalog, &fs, (const char*)catpath);
 
     if (res == FR_OK) {
-      res = f_opendir(&fs, &dir, dirpath); // open the directory
+      res = f_opendir(&fs, &dir, (UCHAR*)dirpath); // open the directory
       if (res == FR_OK) {
-    	for (;;) {
+    	do {
     	  res = f_readdir(&dir, &fno);                   // read a directory item
     	  if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
+       	  if (strcmp((const char*)fno.fname, catpath) == 0) continue; // skip the catalog file
+       	  if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0) continue;
+       	  if (fno.fsize < 0) continue;
 		  memset(line,0,sizeof(line));
-		  snprintf(line,sizeof(line)-1,": %d %s %s", (int)fno.fsize, fno.fname,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
-		  catalog_write(line);
-    	}
+		  snprintf(line,sizeof(line)-1,": %lu %s %s", fno.fsize, fno.fname,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
+		  Catalog_write(&catalog, line);
+    	} while (1);
       }
+      Catalog_close(&catalog);
     }
-
-    catalog_close();
     return res;
 }
 
@@ -456,9 +460,10 @@ static uint8_t hex_open(pab_t pab) {
 
   //*****************************************************
 
-  char* path=(buffer[0]=='$' ? "$" : buffer);
-  if (pab.lun == 0 && buffer[0]=='$') {
-   	char* dirpath = (strlen((char*)buffer)>1 ? &(buffer[1]) : "/");
+  char* path=((char)buffer[0]=='$' ? "$" : (char*)buffer);
+  if (pab.lun == 0 && (char)buffer[0]=='$') {
+   	char* dirpath = (strlen((char*)buffer)>1 ? (char*)&(buffer[1]) : "/");
+
    	write_catalog("$", dirpath);
   }
 

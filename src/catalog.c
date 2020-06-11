@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ff.h>
+#include "catalog.h"
 
 UCHAR  header[]= {0x80,0x03};
 UCHAR  trailer[] = {0xff,0x7f,0x03,0x86,0x00,0x20, 0x00};
@@ -39,7 +40,7 @@ static FRESULT update_proglen(FIL *fp, UINT pgmlen) {
   return res;
 }
 
-static UCHAR write_line(FIL *fp, UINT lineno, char* buf) {
+static UCHAR write_line(FIL *fp, UINT lineno, const char* cstr) {
   UINT written;
   UCHAR  linelen;
   UCHAR  recordlen;
@@ -48,66 +49,76 @@ static UCHAR write_line(FIL *fp, UINT lineno, char* buf) {
   UCHAR  zero = 0x00;
   UCHAR  slen;
 
-  slen = strlen(buf);
+  slen = strlen(cstr);
   linelen = slen + sizeof(recordlen) + sizeof(strtoken)
     + sizeof(slen)+ sizeof(zero); 
   f_write(fp, &lineno, sizeof(lineno), &written);
   f_write(fp, &linelen, sizeof(linelen), &written);
   f_write(fp, &strtoken, sizeof(strtoken), &written);
   f_write(fp, &slen, sizeof(slen), &written);
-  f_write(fp, buf, slen, &written);
+  f_write(fp, cstr, slen, &written);
   f_write(fp, &zero, sizeof(zero), &written);
   recordlen = linelen + sizeof(lineno);
   return recordlen;
 }
 
-static UINT pgmlen = 0;
-static UCHAR linenumber = 0;
-static FIL *fp = NULL;
+/**
+ * Initialize the catalog structure.
+ */
+void Catalog_init(Catalog* self){
+  self->pgmlen = 0;
+  self->linenumber = 0;
+  self->fp = NULL;
+}
 
-FRESULT catalog_open(FATFS* fs,  const char* fname) {
+/**
+ * Open the catalog file ("$") and add the header.
+ */
+FRESULT Catalog_open(Catalog* self, FATFS* fs,  const char* fname) {
   int res = FR_DENIED;
-  if (fp == NULL) {
-	fp = malloc(sizeof(FIL));
-    linenumber = 0;
-    pgmlen = sizeof(header) + sizeof(pgmlen);
+  if (self->fp == NULL) {
+	self->fp = malloc(sizeof(FIL));
+    self->linenumber = 0;
+    self->pgmlen = sizeof(header) + sizeof(self->pgmlen);
 
-    res = f_open(fs, fp, (UCHAR*)fname, FA_OPEN_ALWAYS | FA_WRITE);
+    res = f_open(fs, self->fp, (UCHAR*)fname, FA_OPEN_ALWAYS | FA_WRITE);
     if (res == FR_OK) {
-      write_header(fp);
-      write_proglen(fp, pgmlen);
+      write_header(self->fp);
+      write_proglen(self->fp, self->pgmlen);
+    }
+    else {
+      free(self->fp);
     }
   }
   return res;
 }
 
-void catalog_close(void) {
-  if (fp != NULL) {
-    update_proglen(fp, pgmlen);
-    write_trailer(fp);
-    f_close(fp);
-    free(fp);
-    fp = NULL;
+/**
+ * Close the catalog file ("$") and reset the Catalog structure.
+ */
+void Catalog_close(Catalog* self) {
+  if (self->fp != NULL) {
+    update_proglen(self->fp, self->pgmlen);
+    write_trailer(self->fp);
+    f_close(self->fp);
+    free(self->fp);
+    self->pgmlen = 0;
+    self->linenumber = 0;
+    self->fp = NULL;
   }
 }
 
-
-void catalog_write(char* entry) {
+/**
+ * Write a record to the catalog.
+ */
+void Catalog_write(Catalog* self, const char* cstr) {
   UCHAR recordlen;
-  if (fp != NULL) {
-    linenumber = linenumber + 1;
-    recordlen = write_line(fp,linenumber, entry);
-    pgmlen = pgmlen + recordlen;
+  if (self->fp != NULL) {
+    self->linenumber = self->linenumber + 1;
+    recordlen = write_line(self->fp, self->linenumber, cstr);
+    self->pgmlen = self->pgmlen + recordlen;
   }
 }
 
-/*
-int main(int argc, char* argv[]) {
-   catalog_open("/tmp/t.pgm");
-   catalog_write(": 10 HALLO.PGM FIL");
-   catalog_write(": 103 HAHA.TXT FIL");
-   catalog_write(": 0 HUHU DIR");
-   catalog_close();
-}
-*/
+
 
