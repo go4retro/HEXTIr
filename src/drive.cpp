@@ -36,6 +36,11 @@
 #include <SD.h>
 
 const uint8_t  chipSelect = 10;
+
+#ifdef INCLUDE_CLOCK
+void dateTime(uint16_t* date, uint16_t* time);
+#endif
+
 #else
 FATFS fs;
 #include "diskio.h"
@@ -47,7 +52,7 @@ extern uint8_t buffer[BUFSIZE];
 // Global defines
 uint8_t open_files = 0;
 luntbl_t files[MAX_OPEN_FILES]; // file number to file mapping
-uint8_t fs_initialized = 0;
+uint8_t fs_initialized = FALSE;
 
 
 static file_t* find_file_in_use(uint8_t *lun) {
@@ -101,6 +106,9 @@ static void free_lun(uint8_t lun) {
       set_busy_led(open_files);
       if ( !open_files ) {
 #ifdef ARDUINO
+#ifdef INCLUDE_CLOCK
+        SdFile::dateTimeCallbackCancel();
+#endif
         SD.end();
         fs_initialized = FALSE;
 #endif
@@ -520,11 +528,11 @@ static uint8_t hex_drv_open(pab_t pab) {
     case 0x00:  // append mode
       mode = FILE_WRITE;
       break;
-      
+
     case OPENMODE_WRITE: // write, truncate if present. Maybe...
       mode = FILE_WRITE_NEW; // our own, does not include O_APPEND attribute.
       break;
-      
+
     case OPENMODE_WRITE | OPENMODE_READ:
       mode = FILE_WRITE; // In SD lib, FILE_WRITE includes the O_READ attribute.
       break;
@@ -564,7 +572,6 @@ static uint8_t hex_drv_open(pab_t pab) {
 
       if ( pab.datalen < BUFSIZE - 1 ) {
 
-
         if ( ( att & OPENMODE_READ ) == OPENMODE_READ ) {
           if ( buffer[ pab.datalen - 1 ] == '$' ) {
             // Are we attempting to open a catalog?
@@ -575,21 +582,26 @@ static uint8_t hex_drv_open(pab_t pab) {
 
 #ifdef ARDUINO
         /*
-        if ( ( att & (OPENMODE_READ | OPENMODE_WRITE) ) == OPENMODE_WRITE ) {
+          if ( ( att & (OPENMODE_READ | OPENMODE_WRITE) ) == OPENMODE_WRITE ) {
           // For now, open for write only, remove pre-existing file.
           if ( SD.exists( (const char *)&buffer[3] ) ) {
             SD.remove( (const char *)&buffer[3] );
           }
-        }
+          }
         */
         res = FR_OK; // presume success.
         // Now, open our file in proper mode. create it if we need to.
         file->fp = SD.open( (const char *)&buffer[3], mode );
 
         if ( !(file->attr & FILEATTR_CATALOG ) ) {
-          if ( !SD.exists( (const char *)&buffer[3] )) {
-            res = FR_DENIED;
+
+          // Any mode other than create new file?
+          if ( mode != FILE_WRITE_NEW ) {
+            if ( !SD.exists( (const char *)&buffer[3] )) {
+              res = FR_DENIED;
+            }
           }
+
           if ( (att & OPENMODE_UPDATE) == OPENMODE_APPEND ) {
             file->fp.seek( file->fp.size() ); // position for append.
           }
@@ -840,8 +852,11 @@ static uint8_t hex_drv_delete(pab_t pab) {
       // is no CD logic present.  Once we have known CD logic in place, we don't need
       // to close SD down, unless we get a CD change (i.e.removal of card or insertion).
       if ( !open_files ) {
+#ifdef INCLUDE_CLOCK
+        SdFile::dateTimeCallbackCancel();
+#endif
         SD.end();
-        fs_initialized = 0;
+        fs_initialized = FALSE;
       }
 #else
       // remove file
@@ -938,16 +953,29 @@ static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
    make- ignore/ empty function.
 */
 void drv_start(void) {
+  
   if (!fs_initialized) {
+    
 #ifdef ARDUINO
     // If SD library not initialized, initialize it now
     // and mark it as such.
-    if (SD.begin( chipSelect ) ) {
-#else
-    if (f_mount(1, &fs) == FR_OK) {
+    if ( SD.begin( chipSelect ) ) {
+
+#ifdef INCLUDE_CLOCK
+      SdFile::dateTimeCallback(dateTime);
 #endif
-      fs_initialized = 1;
+      fs_initialized = TRUE;
     }
+
+#else
+
+    if (f_mount(1, &fs) == FR_OK) {
+
+      fs_initialized = TRUE;
+    }
+
+#endif
+
   }
   return;
 }
@@ -1031,6 +1059,6 @@ void drv_init(void) {
     files[i].used = FALSE;
   }
   open_files = 0;
-  fs_initialized = 0;
+  fs_initialized = FALSE;
   return;
 }

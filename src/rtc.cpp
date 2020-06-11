@@ -192,6 +192,7 @@ static uint8_t hex_rtc_reset(pab_t pab) {
 
 void rtc_init() {
 #ifdef ARDUINO
+#ifdef INCLUDE_CLOCK
   RTClib RTC;
   DateTime now;
   
@@ -210,6 +211,7 @@ void rtc_init() {
     clock_peripheral.setSecond(00);
   }
   
+#endif
 #endif
   return;
 }
