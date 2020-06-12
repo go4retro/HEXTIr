@@ -109,7 +109,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
   if ( rtc_open & OPENMODE_READ )
   {
     DateTime now = RTC.now();
-    
+
     buf[0] = 0;
     y = now.year();
     itoa( y, buf, 10 );
@@ -140,8 +140,8 @@ static uint8_t hex_rtc_read(pab_t pab) {
     itoa( i, buf, 10 );
     strcat((char *)buffer, buf );
     len = strlen( (char *)buffer );
-    
-   } else if ( rtc_open ) { // not open for INPUT?
+
+  } else if ( rtc_open ) { // not open for INPUT?
     rc = HEXSTAT_ATTR_ERR;
   } else {
     rc = HEXSTAT_NOT_OPEN;
@@ -164,19 +164,103 @@ static uint8_t hex_rtc_read(pab_t pab) {
   return HEXERR_SUCCESS;
 }
 
+
+/*
+ * bracket space delimited input and return pointer to the start of a non-blank string.
+ */
+static char *skip_blanks( char *inbuf ) {
+  char *ebuf;
+  while ( *inbuf == ' ' ) {
+    *inbuf = 0;
+    inbuf++;
+  }
+  ebuf = inbuf;
+  while ( *ebuf != ' ' && *ebuf != 0 ) {
+    ebuf++;
+  }
+  *ebuf = 0;
+  return inbuf;
+}
+
+
 /*
    Set time when we receive time in format YY,MM,DD,HH,MM,SS
    When RTC opened in OUTPUT or UPDATE mode.
 */
-static uint8_t hex_rtc_write(pab_t pab) {
-  if ( rtc_open ) {
+static uint8_t hex_rtc_write( pab_t pab ) {
+  uint16_t len;
+  char     *token;
+  uint8_t  i = 0;
+  uint8_t  rc = HEXSTAT_SUCCESS;
+  int8_t   t_array[6];
 
+  len = pab.datalen;
+  if ( rtc_open & OPENMODE_WRITE ) {
+    rc = (len >= sizeof(buffer) ) ? HEXSTAT_DATA_ERR : HEXSTAT_SUCCESS;
+    if ( rc == HEXSTAT_SUCCESS ) {
+      rc = hex_get_data(buffer, pab.datalen);
+      if (rc == HEXSTAT_SUCCESS) {
+        // process data in buffer and set clock.
+        // incoming data should be formatted as YY,MM,DD,hh,mm,ss
+        token = skip_blanks( (char *)buffer );
+        len = strlen( token );
+        do
+        {
+          if ( len <= 2 ) {
+            t_array[ i++ ] = atoi(token);
+            token = skip_blanks( &token[ len + 1 ] );
+            len = strlen( token );
+          } else {
+            len = 0; // out w bad data.
+          }
+        } while ( len );
+        
+        rc = HEXSTAT_DATA_INVALID; // assume data is bad.
+        if ( i == 6 ) { // got sufficient data.
+          if ( t_array[0] < 100 ) { // year between 00 and 99
+            if ( t_array[1] > 0 && t_array[1] < 13 ) { // month between 01 and 12
+              if ( t_array[2] > 0 && t_array[2] < 32 ) { // day between 1 and 31 (I know, some months are less; room for improvement here.)
+                if ( t_array[3] < 24 ) { // hour between 0 and 23
+                  if ( t_array[4] < 60 ) { // minutes between 00 and 59
+                    if ( t_array[5] < 60 ) { // seconds between 00 and 59
+                      rc = HEXSTAT_SUCCESS;
+                      clock_peripheral.setYear( (byte)t_array[ 0 ] );
+                      clock_peripheral.setMonth( (byte)t_array[ 1 ] );
+                      clock_peripheral.setDate( (byte)t_array[ 2 ] );
+                      clock_peripheral.setHour( (byte)t_array[ 3 ] );
+                      clock_peripheral.setMinute( (byte)t_array[ 4 ] );
+                      clock_peripheral.setSecond( (byte)t_array[ 5 ] );
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      len = 0;
+    }
+  } else if ( rtc_open ) {
+    rc = HEXSTAT_OUTPUT_MODE_ERR;
+  } else {
+    rc = HEXSTAT_NOT_OPEN;
   }
-  return HEXERR_SUCCESS;
+
+  if ( len ) {
+    hex_eat_it( len, rc );
+    return HEXERR_BAV;
+  }
+
+  if ( !hex_is_bav() ) { // we can send response
+    hex_send_final_response( rc );
+    return HEXERR_SUCCESS;
+  }
+  hex_finish();
+  return HEXERR_BAV;
 }
 
-static uint8_t hex_rtc_reset(pab_t pab) {
 
+static uint8_t hex_rtc_reset( pab_t pab ) {
   rtc_reset();
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
@@ -195,22 +279,22 @@ void rtc_init() {
 #ifdef INCLUDE_CLOCK
   RTClib RTC;
   DateTime now;
-  
+
   Wire.begin();  // bring up the I2C interface
 
   clock_peripheral.setClockMode(false);
   now = RTC.now();
 
-  // If clock is not set; let's init to a base date/time for now.
+  // If clock has not been previously set; let's init to a base date/time for now.
   if ( now.year() == 2000 && now.month() == 1 && now.day() == 1 ) {
-    clock_peripheral.setYear(20);
-    clock_peripheral.setMonth(6);
-    clock_peripheral.setDate(10);
-    clock_peripheral.setHour(17);
-    clock_peripheral.setMinute(30);
+    clock_peripheral.setYear(20);  // Jan 1, 2020 midnight?
+    clock_peripheral.setMonth(1);
+    clock_peripheral.setDate(1);
+    clock_peripheral.setHour(0);
+    clock_peripheral.setMinute(00);
     clock_peripheral.setSecond(00);
   }
-  
+
 #endif
 #endif
   return;
