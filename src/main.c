@@ -121,28 +121,41 @@ static FRESULT write_catalog(const char* catpath, const char* dirpath)
     FRESULT res;
     DIR dir;
     static FILINFO fno;
-	char line[1+1+13+1+11+1+3+1]; //32
+    #if _USE_LFN != 0
+    # ifdef _MAX_LFN_LENGTH
+    UCHAR lfn[_MAX_LFN_LENGTH+1];
+	char line[1+1+13+1+_MAX_LFN_LENGTH+1+3+1];
+    #else
+    UCHAR lfn[21]; // ? not sure
+	char line[1+1+13+1+20+1+3+1];
+    #endif
+    fno.lfn = lfn;
+    #else
+	char line[1+1+13+1+11+1+3+1];
+    #endif
 	Catalog catalog;
 
-    // open the catalog for writing
-	Catalog_init(&catalog);
-    res = Catalog_open(&catalog, &fs, (const char*)catpath);
+
+	Catalog_init(&catalog); // initialize Catalog structure
+    res = Catalog_open(&catalog, &fs, (const char*)catpath); // open catalog file and write header and  actual size
 
     if (res == FR_OK) {
       res = f_opendir(&fs, &dir, (UCHAR*)dirpath); // open the directory
       if (res == FR_OK) {
     	do {
+          memset(lfn,0,sizeof(lfn));
     	  res = f_readdir(&dir, &fno);                   // read a directory item
     	  if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
        	  if (strcmp((const char*)fno.fname, catpath) == 0) continue; // skip the catalog file
-       	  if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0) continue;
-       	  if (fno.fsize < 0) continue;
+       	  if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0) continue; // skip
+       	  if (fno.fsize < 0) continue; // skip
 		  memset(line,0,sizeof(line));
-		  snprintf(line,sizeof(line)-1,": %lu %s %s", fno.fsize, fno.fname,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
+		  char* filename = (fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+		  snprintf(line,sizeof(line)-1,": %lu %s %s", fno.fsize, filename,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
 		  Catalog_write(&catalog, line);
     	} while (1);
       }
-      Catalog_close(&catalog);
+      Catalog_close(&catalog); // write total size and close catalog file
     }
     return res;
 }

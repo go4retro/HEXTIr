@@ -81,7 +81,7 @@ FRESULT Catalog_open(Catalog* self, FATFS* fs,  const char* fname) {
     self->linenumber = 0;
     self->pgmlen = sizeof(header) + sizeof(self->pgmlen);
 
-    res = f_open(fs, self->fp, (UCHAR*)fname, FA_OPEN_ALWAYS | FA_WRITE);
+    res = f_open(fs, self->fp, (UCHAR*)fname, FA_CREATE_ALWAYS | FA_WRITE);
     if (res == FR_OK) {
       write_header(self->fp);
       write_proglen(self->fp, self->pgmlen);
