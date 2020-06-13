@@ -116,37 +116,32 @@ static void init(void) {
   }
 }
 
-static FRESULT write_catalog(const char* catpath, const char* dirpath)
+static FRESULT write_catalog(const char* path, const char* directory)
 {
     FRESULT res;
     DIR dir;
-    static FILINFO fno;
-    #if _USE_LFN != 0
+    FILINFO fno;
     # ifdef _MAX_LFN_LENGTH
     UCHAR lfn[_MAX_LFN_LENGTH+1];
 	char line[1+1+13+1+_MAX_LFN_LENGTH+1+3+1];
-    #else
-    UCHAR lfn[21]; // ? not sure
-	char line[1+1+13+1+20+1+3+1];
-    #endif
     fno.lfn = lfn;
     #else
-	char line[1+1+13+1+11+1+3+1];
+	char line[1+1+13+1+12+1+3+1];
     #endif
 	Catalog catalog;
 
 
 	Catalog_init(&catalog); // initialize Catalog structure
-    res = Catalog_open(&catalog, &fs, (const char*)catpath); // open catalog file and write header and  actual size
+    res = Catalog_open(&catalog, &fs, (const char*)path); // open catalog file and write header and  actual size
 
     if (res == FR_OK) {
-      res = f_opendir(&fs, &dir, (UCHAR*)dirpath); // open the directory
+      res = f_opendir(&fs, &dir, (UCHAR*)directory); // open the directory
       if (res == FR_OK) {
     	do {
           memset(lfn,0,sizeof(lfn));
     	  res = f_readdir(&dir, &fno);                   // read a directory item
     	  if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
-       	  if (strcmp((const char*)fno.fname, catpath) == 0) continue; // skip the catalog file
+       	  if (strcmp((const char*)fno.fname, path) == 0) continue; // skip the catalog file
        	  if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0) continue; // skip
        	  if (fno.fsize < 0) continue; // skip
 		  memset(line,0,sizeof(line));
