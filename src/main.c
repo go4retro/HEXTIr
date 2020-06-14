@@ -508,18 +508,17 @@ static uint8_t hex_open(pab_t pab) {
   buffer[pab.datalen - 3] = 0; // terminate the string
 
   //*****************************************************
-
+  // special file name "$" -> catalog
   char* path=((char)buffer[0]=='$' ? "$" : (char*)buffer);
   if ((char)buffer[0]=='$') {
    	char* dirpath = (strlen((char*)buffer)>1 ? (char*)&(buffer[1]) : "/");
    	if (pab.lun == 0) {
-   	  write_catalog_pgm("$", dirpath);
+   	  write_catalog_pgm("$", dirpath); // OLD-PGM
    	}
    	else {
-   	  write_catalog_txt("$", dirpath);
+   	  write_catalog_txt("$", dirpath); // OPEN-INPUT
    	}
   }
-
   //*******************************************************
 
   switch (att & (0x80 | 0x40)) {
