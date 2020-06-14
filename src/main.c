@@ -116,7 +116,7 @@ static void init(void) {
   }
 }
 
-static FRESULT write_catalog(const char* path, const char* directory)
+static FRESULT write_catalog_pgm(const char* path, const char* directory)
 {
     FRESULT res;
     DIR dir;
@@ -145,7 +145,7 @@ static FRESULT write_catalog(const char* path, const char* directory)
        	  if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0) continue; // skip
        	  if (fno.fsize < 0) continue; // skip
 		  memset(line,0,sizeof(line));
-		  char* filename = (fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+		  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
 		  snprintf(line,sizeof(line)-1,": %lu %s %s", fno.fsize, filename,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
 		  Catalog_write(&catalog, line);
     	} while (1);
@@ -154,6 +154,47 @@ static FRESULT write_catalog(const char* path, const char* directory)
     }
     return res;
 }
+
+static FRESULT write_catalog_txt(const char* path, const char* directory)
+{
+    FRESULT res;
+    DIR dir;
+    FILINFO fno;
+    # ifdef _MAX_LFN_LENGTH
+    UCHAR lfn[_MAX_LFN_LENGTH+1];
+	char line[1+5+1+1+1+13+1+_MAX_LFN_LENGTH+1+3+1+1+1];
+    fno.lfn = lfn;
+    #else
+	char line[5+1+1+1+13+1+12+1+3+1+1+1];
+    #endif
+	FIL fp;
+	UINT written;
+	USHORT lineno = 0;
+
+    res = f_open(&fs, &fp, (UCHAR*)path, FA_CREATE_ALWAYS | FA_WRITE);
+    if (res == FR_OK) {
+      res = f_opendir(&fs, &dir, (UCHAR*)directory); // open the directory
+      if (res == FR_OK) {
+    	do {
+          memset(lfn,0,sizeof(lfn));
+    	  res = f_readdir(&dir, &fno);                   // read a directory item
+    	  if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
+       	  if (strcmp((const char*)fno.fname, path) == 0) continue; // skip the catalog file
+       	  if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0) continue; // skip
+       	  if (fno.fsize < 0) continue; // skip
+       	  lineno = lineno + 1;
+		  memset(line,0,sizeof(line));
+		  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+		  snprintf(line,sizeof(line)-1,"\"%u : %lu %s %s\",", lineno, fno.fsize, filename,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
+		  f_write(&fp, line, strlen(line), &written);
+    	} while (1);
+
+      }
+      f_close(&fp);
+    }
+    return res;
+}
+
 
 static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   uint16_t i = 0;
@@ -469,10 +510,14 @@ static uint8_t hex_open(pab_t pab) {
   //*****************************************************
 
   char* path=((char)buffer[0]=='$' ? "$" : (char*)buffer);
-  if (pab.lun == 0 && (char)buffer[0]=='$') {
+  if ((char)buffer[0]=='$') {
    	char* dirpath = (strlen((char*)buffer)>1 ? (char*)&(buffer[1]) : "/");
-
-   	write_catalog("$", dirpath);
+   	if (pab.lun == 0) {
+   	  write_catalog_pgm("$", dirpath);
+   	}
+   	else {
+   	  write_catalog_txt("$", dirpath);
+   	}
   }
 
   //*******************************************************
