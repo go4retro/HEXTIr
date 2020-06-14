@@ -27,7 +27,9 @@
 #ifdef INCLUDE_SERIAL
 // WORK IN PROGRESS - some of the routines will flag an unused parameter 'pab' warning.
 #include <SoftwareSerial.h>
+#include <Arduino.h>
 
+static const char baud_attrib[] PROGMEM = "B=";
 // Global defines
 volatile uint8_t  ser_open = 0;
 SoftwareSerial    serial_peripheral( 8, 9 );  // either can support interrupts, and are otherwise available.
@@ -35,9 +37,11 @@ SoftwareSerial    serial_peripheral( 8, 9 );  // either can support interrupts, 
 extern uint8_t buffer[BUFSIZE];
 
 /*
- * her_ser_open()
- */
+   her_ser_open()
+*/
 static uint8_t hex_ser_open(pab_t pab) {
+  char     *attrib;
+  long     baud = 9600;
   uint16_t len;
   uint8_t  att;
 
@@ -66,17 +70,29 @@ static uint8_t hex_ser_open(pab_t pab) {
   // work in progress... not ready for prime time.
   if ( !hex_is_bav() ) {
     if ( !ser_open ) {
-
       if ( att != 0 ) {
         len = len ? len : sizeof( buffer );
-        ser_open = att; // 00 attribute = illegal.
-        serial_peripheral.begin(9600);
-        transmit_word( 4 );
-        transmit_word( len );
-        transmit_word( 0 );
-        transmit_byte( HEXSTAT_SUCCESS );
-        hex_finish();
-        return HEXERR_SUCCESS;
+        if ( att & OPENMODE_UPDATE ) {
+          ser_open = att; // 00 attribute = illegal.
+          if ( pab.datalen > 3 ) { // see if we have a B= in the buffer.
+            attrib = strtok( (char *)&buffer[ 3 ], baud_attrib );
+            if ( attrib != NULL ) {
+              baud = atol( attrib + 2 );
+            }
+          }
+          serial_peripheral.begin( baud );
+          if ( att & OPENMODE_READ ) {
+            serial_peripheral.listen(); // apply listener if we are expecting input
+          }
+          transmit_word( 4 );
+          transmit_word( len );
+          transmit_word( 0 );
+          transmit_byte( HEXSTAT_SUCCESS );
+          hex_finish();
+          return HEXERR_SUCCESS;
+        } else {
+          att = HEXSTAT_APPEND_MODE_ERR;
+        }
       } else {
         att = HEXSTAT_ATTR_ERR;
       }
@@ -92,8 +108,8 @@ static uint8_t hex_ser_open(pab_t pab) {
 
 
 /*
- * hex_ser_close()
- */
+   hex_ser_close()
+*/
 static uint8_t hex_ser_close(__attribute__((unused)) pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
 
@@ -113,19 +129,19 @@ static uint8_t hex_ser_close(__attribute__((unused)) pab_t pab) {
 
 static uint8_t hex_ser_read(pab_t pab) {
   uint16_t len = pab.buflen;
-  uint16_t bcount= 0;
+  uint16_t bcount = 0;
   int8_t  rc = HEXSTAT_SUCCESS;
 
   if ( ser_open ) {
     // protect access via ser_open since serial_peripheral is not present
     // if ser_open = 0.
     bcount = serial_peripheral.available();
-  
+
     if ( bcount > pab.buflen ) {
       bcount = pab.buflen;
     }
   }
-  
+
   if ( !hex_is_bav() ) {
     if ( ser_open & OPENMODE_READ ) {
       // send how much we are going to send
@@ -210,11 +226,11 @@ static uint8_t hex_ser_rtn_sta(pab_t pab) {
 static uint8_t hex_ser_set_opts(pab_t pab) {
   // TBD
   return HEXERR_SUCCESS;
-} 
+}
 
 
 static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
-  
+
   ser_reset();
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
@@ -227,8 +243,8 @@ static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
 
 
 /*
- * Command handling registry for device
- */
+   Command handling registry for device
+*/
 
 static const cmd_proc fn_table[] PROGMEM = {
   hex_ser_open,
@@ -258,7 +274,7 @@ static const uint8_t op_table[] PROGMEM = {
 void ser_register(registry_t *registry) {
 #ifdef INCLUDE_SERIAL
   uint8_t i = registry->num_devices;
-  
+
   registry->num_devices++;
   registry->entry[ i ].device_code_start = SER_DEV;
   registry->entry[ i ].device_code_end = MAX_SER; // support 20, 21, 22, 23 as device codes
