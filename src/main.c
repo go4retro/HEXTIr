@@ -146,7 +146,8 @@ static FRESULT write_catalog_pgm(const char* path, const char* directory)
        	  if (fno.fsize < 0) continue; // skip
 		  memset(line,0,sizeof(line));
 		  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-		  snprintf(line,sizeof(line)-1,": %lu %s %s", fno.fsize, filename,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
+		  char* attrib = ((fno.fattrib & AM_DIR) ? "DIR" : ((fno.fattrib & AM_VOL) ?"VOL" : "FIL"));
+		  snprintf(line,sizeof(line)-1,": %lu %s %s", fno.fsize, filename, attrib);
 		  Catalog_write(&catalog, line);
     	} while (1);
       }
@@ -185,7 +186,8 @@ static FRESULT write_catalog_txt(const char* path, const char* directory)
        	  lineno = lineno + 1;
 		  memset(line,0,sizeof(line));
 		  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-		  snprintf(line,sizeof(line)-1,"\"%u : %lu %s %s\",", lineno, fno.fsize, filename,((fno.fattrib & AM_DIR) ? "DIR" : "FIL"));
+		  char* attrib = ((fno.fattrib & AM_DIR) ? "DIR" : ((fno.fattrib & AM_VOL) ?"VOL" : "FIL"));
+		  snprintf(line,sizeof(line)-1,"\"%u : %lu %s %s\",", lineno, fno.fsize, filename, attrib);
 		  f_write(&fp, line, strlen(line), &written);
     	} while (1);
 
@@ -216,6 +218,49 @@ static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   }
   return HEXERR_SUCCESS;
 }
+
+static int8_t hex_return_status(pab_t pab) {
+	uint8_t rc = HEXSTAT_SUCCESS;
+	file_t* file;
+	BYTE res = FR_OK;
+	BYTE status = 0x0;
+
+	uart_putc('>');
+	file = find_lun(pab.lun);
+
+	res = (file != NULL ? FR_OK : FR_NO_FILE);
+	if (file->fp.fptr == file->fp.fsize) {
+	  status = 0x80;
+	}
+
+	if(rc == HEXSTAT_SUCCESS) {
+		switch(res) {
+		case FR_OK:
+			  rc = HEXSTAT_SUCCESS;
+			break;
+		default:
+			rc = HEXSTAT_DEVICE_ERR;
+			break;
+		}
+	}
+
+
+
+	uart_putc('>');
+	hex_release_bus_recv();
+	_delay_us(200);
+	if(!hex_is_bav()) { // we can send response
+		hex_puti(1, FALSE);
+		hex_putc(status, FALSE);
+//		hex_puti(0, FALSE);  // zero length data
+		hex_putc(rc, FALSE);    // status code
+		return HEXERR_SUCCESS;
+	} else {
+		return HEXERR_BAV;
+	}
+}
+
+
 
 /*
  * https://github.com/m5dk2n comments:
@@ -748,6 +793,9 @@ int main(void) {
             	break;
               case HEXCMD_DELETE:
             	  hex_delete(pabdata.pab);
+            	  break;
+              case HEXCMD_RETURN_STATUS:
+            	  hex_return_status(pabdata.pab);
             	  break;
               case HEXCMD_FORMAT:
                 hex_format(pabdata.pab);
