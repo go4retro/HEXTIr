@@ -225,8 +225,8 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
   hex_release_bus_recv();
   _delay_us(200);
   if(lun != NULL) {
-    hex_puti(lun->dirnum * 36, FALSE);  // send full length of file
-    //hex_puti(36, FALSE);
+    //hex_puti(lun->dirnum * 36, FALSE);  // send full length of file
+    hex_puti(36, FALSE);
     uint16_t i = 1;
     while(i <= lun->dirnum && res == FR_OK) {
       memset(lfn,0,sizeof(lfn));
@@ -280,8 +280,9 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
       hex_putc('\"', FALSE);
       hex_putc(',', TRUE);
       //hex_putc(0, TRUE); // null termination
+      lun->dirnum = lun->dirnum - 1;
       uart_putcrlf();
-      //break;
+      break;
     }
     hex_release_bus_send();
     uart_putc('>');
@@ -324,13 +325,25 @@ static int8_t hex_return_status(pab_t pab) {
 	file_t* file;
 	BYTE res = FR_OK;
 	BYTE status = 0x0;
+	luntbl_t* lun;
 
 	uart_putc('>');
 	file = find_lun(pab.lun);
 
-	res = (file != NULL ? FR_OK : FR_NO_FILE);
-	if (file->fp.fptr == file->fp.fsize) {
-	  status = 0x80;
+	lun = find_lun2(pab.lun);
+	if(lun != NULL && lun->type == LUN_DIR) {
+		if (pab.lun != 0 ) {
+		  if (lun->dirnum == 0) {
+			 status = 0x80; // EOF
+		  }
+		}
+	}
+	else {
+		file = &(lun->file);
+		res = (file != NULL ? FR_OK : FR_NO_FILE);
+		if (file->fp.fptr == file->fp.fsize) {
+			status = 0x80; // EOF
+		}
 	}
 
 	if(rc == HEXSTAT_SUCCESS) {
