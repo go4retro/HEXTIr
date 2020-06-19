@@ -5,7 +5,7 @@
  * Send PGM header bytes and length on hex-bus.
  * num : Number of catalog entries.
  */
-void pgm_cat_open(uint16_t num);
+void pgm_cat_open(uint16_t num_entries);
 
 /**
  * Send catalog entry on hex-bus.
@@ -17,6 +17,11 @@ void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char 
  */
 void pgm_cat_close(void);
 
+/**
+ * Calculate the PGM file length.
+ */
+uint16_t pgm_file_length(uint16_t num_entries);
+
 
 /**
  * Get number of directory (=catalog) entries.
@@ -25,10 +30,10 @@ void pgm_cat_close(void);
 uint16_t cat_get_length(const char* directory);
 
 /**
- * Calculate the PGM file length.
- * dirnum : The number of directory entries.
+ * Return true if catalog entry shall be skipped.
  */
-uint16_t pgm_file_length(uint16_t dirnum);
+BOOL cat_skip_file(const char* filename);
+
 
 char* byte_to_kb(uint32_t bytes, char* buf, uint8_t len);
 

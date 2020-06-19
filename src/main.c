@@ -179,10 +179,12 @@ static uint8_t hex_read_catalog(pab_t pab) {
       res = f_readdir(&lun->dir, &fno);                   // read a directory item
       if (res != FR_OK || fno.fname[0] == 0)
         break;  // break on error or end of dir
-      if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0)
-        continue; // skip
 
       char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+
+      if (cat_skip_file(filename))
+    	continue; // skip certain files like "." and ".."
+
       char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
 
       uart_trace(filename, 0, strlen(filename));
@@ -224,6 +226,7 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
   _delay_us(200);
   if(lun != NULL) {
     hex_puti(lun->dirnum * 36, FALSE);  // send full length of file
+    //hex_puti(36, FALSE);
     uint16_t i = 1;
     while(i <= lun->dirnum && res == FR_OK) {
       memset(lfn,0,sizeof(lfn));

@@ -9,9 +9,10 @@
 #include "catalog.h"
 
 extern FATFS fs;  // from main.c
-
-static const UCHAR   pgm_header[] = {0x80,0x03};
-static const UCHAR   pgm_trailer[] = {0xff,0x7f,0x03,0x86,0x00,0x20, 0x00};
+//static const PROGMEM
+UCHAR   pgm_header[] = {0x80,0x03};
+//static const PROGMEM
+UCHAR   pgm_trailer[] = {0xff,0x7f,0x03,0x86,0x00,0x20, 0x00};
 
 static const uint8_t pgm_header_len = 4;  // number of bytes in pgm_header + 2 bytes for file length
 static const uint8_t pgm_trailer_len = 7; // number of bytes in the pgm_trailer
@@ -19,8 +20,8 @@ static const uint8_t pgm_record_len = 33; // length record (constant here), incl
 static const uint8_t pgm_line_len = 31;   // length of line, just the recordlen without len of line number (2 bytes)
 static const uint8_t pgm_str_len = 27;    // length of string without terminating zero
 
-void pgm_cat_open(uint16_t num_records) {
-  uint16_t i = pgm_record_len * num_records + pgm_header_len;
+void pgm_cat_open(uint16_t num_entries) {
+  uint16_t i = pgm_record_len * num_entries + pgm_header_len;
   hex_putc(pgm_header[0],FALSE);
   hex_putc(pgm_header[1],FALSE);
   hex_putc(i & 255, FALSE);
@@ -61,8 +62,8 @@ void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char 
     uart_putcrlf();                          // in total 33 bytes
 }
 
-uint16_t pgm_file_length(uint16_t dirnum) {
-  uint16_t len = dirnum * pgm_record_len + pgm_header_len + pgm_trailer_len;
+uint16_t pgm_file_length(uint16_t num_entries) {
+  uint16_t len = num_entries * pgm_record_len + pgm_header_len + pgm_trailer_len;
   return len;
 }
 
@@ -75,25 +76,32 @@ UCHAR lfn[_MAX_LFN_LENGTH+1];
 fno.lfn = lfn;
 #endif
   uint16_t count = 0;
-
   res = f_opendir(&fs, &dir, (UCHAR*)directory); // open the directory
   while(res == FR_OK) {
     res = f_readdir(&dir, &fno);                   // read a directory item
     if (res != FR_OK || fno.fname[0] == 0)
       break;  // break on error or end of dir
-    if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0)
-      continue; // skip
+    char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+    if (cat_skip_file(filename))
+    	continue; // skip certain files like "." and ".."
     count++;
   }
   // no closedir needed.
   return count;
 }
 
+BOOL cat_skip_file(const char* filename) {
+	BOOL skip = FALSE;
+	if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
+		skip = TRUE;
+	}
+	return skip;
+}
 
 char* byte_to_kb(uint32_t bytes, char* buf, uint8_t len) {
   int kb = bytes / 1024;
   int rb = (int)round(((bytes % 1024)/1024.0)*10);
-  if (kb > 99) {
+  if (kb > 99) { // return 99.9 for files >= 100 kB
     kb = 99;
     rb = 9;
   }
