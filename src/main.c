@@ -171,19 +171,67 @@ static uint8_t hex_read_catalog(pab_t pab) {
   hex_release_bus_recv();
   _delay_us(200);
   if(lun != NULL) {
-    hex_puti(lun->dirnum * 33 + 4 + 7, FALSE);  // send full length of file
-    cat_open(lun->dirnum);
+    hex_puti(pgm_file_length(lun->dirnum), FALSE);  // send full length of file
+    pgm_cat_open(lun->dirnum);
     uint16_t i = 1;
     while(i <= lun->dirnum && res == FR_OK) {
       memset(lfn,0,sizeof(lfn));
       res = f_readdir(&lun->dir, &fno);                   // read a directory item
       if (res != FR_OK || fno.fname[0] == 0)
         break;  // break on error or end of dir
-      if (strcmp((const char*)fno.fname, "$") == 0)
-        continue; // skip the catalog file
       if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0)
         continue; // skip
-      if (fno.fsize < 0) continue; // skip
+
+      char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+      char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+
+      uart_trace(filename, 0, strlen(filename));
+      uart_putcrlf();
+
+      hex_release_bus_send();
+
+      pgm_cat_record(i++,fno.fsize, filename,attrib);
+
+    }
+    hex_release_bus_send();
+    pgm_cat_close();
+    uart_putc('>');
+    hex_release_bus_send();
+    rc = HEXSTAT_SUCCESS;
+  } else {
+    hex_puti(0, FALSE);  // null file
+    rc = HEXSTAT_NOT_OPEN;
+  }
+  hex_putc(rc, FALSE);    // status code
+  return 0;
+}
+
+static uint8_t hex_read_catalog_txt(pab_t pab) {
+  uint8_t fsize_k;
+  uint8_t rem;
+  uint8_t rc;
+  BYTE res = FR_OK;
+  luntbl_t* lun;
+  FILINFO fno;
+  # ifdef _MAX_LFN_LENGTH
+  UCHAR lfn[_MAX_LFN_LENGTH+1];
+  fno.lfn = lfn;
+  #endif
+
+  uart_putc('r');
+  lun = find_lun2(pab.lun);
+  hex_release_bus_recv();
+  _delay_us(200);
+  if(lun != NULL) {
+    hex_puti(lun->dirnum * 36, FALSE);  // send full length of file
+    uint16_t i = 1;
+    while(i <= lun->dirnum && res == FR_OK) {
+      memset(lfn,0,sizeof(lfn));
+      res = f_readdir(&lun->dir, &fno);                   // read a directory item
+      if (res != FR_OK || fno.fname[0] == 0)
+        break;  // break on error or end of dir
+      if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0)
+        continue; // skip
 
       fsize_k = (uint8_t)(fno.fsize / 1000);
       rem = ((fno.fsize % 1000) / 100);
@@ -195,35 +243,44 @@ static uint8_t hex_read_catalog(pab_t pab) {
       uart_putcrlf();
 
       hex_release_bus_send();
-
-      hex_puti(i++, FALSE);
-      hex_putc(31, FALSE);
-      hex_putc(0xca, FALSE);
-      hex_putc(27, FALSE);
+      hex_putc('\"', FALSE);
+      char lno[5];
+      memset(lno,0,sizeof(lno));
+      snprintf(lno,4,"%d  ",i++);
+      for (int j=0; j<strlen(lno) && j<3; j++) {
+    	  hex_putc(lno[j],FALSE);
+      }
+      hex_putc(' ', FALSE);
       hex_putc('!', FALSE);
-      if(fsize_k > 9)
+      if(fsize_k > 9) {
         hex_putc((fsize_k / 10) % 10 + '0', FALSE);
-      else
+      }
+      else {
         hex_putc(' ', FALSE);
+      }
       hex_putc(fsize_k % 10 + '0', FALSE);
       hex_putc('.', FALSE);
       hex_putc(rem + '0', FALSE);
       hex_putc(' ', FALSE);
+      hex_putc('\"', FALSE);
       hex_putc('\"', FALSE);
       uint8_t j;
       for(j = 0; j < 18 && j < strlen(filename) ; j++) {
         hex_putc(filename[j], FALSE);
       }
       hex_putc('\"', FALSE);
+      hex_putc('\"', FALSE);
       for( ; j < 18; j++) {
         hex_putc(' ', FALSE);
       }
       hex_putc(attrib[0], FALSE);
-      hex_putc(0, TRUE); // null termination
+      hex_putc('\"', FALSE);
+      hex_putc(',', TRUE);
+      //hex_putc(0, TRUE); // null termination
       uart_putcrlf();
+      //break;
     }
     hex_release_bus_send();
-    cat_close();
     uart_putc('>');
     hex_release_bus_send();
     rc = HEXSTAT_SUCCESS;
@@ -236,126 +293,6 @@ static uint8_t hex_read_catalog(pab_t pab) {
 }
 
 
-static FRESULT write_catalog_pgm(const char* path, const char* directory) {
-	char line[36];
-  uint8_t fsize_k;
-  uint8_t rem;
-  uint16_t count = 0;
-    FRESULT res;
-    DIR dir;
-    FILINFO fno;
-    # ifdef _MAX_LFN_LENGTH
-    UCHAR lfn[_MAX_LFN_LENGTH+1];
-    fno.lfn = lfn;
-    #endif
-	Catalog catalog;
-
-  res = f_opendir(&fs, &dir, (UCHAR*)directory); // open the directory
-  while(res == FR_OK) {
-    res = f_readdir(&dir, &fno);                   // read a directory item
-    if (fno.fname[0] == 0)
-      break;  // break on error or end of dir
-    if (strcmp((const char*)fno.fname, path) == 0)  // TODO remove this
-      continue; // skip the catalog file
-    if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0)
-      continue; // skip
-    if (fno.fsize < 0)
-      continue; // skip
-	  count++;
-	}
-  // no closedir needed.
-
-	Catalog_init(&catalog); // initialize Catalog structure
-    res = Catalog_open(&catalog, &fs, (const char*)path, count); // open catalog file and write header and  actual size
-
-    if (res == FR_OK) {
-      res = f_opendir(&fs, &dir, (UCHAR*)directory); // open the directory
-      if (res == FR_OK) {
-    	do {
-        memset(lfn,0,sizeof(lfn));
-    	  res = f_readdir(&dir, &fno);                   // read a directory item
-    	  if (res != FR_OK || fno.fname[0] == 0)
-    	    break;  // break on error or end of dir
-       	if (strcmp((const char*)fno.fname, path) == 0)
-       	  continue; // skip the catalog file
-       	if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0)
-       	  continue; // skip
-       	if (fno.fsize < 0) continue; // skip
-      fsize_k = (uint8_t)(fno.fsize / 1000);
-      rem = ((fno.fsize % 1000) / 100);
-		  memset(line,0,sizeof(line));
-		  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-		  char* attrib = ((fno.fattrib & AM_DIR) ? "D" : ((fno.fattrib & AM_VOL) ? "V" : "F"));
-
-      uint8_t i = 0;
-      line[i++] = '!';
-      if(fsize_k > 9)
-        line[i++] = (fsize_k / 10) % 10 + '0';
-      else
-        line[i++] = ' ';
-      line[i++] = fsize_k % 10 + '0';
-      line[i++] = '.';
-      line[i++] = rem + '0';
-      line[i++] = ' ';
-      line[i++] = '\"';
-      uint8_t j;
-      for(j = 0; j < 18 && j < strlen(filename) ; j++) {
-        line[i++] = filename[j];
-      }
-      line[i++] = '\"';
-      for( ; j < 18; j++) {
-        line[i++] = ' ';
-      }
-      line[i++] = attrib[0];
-      line[i] = 0;
-		  Catalog_write(&catalog, line);
-    	} while (1);
-      }
-      Catalog_close(&catalog); // write total size and close catalog file
-    }
-    return res;
-}
-
-static FRESULT write_catalog_txt(const char* path, const char* directory)
-{
-    FRESULT res;
-    DIR dir;
-    FILINFO fno;
-    # ifdef _MAX_LFN_LENGTH
-    UCHAR lfn[_MAX_LFN_LENGTH+1];
-	char line[1+5+1+1+1+13+1+_MAX_LFN_LENGTH+1+3+1+1+1];
-    fno.lfn = lfn;
-    #else
-	char line[5+1+1+1+13+1+12+1+3+1+1+1];
-    #endif
-	FIL fp;
-	UINT written;
-	USHORT lineno = 0;
-
-    res = f_open(&fs, &fp, (UCHAR*)path, FA_CREATE_ALWAYS | FA_WRITE);
-    if (res == FR_OK) {
-      res = f_opendir(&fs, &dir, (UCHAR*)directory); // open the directory
-      if (res == FR_OK) {
-    	do {
-          memset(lfn,0,sizeof(lfn));
-    	  res = f_readdir(&dir, &fno);                   // read a directory item
-    	  if (res != FR_OK || fno.fname[0] == 0) break;  // break on error or end of dir
-       	  if (strcmp((const char*)fno.fname, path) == 0) continue; // skip the catalog file
-       	  if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0) continue; // skip
-       	  if (fno.fsize < 0) continue; // skip
-       	  lineno = lineno + 1;
-		  memset(line,0,sizeof(line));
-		  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-		  char* attrib = ((fno.fattrib & AM_DIR) ? "DIR" : ((fno.fattrib & AM_VOL) ?"VOL" : "FIL"));
-		  snprintf(line,sizeof(line)-1,"\"%u : %lu %s %s\",", lineno, fno.fsize, filename, attrib);
-		  f_write(&fp, line, strlen(line), &written);
-    	} while (1);
-
-      }
-      f_close(&fp);
-    }
-    return res;
-}
 
 
 static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
@@ -641,7 +578,14 @@ static uint8_t hex_read(pab_t pab) {
   uart_putc('R');
   lun = find_lun2(pab.lun);
   if(lun != NULL && lun->type == LUN_DIR) {
-    return hex_read_catalog(pab);
+	if (pab.lun == 0 ) {
+	  uart_putc('P');
+      return hex_read_catalog(pab);
+	}
+	else {
+	  uart_putc('T');
+      return hex_read_catalog_txt(pab);
+	}
   }
   if(lun != NULL) {
     file = &(lun->file);
@@ -700,17 +644,10 @@ static uint8_t hex_open_catalog(pab_t pab) {
     rc = HEXSTAT_MAX_LUNS;
   }
   char* dirpath = (strlen((char*)buffer) > 1 ? (char*)&(buffer[1]) : "/");
-  if (pab.lun == 0) {
+  lun->dirnum = cat_get_length(dirpath);
+  fsize = (pab.lun == 0 ? pgm_file_length(lun->dirnum)  : lun->dirnum * 36);
+  res = f_opendir(&fs, &(lun->dir), (UCHAR*)dirpath); // open the director
 
-    lun->dirnum = cat_get_length(dirpath);
-    fsize = lun->dirnum * 33 + 4 + 7;
-    res = f_opendir(&fs, &(lun->dir), (UCHAR*)dirpath); // open the directory
-    // TODO need to handle fir open failing
-  }
-  else {
-    // TODO need to do open LUN!=0...
-    //write_catalog_txt("$", dirpath); // OPEN-INPUT
-  }
   hex_release_bus_recv();
   _delay_us(200);  // wait a bit...
   if(!hex_is_bav()) { // we can send response
@@ -765,14 +702,8 @@ static uint8_t hex_open(pab_t pab) {
   char* path=((char)buffer[0]=='$' ? "$" : (char*)buffer);
 
   if ((char)buffer[0]=='$') {
-   	char* dirpath = (strlen((char*)buffer)>1 ? (char*)&(buffer[1]) : "/");
-   	if (pab.lun == 0) {
-   	  return hex_open_catalog(pab);
-   	  //write_catalog_pgm("$", dirpath); // OLD-PGM
-   	}
-   	else {
-   	  write_catalog_txt("$", dirpath); // OPEN-INPUT
-   	}
+	  char* dirpath = (strlen((char*)buffer)>1 ? (char*)&(buffer[1]) : "/");
+	  return hex_open_catalog(pab);
   }
   //*******************************************************
 

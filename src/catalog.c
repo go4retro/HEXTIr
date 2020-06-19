@@ -9,130 +9,62 @@
 
 extern FATFS fs;  // from main.c
 
-UCHAR  header[]= {0x80,0x03};
-UCHAR  trailer[] = {0xff,0x7f,0x03,0x86,0x00,0x20, 0x00};
+static const UCHAR   pgm_header[] = {0x80,0x03};
+static const UCHAR   pgm_trailer[] = {0xff,0x7f,0x03,0x86,0x00,0x20, 0x00};
 
-static FRESULT write_header(FIL *fp) {
-  UINT written;
-  FRESULT res;
-  res = f_write(fp, &header, sizeof(header), &written);
-  return res;
-}
+static const uint8_t pgm_header_len = 4;  // number of bytes in pgm_header + 2 bytes for file length
+static const uint8_t pgm_trailer_len = 7; // number of bytes in the pgm_trailer
+static const uint8_t pgm_record_len = 33; // length record (constant here), includes len. of line number
+static const uint8_t pgm_line_len = 31;   // length of line, just the recordlen without len of line number (2 bytes)
+static const uint8_t pgm_str_len = 27;    // length of string without terminating zero
 
-static FRESULT write_trailer(FIL *fp) {
-  UINT written;
-  FRESULT res;
-  res = f_write(fp, &trailer, sizeof(trailer), &written);
-  return res;
-}
-
-static FRESULT write_proglen(FIL *fp, UINT pgmlen) {
-  UINT written;
-  FRESULT res;
-  res = f_write(fp, &pgmlen, sizeof(pgmlen), &written);
-  return res;
-}
-
-static UCHAR write_line(FIL *fp, UINT lineno, const char* cstr) {
-  UINT written;
-  UCHAR  linelen;
-  UCHAR  recordlen;
-  //UCHAR  remtoken = 0x82;
-  UCHAR  strtoken = 0xca;
-  UCHAR  zero = 0x00;
-  UCHAR  slen;
-
-  slen = strlen(cstr);
-  linelen = slen + sizeof(recordlen) + sizeof(strtoken)
-    + sizeof(slen)+ sizeof(zero); 
-  f_write(fp, &lineno, sizeof(lineno), &written);
-  f_write(fp, &linelen, sizeof(linelen), &written);
-  f_write(fp, &strtoken, sizeof(strtoken), &written);
-  f_write(fp, &slen, sizeof(slen), &written);
-  f_write(fp, cstr, slen, &written);
-  f_write(fp, &zero, sizeof(zero), &written);
-  recordlen = linelen + sizeof(lineno);
-  uart_puthex(recordlen >> 8);
-  uart_puthex(recordlen & 255);
-  uart_putcrlf();
-  return recordlen;
-}
-
-/**
- * Initialize the catalog structure.
- */
-void Catalog_init(Catalog* self){
-  self->pgmlen = 0;
-  self->linenumber = 0;
-  self->fp = NULL;
-}
-
-void cat_open(uint16_t num) {
-  uint16_t i = 33 * num + 4;
-
-  hex_putc(header[0],FALSE);
-  hex_putc(header[1],FALSE);
+void pgm_cat_open(uint16_t num_records) {
+  uint16_t i = pgm_record_len * num_records + pgm_header_len;
+  hex_putc(pgm_header[0],FALSE);
+  hex_putc(pgm_header[1],FALSE);
   hex_putc(i & 255, FALSE);
   hex_putc(i >> 8, TRUE);
 }
-/**
- * Open the catalog file ("$") and add the header.
- */
-FRESULT Catalog_open(Catalog* self, FATFS* fs,  const char* fname, uint16_t num) {
-  int res = FR_DENIED;
-  if (self->fp == NULL) {
-	self->fp = malloc(sizeof(FIL));
-    self->linenumber = 0;
-    self->pgmlen = sizeof(header) + sizeof(self->pgmlen);
-    uint16_t i = sizeof(header) + 33*num + 2;
-    uart_puthex(i>>8);
-    uart_puthex(i);
+
+void pgm_cat_close(void) {
+  for (uint8_t i = 0; i < sizeof(pgm_trailer); i++) {
+    hex_putc(pgm_trailer[i], i + 1 == sizeof(pgm_trailer));
+  }
+}
+
+void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char attrib) {
+    uint8_t fsize_k = (uint8_t)(fsize / 1000);
+    uint8_t rem = ((fsize % 1000) / 100);
+    hex_puti(lineno, FALSE);                // line number
+    hex_putc(pgm_line_len, FALSE);          // length of next "code" line (without len. of line number)
+    hex_putc(0xca, FALSE);                  // 0xca : token for unquoted string, next data is string
+    hex_putc(pgm_str_len, FALSE);           // length of the string without terminating zero
+    hex_putc('!', FALSE);                   // separator char line number / string
+    if(fsize_k > 9)
+      hex_putc((fsize_k / 10) % 10 + '0', FALSE);
+    else
+      hex_putc(' ', FALSE);
+    hex_putc(fsize_k % 10 + '0', FALSE);
+    hex_putc('.', FALSE);
+    hex_putc(rem + '0', FALSE);
+    hex_putc(' ', FALSE);
+    hex_putc('\"', FALSE);
+    uint8_t j;
+    for(j = 0; j < 18 && j < strlen(filename) ; j++) {
+      hex_putc(filename[j], FALSE);
+    }
+    hex_putc('\"', FALSE);
+    for( ; j < 18; j++) {
+      hex_putc(' ', FALSE);
+    }
+    hex_putc(attrib, FALSE);
+    hex_putc(0, TRUE); // null termination of str.
     uart_putcrlf();
-
-
-    res = f_open(fs, self->fp, (UCHAR*)fname, FA_CREATE_ALWAYS | FA_WRITE);
-    if (res == FR_OK) {
-      write_header(self->fp);
-      write_proglen(self->fp, i);
-    }
-    else {
-      free(self->fp);
-    }
-  }
-  return res;
 }
 
-void cat_close(void) {
-  for (uint8_t i = 0; i < sizeof(trailer); i++) {
-    hex_putc(trailer[i], i + 1 == sizeof(trailer));
-  }
-}
-
-/**
- * Close the catalog file ("$") and reset the Catalog structure.
- */
-void Catalog_close(Catalog* self) {
-  if (self->fp != NULL) {
-    //update_proglen(self->fp, self->pgmlen);
-    write_trailer(self->fp);
-    f_close(self->fp);
-    free(self->fp);
-    self->pgmlen = 0;
-    self->linenumber = 0;
-    self->fp = NULL;
-  }
-}
-
-/**
- * Write a record to the catalog.
- */
-void Catalog_write(Catalog* self, const char* cstr) {
-  UCHAR recordlen;
-  if (self->fp != NULL) {
-    self->linenumber = self->linenumber + 1;
-    recordlen = write_line(self->fp, self->linenumber, cstr);
-    self->pgmlen = self->pgmlen + recordlen;
-  }
+uint16_t pgm_file_length(uint16_t dirnum) {
+  uint16_t len = dirnum * pgm_record_len + pgm_header_len + pgm_trailer_len;
+  return len;
 }
 
 uint16_t cat_get_length(const char* directory) {
@@ -150,11 +82,7 @@ fno.lfn = lfn;
     res = f_readdir(&dir, &fno);                   // read a directory item
     if (res != FR_OK || fno.fname[0] == 0)
       break;  // break on error or end of dir
-    if (strcmp((const char*)fno.fname, "$") == 0)  // TODO remove this
-      continue; // skip the catalog file
     if (strcmp((const char*)fno.fname, ".") == 0 || strcmp((const char*)fno.fname, "..") == 0)
-      continue; // skip
-    if (fno.fsize < 0)
       continue; // skip
     count++;
   }
