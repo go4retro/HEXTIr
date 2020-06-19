@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ff.h>
+#include <math.h>
 #include "config.h"
 #include "hexbus.h"
 #include "uart.h"
@@ -33,33 +34,31 @@ void pgm_cat_close(void) {
 }
 
 void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char attrib) {
-    uint8_t fsize_k = (uint8_t)(fsize / 1000);
-    uint8_t rem = ((fsize % 1000) / 100);
-    hex_puti(lineno, FALSE);                // line number
-    hex_putc(pgm_line_len, FALSE);          // length of next "code" line (without len. of line number)
-    hex_putc(0xca, FALSE);                  // 0xca : token for unquoted string, next data is string
-    hex_putc(pgm_str_len, FALSE);           // length of the string without terminating zero
-    hex_putc('!', FALSE);                   // separator char line number / string
-    if(fsize_k > 9)
-      hex_putc((fsize_k / 10) % 10 + '0', FALSE);
-    else
-      hex_putc(' ', FALSE);
-    hex_putc(fsize_k % 10 + '0', FALSE);
-    hex_putc('.', FALSE);
-    hex_putc(rem + '0', FALSE);
-    hex_putc(' ', FALSE);
-    hex_putc('\"', FALSE);
-    uint8_t j;
-    for(j = 0; j < 18 && j < strlen(filename) ; j++) {
-      hex_putc(filename[j], FALSE);
+
+	uint8_t i;
+    char buf[5];
+    char* size_kb = byte_to_kb(fsize, buf, sizeof(buf));
+
+    hex_puti(lineno, FALSE);                // line number, 2 bytes
+    hex_putc(pgm_line_len, FALSE);          // length of next "code" line (without len. of line number), 1 byte
+    hex_putc(0xca, FALSE);                  // 0xca : token for unquoted string, next data is string, 1 byte
+    hex_putc(pgm_str_len, FALSE);           // length of the string without terminating zero, 1 byte
+    hex_putc('!', FALSE);                   // separator char line number / string 1 byte
+    for (i = 0; i < 4; i++) {               // file size in kilo bytes, 4 byte
+      hex_putc(size_kb[i], FALSE);          //
+    }                                       //
+    hex_putc(' ', FALSE);                   // blank, 1 byte
+    hex_putc('\"', FALSE);                  // quote, 1 byte
+    for(i = 0; i < 18 && i < strlen(filename) ; i++) {  // file name padded with trailing blanks, 18 bytes
+      hex_putc(filename[i], FALSE);
     }
-    hex_putc('\"', FALSE);
-    for( ; j < 18; j++) {
+    hex_putc('\"', FALSE);                  // quote, 1 byte
+    for( ; i < 18; i++) {
       hex_putc(' ', FALSE);
     }
-    hex_putc(attrib, FALSE);
-    hex_putc(0, TRUE); // null termination of str.
-    uart_putcrlf();
+    hex_putc(attrib, FALSE);                 // file attribute, 1 byte
+    hex_putc(0, TRUE);                       // null termination of string, 1 byte
+    uart_putcrlf();                          // in total 33 bytes
 }
 
 uint16_t pgm_file_length(uint16_t dirnum) {
@@ -90,5 +89,16 @@ fno.lfn = lfn;
   return count;
 }
 
+
+char* byte_to_kb(uint32_t bytes, char* buf, uint8_t len) {
+  int kb = bytes / 1024;
+  int rb = (int)round(((bytes % 1024)/1024.0)*10);
+  if (kb > 99) {
+    kb = 99;
+    rb = 9;
+  }
+  snprintf(buf, len, "%2d.%d", kb, rb);
+  return buf;
+}
 
 

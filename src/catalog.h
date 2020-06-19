@@ -30,6 +30,6 @@ uint16_t cat_get_length(const char* directory);
  */
 uint16_t pgm_file_length(uint16_t dirnum);
 
-
+char* byte_to_kb(uint32_t bytes, char* buf, uint8_t len);
 
 #endif /* SRC_CATALOG_H_ */
