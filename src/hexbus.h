@@ -117,6 +117,8 @@ typedef enum _openmode_t {
               OPENMODE_INTERNAL = 0x08, // internal type files store data in native form rather than ASCII (ie. numbers are stored in internal format.
             } openmode_t ;
 
+#define OPENMODE_MASK 0xC0
+
 
 #define    FILE_EOF_REACHED        0x80
 #define    FILE_SUPPORTS_RELATIVE  0x40

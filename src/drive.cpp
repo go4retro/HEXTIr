@@ -365,7 +365,7 @@ static uint8_t hex_drv_read(pab_t pab) {
       // amount remaining to read from file
       fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
 #else
-      fsize = file->fp.fsize;
+      fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
 #endif
       if ( fsize == 0 ) {
         res = FR_EOF;
@@ -505,7 +505,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   BYTE    mode = 0;
   uint16_t fsize = 0;
   file_t* file = NULL;
-  BYTE res;
+  BYTE res = FR_OK;
 
   uart_putc('>');
 
@@ -524,8 +524,8 @@ static uint8_t hex_drv_open(pab_t pab) {
 #ifdef ARDUINO
 
   // for now, until we get rid of SD library in Arduino build.
-  switch (att & OPENMODE_UPDATE) {
-    case 0x00:  // append mode
+  switch (att & OPENMODE_MASK) {
+    case OPENMODE_APPEND:  // append mode
       mode = FILE_WRITE;
       break;
 
@@ -533,7 +533,7 @@ static uint8_t hex_drv_open(pab_t pab) {
       mode = FILE_WRITE_NEW; // our own, does not include O_APPEND attribute.
       break;
 
-    case OPENMODE_WRITE | OPENMODE_READ:
+    case OPENMODE_UPDATE:
       mode = FILE_WRITE; // In SD lib, FILE_WRITE includes the O_READ attribute.
       break;
     default: //OPENMODE_READ
@@ -543,14 +543,14 @@ static uint8_t hex_drv_open(pab_t pab) {
 
 #else
   // map attributes to FatFS file access mode
-  switch (att & OPENMODE_UPDATE) {
-    case 0x00:  // append mode
-      mode = FA_WRITE;
+  switch (att & OPENMODE_MASK) {
+    case OPENMODE_APPEND:  // append mode
+      mode = FA_WRITE | FA_CREATE_ALWAYS;
       break;
     case OPENMODE_WRITE: // write, truncate if present. Maybe...
       mode = FA_WRITE | FA_CREATE_ALWAYS;
       break;
-    case OPENMODE_WRITE | OPENMODE_READ:
+    case OPENMODE_UPDATE:
       mode = FA_WRITE | FA_READ | FA_CREATE_ALWAYS;
       break;
     default: //OPENMODE_READ
@@ -602,14 +602,19 @@ static uint8_t hex_drv_open(pab_t pab) {
             }
           }
 
-          if ( (att & OPENMODE_UPDATE) == OPENMODE_APPEND ) {
+          if ( (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
             file->fp.seek( file->fp.size() ); // position for append.
           }
         }
 #else
         // TODO: manage open of a directory if file->attr == FILEATTR_CATALOG
-        if ( pab.datalen < BUFSIZE - 1 ) {
-          res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
+        if ( !(file->attr & FILEATTR_CATALOG ) ) {
+          if ( pab.datalen < BUFSIZE - 1 ) {
+            res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
+          }
+          if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
+            res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
+          }
         }
 #endif
 
@@ -890,7 +895,6 @@ static uint8_t hex_drv_delete(pab_t pab) {
     initial simplistic implementation
 */
 static uint8_t hex_drv_status( pab_t pab ) {
-  uint8_t rc = HEXSTAT_SUCCESS;
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
@@ -905,16 +909,15 @@ static uint8_t hex_drv_status( pab_t pab ) {
       // TODO: we need to cache the file's "open" mode (read-only, write-only, read/write/append and report that properly here.
       //       ... relative or sequential access as well)
       st = FILE_DEV_IS_OPEN | FILE_SUPPORTS_RELATIVE | FILE_IO_MODE_READWRITE;
-#ifdef ARDUINO
       if ( !( file->attr & FILEATTR_CATALOG )) {
+#ifdef ARDUINO
         if ( file->fp.position() == file->fp.size() ) {
+#else
+        if ( file->fp.fptr == file->fp.fsize ) {
+#endif
           st |= FILE_EOF_REACHED;
         }
       }
-#else
-      // TODO: FatFS EOF check on file
-      // We also need to deal properly here and in SD with the CATALOG being open.
-#endif
     }
   }
   if ( !hex_is_bav() ) {
