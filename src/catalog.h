@@ -20,14 +20,17 @@ void pgm_cat_close(void);
 /**
  * Calculate the PGM file length.
  */
-uint16_t pgm_file_length(uint16_t num_entries);
+uint16_t pgm_cat_file_length(uint16_t num_entries);
 
+/**
+ * Get the maximum file length for the OPEN/INPUT text catalog file.
+ */
+uint16_t txt_max_cat_file_length(void);
 
 /**
  * Get number of directory (=catalog) entries.
- * directory : The path to the directory.
  */
-uint16_t cat_get_length(const char* directory);
+uint16_t cat_get_num_entries(FATFS* fsp, const char* directory);
 
 /**
  * Return true if catalog entry shall be skipped.

@@ -8,7 +8,9 @@
 #include "uart.h"
 #include "catalog.h"
 
-extern FATFS fs;  // from main.c
+// ------------------------- OLD/PGM catalog -------------------------
+
+//extern FATFS fs;  // from main.c
 //static const PROGMEM
 UCHAR   pgm_header[] = {0x80,0x03};
 //static const PROGMEM
@@ -62,12 +64,26 @@ void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char 
     uart_putcrlf();                          // in total 33 bytes
 }
 
-uint16_t pgm_file_length(uint16_t num_entries) {
+uint16_t pgm_cat_file_length(uint16_t num_entries) {
   uint16_t len = num_entries * pgm_record_len + pgm_header_len + pgm_trailer_len;
   return len;
 }
 
-uint16_t cat_get_length(const char* directory) {
+// ------------------------- OPEN/INPUT catalog -------------------------
+
+uint16_t txt_max_cat_file_length(void) {
+  // 4 bytes for file size in kB plus
+  // 1 byte for "," separator plus
+  // _MAX_LFN_LENGTH bytes max. for file name plus
+  // 1 byte for "," separator plus
+  // 1 byte for file attribute (F,D,V,..)
+  uint16_t len = 4 + 1 + _MAX_LFN_LENGTH + 1 + 1;
+  return len;
+}
+
+// ----------------------------- common -----------------------------------
+
+uint16_t cat_get_num_entries(FATFS* fsp, const char* directory) {
   FRESULT res;
   DIR dir;
   FILINFO fno;
@@ -76,7 +92,7 @@ UCHAR lfn[_MAX_LFN_LENGTH+1];
 fno.lfn = lfn;
 #endif
   uint16_t count = 0;
-  res = f_opendir(&fs, &dir, (UCHAR*)directory); // open the directory
+  res = f_opendir(fsp, &dir, (UCHAR*)directory); // open the directory
   while(res == FR_OK) {
     res = f_readdir(&dir, &fno);                   // read a directory item
     if (res != FR_OK || fno.fname[0] == 0)
