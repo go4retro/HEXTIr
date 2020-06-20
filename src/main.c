@@ -155,8 +155,6 @@ static void init(void) {
 
 
 static uint8_t hex_read_catalog(pab_t pab) {
-  uint8_t fsize_k;
-  uint8_t rem;
   uint8_t rc;
   BYTE res = FR_OK;
   luntbl_t* lun;
@@ -171,8 +169,8 @@ static uint8_t hex_read_catalog(pab_t pab) {
   hex_release_bus_recv();
   _delay_us(200);
   if(lun != NULL) {
-    hex_puti(pgm_cat_file_length(lun->dirnum), FALSE);  // send full length of file
-    pgm_cat_open(lun->dirnum);
+    hex_puti(cat_file_length_pgm(lun->dirnum), FALSE);  // send full length of file
+    cat_open_pgm(lun->dirnum);
     uint16_t i = 1;
     while(i <= lun->dirnum && res == FR_OK) {
       memset(lfn,0,sizeof(lfn));
@@ -192,11 +190,12 @@ static uint8_t hex_read_catalog(pab_t pab) {
 
       hex_release_bus_send();
 
-      pgm_cat_record(i++,fno.fsize, filename,attrib);
+      cat_write_record_pgm(i++,fno.fsize, filename,attrib);
 
+      uart_putcrlf();
     }
     hex_release_bus_send();
-    pgm_cat_close();
+    cat_close_pgm();
     uart_putc('>');
     hex_release_bus_send();
     rc = HEXSTAT_SUCCESS;
@@ -217,16 +216,17 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
   UCHAR lfn[_MAX_LFN_LENGTH+1];
   fno.lfn = lfn;
   #endif
-  char buf[5]; // for byte_to_kb
 
   uart_putc('r');
   lun = find_lun2(pab.lun);
   hex_release_bus_recv();
   _delay_us(200);
   if(lun != NULL) {
+	// the loop is to be able to skip files that shall not be listed in the catalog
+	// else we only go through the loop once
     do {
 	  memset(lfn,0,sizeof(lfn));
-	  res = f_readdir(&lun->dir, &fno);                   // read a directory item
+	  res = f_readdir(&lun->dir, &fno); // read a directory item
 	  if (res != FR_OK) {
 		  break; // break on error, leave do .. while loop
 	  }
@@ -241,27 +241,17 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
 	  uart_trace(filename, 0, strlen(filename));
 	  uart_putcrlf();
 
-	  char* size_kb = byte_to_kb(fno.fsize, buf, sizeof(buf));
 	  char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
 
-	  int len = strlen(filename) + strlen(size_kb) + 1 + 1 + 1;
-	  hex_puti(len, FALSE);
-	  uint8_t i;
-	  for(i = 0; i < strlen(size_kb)  ; i++) {
-		  hex_putc(size_kb[i], FALSE);
-	  }
-	  hex_putc(',', FALSE);
-	  for(i = 0; i < strlen(filename); i++) {
-		  hex_putc(filename[i], FALSE);
-	  }
-	  hex_putc(',', FALSE);
-	  hex_putc(attrib, TRUE);
-	  lun->dirnum = lun->dirnum - 1; // decrement dirnum, used here as entries left to detect EOF for catalog when dirnum = 0
-	  uart_putcrlf();
-	  uart_putc('>');
-	  hex_release_bus_send(); // in the right place ?
+	  hex_release_bus_send();
+
+	  // write the calatog entry for OPEN/INPUT
+	  cat_write_txt(&(lun->dirnum), fno.fsize, filename, attrib);
+
 	  break; // success, leave the do .. while loop
     } while(1);
+
+    hex_release_bus_send(); // in the right place ?
 
     switch(res) {
       case FR_OK:
@@ -317,9 +307,11 @@ static int8_t hex_return_status(pab_t pab) {
 
 	lun = find_lun2(pab.lun);
 	if(lun != NULL && lun->type == LUN_DIR) {
+		// EOF on catalog for OPEN/INPUT only
+		// each INPUT on the catalog decrements lun->dirnum
 		if (pab.lun != 0 ) {
 		  if (lun->dirnum == 0) {
-			 status = 0x80; // EOF on catalog
+			 status = 0x80; // EOF on catalog for OPEN/INPUT only
 		  }
 		}
 	}
@@ -648,7 +640,7 @@ static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
 	  char* dirpath = (strlen((char*)buffer) > 1 ? (char*)&(buffer[1]) : "/");
 	  lun->dirnum = cat_get_num_entries(&fs, dirpath);
 	  // the file size is either the length of the PGM file for OLD/PGM or the max. length of the txt file for OPEN/INPUT.
-	  fsize = (pab.lun == 0 ? pgm_cat_file_length(lun->dirnum)  : txt_max_cat_file_length());
+	  fsize = (pab.lun == 0 ? cat_file_length_pgm(lun->dirnum)  : cat_max_file_length_txt());
 	  res = f_opendir(&fs, &(lun->dir), (UCHAR*)dirpath); // open the director
 	}
 	else {

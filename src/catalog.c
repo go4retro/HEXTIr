@@ -22,7 +22,8 @@ static const uint8_t pgm_record_len = 33; // length record (constant here), incl
 static const uint8_t pgm_line_len = 31;   // length of line, just the recordlen without len of line number (2 bytes)
 static const uint8_t pgm_str_len = 27;    // length of string without terminating zero
 
-void pgm_cat_open(uint16_t num_entries) {
+// called once at the beginning
+void cat_open_pgm(uint16_t num_entries) {
   uint16_t i = pgm_record_len * num_entries + pgm_header_len;
   hex_putc(pgm_header[0],FALSE);
   hex_putc(pgm_header[1],FALSE);
@@ -30,17 +31,19 @@ void pgm_cat_open(uint16_t num_entries) {
   hex_putc(i >> 8, TRUE);
 }
 
-void pgm_cat_close(void) {
+// called onece at the end
+void cat_close_pgm(void) {
   for (uint8_t i = 0; i < sizeof(pgm_trailer); i++) {
     hex_putc(pgm_trailer[i], i + 1 == sizeof(pgm_trailer));
   }
 }
 
-void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char attrib) {
+// called multiple times, once for each catalog entry
+void cat_write_record_pgm(uint16_t lineno, uint32_t fsize, const char* filename, char attrib) {
 
 	uint8_t i;
-    char buf[5];
-    char* size_kb = byte_to_kb(fsize, buf, sizeof(buf));
+    char buf[5]; // needed for size_kb
+    char* size_kb = cat_bytes_to_kb(fsize, buf, sizeof(buf));
 
     hex_puti(lineno, FALSE);                // line number, 2 bytes
     hex_putc(pgm_line_len, FALSE);          // length of next "code" line (without len. of line number), 1 byte
@@ -61,17 +64,17 @@ void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char 
     }
     hex_putc(attrib, FALSE);                 // file attribute, 1 byte
     hex_putc(0, TRUE);                       // null termination of string, 1 byte
-    uart_putcrlf();                          // in total 33 bytes
+                                             // in total 33 bytes
 }
 
-uint16_t pgm_cat_file_length(uint16_t num_entries) {
+uint16_t cat_file_length_pgm(uint16_t num_entries) {
   uint16_t len = num_entries * pgm_record_len + pgm_header_len + pgm_trailer_len;
   return len;
 }
 
 // ------------------------- OPEN/INPUT catalog -------------------------
 
-uint16_t txt_max_cat_file_length(void) {
+uint16_t cat_max_file_length_txt(void) {
   // 4 bytes for file size in kB plus
   // 1 byte for "," separator plus
   // _MAX_LFN_LENGTH bytes max. for file name plus
@@ -79,6 +82,26 @@ uint16_t txt_max_cat_file_length(void) {
   // 1 byte for file attribute (F,D,V,..)
   uint16_t len = 4 + 1 + _MAX_LFN_LENGTH + 1 + 1;
   return len;
+}
+
+void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char attrib) {
+	uint8_t i;
+    char buf[5];
+    char* size_kb = cat_bytes_to_kb(fsize, buf, sizeof(buf));
+
+	int len = strlen(size_kb) + 1 + strlen(filename) + 1 + 1; // length of data transmitted
+	hex_puti(len, FALSE);                                     // length
+	for(i = 0; i < strlen(size_kb)  ; i++) {                  // file size in kilo bytes, 4 byte
+	  hex_putc(size_kb[i], FALSE);                            //
+	}                                                         //
+	hex_putc(',', FALSE);                                     // "," separator, 1 byte
+	for(i = 0; i < strlen(filename); i++) {                   // file name , max. _MAX_LFN_LENGTH bytes
+	  hex_putc(filename[i], FALSE);                           //
+	}                                                         //
+	hex_putc(',', FALSE);                                     // "," separator, 1 byte
+	hex_putc(attrib, TRUE);                                   // file attribute, 1 byte
+
+	*dirnum = *dirnum - 1; // decrement dirnum, used here as entries left to detect EOF for catalog when dirnum = 0
 }
 
 // ----------------------------- common -----------------------------------
@@ -114,7 +137,7 @@ BOOL cat_skip_file(const char* filename) {
 	return skip;
 }
 
-char* byte_to_kb(uint32_t bytes, char* buf, uint8_t len) {
+char* cat_bytes_to_kb(uint32_t bytes, char* buf, uint8_t len) {
   int kb = bytes / 1024;
   int rb = (int)round(((bytes % 1024)/1024.0)*10);
   if (kb > 99) { // return 99.9 for files >= 100 kB

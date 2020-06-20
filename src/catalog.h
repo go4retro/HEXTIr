@@ -5,27 +5,32 @@
  * Send PGM header bytes and length on hex-bus.
  * num : Number of catalog entries.
  */
-void pgm_cat_open(uint16_t num_entries);
+void cat_open_pgm(uint16_t num_entries);
 
 /**
- * Send catalog entry on hex-bus.
+ * Send catalog entry on hex-bus in PGM format.
  */
-void pgm_cat_record(uint16_t lineno, uint32_t fsize, const char* filename, char attrib);
+void cat_write_record_pgm(uint16_t lineno, uint32_t fsize, const char* filename, char attrib);
 
 /**
  * Send PGM trailer bytes on hex-bus.
  */
-void pgm_cat_close(void);
+void cat_close_pgm(void);
 
 /**
  * Calculate the PGM file length.
  */
-uint16_t pgm_cat_file_length(uint16_t num_entries);
+uint16_t cat_file_length_pgm(uint16_t num_entries);
 
 /**
  * Get the maximum file length for the OPEN/INPUT text catalog file.
  */
-uint16_t txt_max_cat_file_length(void);
+uint16_t cat_max_file_length_txt(void);
+
+/**
+ * Send catalog entry on hex-bus in text format.
+ */
+void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char attrib);
 
 /**
  * Get number of directory (=catalog) entries.
@@ -38,6 +43,6 @@ uint16_t cat_get_num_entries(FATFS* fsp, const char* directory);
 BOOL cat_skip_file(const char* filename);
 
 
-char* byte_to_kb(uint32_t bytes, char* buf, uint8_t len);
+char* cat_bytes_to_kb(uint32_t bytes, char* buf, uint8_t len);
 
 #endif /* SRC_CATALOG_H_ */
