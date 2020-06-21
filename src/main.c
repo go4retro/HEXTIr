@@ -258,9 +258,11 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
         rc = HEXSTAT_SUCCESS;
         break;
       case FR_NO_FILE:
+      	hex_puti(0, FALSE); // zero length data
     	rc = HEXSTAT_EOF;
     	break;
       default:
+        hex_puti(0, FALSE); // zero length data
         rc = HEXSTAT_DEVICE_ERR;
         break;
     }
