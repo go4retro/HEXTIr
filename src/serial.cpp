@@ -17,22 +17,33 @@
 
     serial.cpp: simple SoftwareSerial device functions.
 */
+
+#include <stdlib.h>
+#include <string.h>
+#include <avr/pgmspace.h>
+
 #include "config.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "timer.h"
 
-#include "serial.h"
-
-#ifdef INCLUDE_SERIAL
+#ifdef ARDUINO
 // WORK IN PROGRESS - some of the routines will flag an unused parameter 'pab' warning.
 #include <SoftwareSerial.h>
 #include <Arduino.h>
+#else
+#include "uart.h"
+#endif
+
+#include "serial.h"
 
 static const char baud_attrib[] PROGMEM = "B=";
 // Global defines
 volatile uint8_t  ser_open = 0;
+
+#ifdef ARDUINO
 SoftwareSerial    serial_peripheral( 8, 9 );  // either can support interrupts, and are otherwise available.
+#endif
 
 extern uint8_t buffer[BUFSIZE];
 
@@ -80,9 +91,17 @@ static uint8_t hex_ser_open(pab_t pab) {
               baud = atol( attrib + 2 );
             }
           }
+#ifdef ARDUINO
           serial_peripheral.begin( baud );
+#else
+          uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
+#endif
           if ( att & OPENMODE_READ ) {
+#ifdef ARDUINO
             serial_peripheral.listen(); // apply listener if we are expecting input
+#else
+            // TODO figure out non Arduino alternative
+#endif
           }
           transmit_word( 4 );
           transmit_word( len );
@@ -135,8 +154,11 @@ static uint8_t hex_ser_read(pab_t pab) {
   if ( ser_open ) {
     // protect access via ser_open since serial_peripheral is not present
     // if ser_open = 0.
+#ifdef ARDUINO
     bcount = serial_peripheral.available();
-
+#else
+    bcount = (uart0_data_available() ? 1 : 0); // TODO  need to implement true count
+#endif
     if ( bcount > pab.buflen ) {
       bcount = pab.buflen;
     }
@@ -157,7 +179,11 @@ static uint8_t hex_ser_read(pab_t pab) {
 
         bcount -= len;
         while ( len-- && rc == HEXSTAT_SUCCESS ) {
+#ifdef ARDUINO
           rc = transmit_byte( serial_peripheral.read() );
+#else
+          rc = transmit_byte( uart_getc() );
+#endif
         }
       }
       if ( rc != HEXERR_BAV ) {
@@ -192,7 +218,11 @@ static uint8_t hex_ser_write(pab_t pab) {
       if (rc == HEXSTAT_SUCCESS) {
         j  = 0;
         while (j < len) {
+#ifdef ARDUINO
           serial_peripheral.write( buffer[ j++ ] );
+#else
+          uart_putc(buffer[j++]);
+#endif
         }
       }
       len -= i;
@@ -268,11 +298,8 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_INVALID_MARKER
 };
 
-#endif // include-serial
-
 
 void ser_register(registry_t *registry) {
-#ifdef INCLUDE_SERIAL
   uint8_t i = registry->num_devices;
 
   registry->num_devices++;
@@ -281,23 +308,20 @@ void ser_register(registry_t *registry) {
   registry->entry[ i ].operation = (cmd_proc *)&fn_table;
   registry->entry[ i ].command = (uint8_t *)&op_table;
   return;
-#endif
 }
 
 
 void ser_reset(void) {
-#ifdef INCLUDE_SERIAL
   if ( ser_open ) {
+#ifdef ARDUINO
     serial_peripheral.end();
+#endif
     ser_open = FALSE;
   }
-#endif
   return;
 }
 
 
 void ser_init(void) {
-#ifdef INCLUDE_SERIAL
   ser_open = FALSE;
-#endif
 }

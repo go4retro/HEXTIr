@@ -18,22 +18,27 @@
     printer.cpp: Printer-based (over Serial) device functions.
 */
 
+#include <string.h>
+#include <avr/pgmspace.h>
+
 #include "config.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "timer.h"
 
+
+#ifdef ARDUINO
+#include <Arduino.h>
+#else
+#include "swuart.h"
+#endif
+
 #include "printer.h"
 
-
-#ifdef INCLUDE_PRINTER
-#include <Arduino.h>
-#endif
 
 // Global references
 extern uint8_t buffer[BUFSIZE];
 
-#ifdef INCLUDE_PRINTER
 // Global defines
 volatile uint8_t  prn_open = 0;
 
@@ -127,12 +132,18 @@ static uint8_t hex_prn_write(pab_t pab) {
         that HexBus operations are not compromised.
     */
     if ( rc == HEXSTAT_SUCCESS && prn_open ) {
+#ifdef ARDUINO
       Serial.write(buffer, i);
       delayMicroseconds( i*72 );
       /* use 72 us per character sent delay.
          digital logic analyzer confirms that @ 115200 baud, the data is
          flushed over the wire BEFORE we continue HexBus operations.
       */
+#else
+      for(uint8_t j = 0; j < i; j++) {
+        swuart_putc(0, buffer[j]);
+      }
+#endif
       written = 1; // indicate we actually wrote some data
     }
     len -= i;
@@ -142,10 +153,15 @@ static uint8_t hex_prn_write(pab_t pab) {
       a CR/LF.
   */
   if ( written && prn_open ) {
+#ifdef ARDUINO
     buffer[0] = 13;
     buffer[1] = 10;
     Serial.write(buffer, 2);
     delayMicroseconds(176);
+#else
+    swuart_putc(0, 13);
+    swuart_putc(0, 10);
+#endif
   }
   /*
      if printer is NOT open, report such status back
@@ -179,9 +195,6 @@ static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
 }
 
 
-#endif
-
-#ifdef INCLUDE_PRINTER
 /*
  * Command handling registry for device
  */
@@ -200,11 +213,9 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
-#endif
 
 
 void prn_register(registry_t *registry) {
-#ifdef INCLUDE_PRINTER
   uint8_t i = registry->num_devices;
   
   registry->num_devices++;
@@ -212,22 +223,20 @@ void prn_register(registry_t *registry) {
   registry->entry[ i ].device_code_end = PRN_DEV+9; // support 10 thru 19 as device codes.
   registry->entry[ i ].operation = (cmd_proc *)&fn_table;
   registry->entry[ i ].command = (uint8_t *)&op_table;
-#endif
   return;
 }
 
-void prn_reset( void )
-{
-#ifdef INCLUDE_PRINTER
+void prn_reset( void ) {
   prn_open = 0; // make sure our printer is closed.
-#endif
   return;
 }
 
-void prn_init( void )
-{
-#ifdef INCLUDE_PRINTER
+void prn_init( void ) {
+
   prn_open = 0;
+#ifndef ARDUINO
+  // TODO not sure where BPS rate is set on Arduino...
+  swuart_setrate(0, SB9600);
 #endif
   return;
 }

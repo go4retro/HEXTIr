@@ -1,13 +1,14 @@
 # Hey Emacs, this is a -*- makefile -*-
 
 # Define version number
-MAJOR = 1
-MINOR = 0
+MAJOR = 0
+MINOR = 9
 PATCHLEVEL = 0
 FIX =
 
 # Forces bootloader version to 0, comment out or leave empty for release
-PRERELEASE = atentdead0
+#PRERELEASE = atentdead0
+PRERELEASE = .0
 
 #----------------------------------------------------------------------------
 # WinAVR Makefile Template written by Eric B. Weddington, Joerg Wunsch, et al.
@@ -78,7 +79,9 @@ SRC += printer.c
 SRC += powermgmt.c
 SRC += eeprom.c
 SRC += configure.c
-#SRC += swuart.c
+SRC += swuart.c
+SRC += debug.c
+SRC += uart.c
 
 
 ifneq ($(CONFIG_NO_SD),y)
@@ -87,6 +90,10 @@ endif
 
 ifeq ($(CONFIG_UART_DEBUG),y)
   SRC += uart.c
+endif
+
+ifeq ($(CONFIG_UART_DEBUG_SW),y)
+  SRC += swuart.c
 endif
 
 # Additional hardware support enabled in the config file

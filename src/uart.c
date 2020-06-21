@@ -308,8 +308,6 @@ void uart_init(void) {
             | _BV(TXENA)
            );
 
-
-
   /* Flush buffers */
 #    if defined UART0_TX_BUFFER_SHIFT && UART0_TX_BUFFER_SHIFT > 0
   tx0_tail = 0;

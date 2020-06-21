@@ -21,9 +21,12 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <avr/pgmspace.h>
 #include <util/delay.h>
+
 #include "config.h"
 #include "configure.h"
+#include "debug.h"
 #include "drive.h"
 #include "eeprom.h"
 #include "hexbus.h"
@@ -34,6 +37,7 @@
 #include "registry.h"
 #include "rtc.h"
 #include "serial.h"
+#include "swuart.h"
 #include "configure.h"
 #include "timer.h"
 
@@ -60,9 +64,9 @@ registry_t  registry;
 */
 static uint8_t hex_reset_bus(pab_t pab) {
 
-  uart_putc(13);
-  uart_putc(10);
-  uart_putc('R');
+  debug_putc(13);
+  debug_putc(10);
+  debug_putc('R');
 
   // We ONLY do all devices if the command is directed to device 0.
   if ( pab.dev == 0 ) {
@@ -200,8 +204,8 @@ void loop(void) { // Arduino main loop routine.
 
  // setup stuff for main
   board_init();
+  debug_init();
   hex_init();
-  uart_init();
   disk_init();
   leds_init();
   timer_init();
@@ -210,10 +214,20 @@ void loop(void) { // Arduino main loop routine.
   rtc_init();
   prn_init();
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
+#if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
+  uart_init();
+  swuart_init();
+#endif
   
   config = ee_get_config();
 
   sei();
+
+  debug_putcrlf();
+  debug_puts_P(PSTR(TOSTRING(CONFIG_HARDWARE_NAME)));
+  debug_puts_P(PSTR(" Version: "));
+  debug_puts_P(PSTR(VERSION));
+  debug_putcrlf();
 
 #endif
 
@@ -225,6 +239,8 @@ void loop(void) { // Arduino main loop routine.
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
+
+
   while (TRUE) {
 
     set_busy_led( FALSE );  // TODO do we need to set busy LED here?
@@ -233,7 +249,7 @@ void loop(void) { // Arduino main loop routine.
       sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.(if power management enabled, if not this is nop)
     }
 
-    uart_putc('^');
+    debug_putc('^');
     set_busy_led( TRUE ); // TODO why do we set busy led here?
 
     while (!hex_is_bav()) {
@@ -277,7 +293,7 @@ void loop(void) { // Arduino main loop routine.
       if ( !ignore_cmd ) {
         if (i == 9) {
           // exec command
-          uart_putcrlf();
+          debug_putcrlf();
           /*
              If we are attempting to use the SD card, we
              initialize it NOW.  If it fails (no card present)
@@ -296,8 +312,8 @@ void loop(void) { // Arduino main loop routine.
           ignore_cmd = TRUE;  // in case someone sends more data, ignore it.
         }
       } else {
-        uart_putc('%');
-        uart_puthex(pabdata.raw[0]);
+        debug_putc('%');
+        debug_puthex(pabdata.raw[0]);
         i = 0;
         hex_release_bus();
         while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
@@ -306,8 +322,8 @@ void loop(void) { // Arduino main loop routine.
       }
     }
 
-    uart_putc(13);
-    uart_putc(10);
+    debug_putc(13);
+    debug_putc(10);
     i = 0;
     ignore_cmd = FALSE;
   }

@@ -21,6 +21,7 @@
 
 #include <stddef.h>
 #include "config.h"
+#include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "timer.h"
@@ -41,8 +42,8 @@ uint8_t hex_get_data(uint8_t *buf, uint16_t len) {
     }
   }
   if (len > 0) {
-    uart_putcrlf();
-    uart_trace(buf, 0, len);
+    debug_putcrlf();
+    debug_trace(buf, 0, len);
   }
   return HEXERR_SUCCESS;
 }

@@ -335,7 +335,7 @@ void uart0_putcrlf(void);
 #  define uart0_puthex(x)        do {} while(0)
 #  define uart_trace(x,y,z)      do {} while(0)
 #  define uart0_puts_P(x)        do {} while(0)
-#  define uart0_data_available() do {} while(0)
+#  define uart0_data_available() 0
 #  define uart0_putcrlf()        do {} while(0)
 #endif
 
