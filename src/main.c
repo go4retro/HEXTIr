@@ -630,7 +630,7 @@ static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
   BYTE res = FR_OK;
 
   uart_putc('o');
-  if ((att & OPENMODE_READ) != OPENMODE_READ) {
+  if (!(att & OPENMODE_READ)) {
 	// send back error on anything not OPENMODE_READ
 	res =  FR_IS_READONLY;
   }
