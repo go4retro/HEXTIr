@@ -84,6 +84,7 @@ uint16_t cat_max_file_length_txt(void) {
   return len;
 }
 
+// Output looks like : 10.2,HELLO.PGM,F
 void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char attrib) {
 	uint8_t i;
     char buf[5];
@@ -105,7 +106,7 @@ void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char 
 }
 
 // ----------------------------- common -----------------------------------
-
+// Get number of directory (=catalog) entries.
 uint16_t cat_get_num_entries(FATFS* fsp, const char* directory) {
   FRESULT res;
   DIR dir;
@@ -129,6 +130,7 @@ fno.lfn = lfn;
   return count;
 }
 
+// Return true if catalog entry shall be skipped.
 BOOL cat_skip_file(const char* filename) {
 	BOOL skip = FALSE;
 	if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
@@ -137,6 +139,7 @@ BOOL cat_skip_file(const char* filename) {
 	return skip;
 }
 
+// Convert bytes to kBytes and format to ##.# . In case size >= 100kB returns 99.9.
 char* cat_bytes_to_kb(uint32_t bytes, char* buf, uint8_t len) {
   int kb = bytes / 1024;
   int rb = (int)round(((bytes % 1024)/1024.0)*10);
