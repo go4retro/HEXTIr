@@ -56,7 +56,7 @@ static uint8_t hex_rtc_open( pab_t pab ) {
 
   if ( !hex_is_bav() ) {
     if ( !rtc_open ) {
-      if ( att & OPENMODE_READ | OPENMODE_WRITE ) {
+      if ( att & OPENMODE_MASK ) {
         len = len ? len : sizeof(buffer);
         clock_peripheral.setClockMode(false);
         rtc_open = att;

@@ -34,6 +34,32 @@
 #ifndef ARDUINO
  #include "autoconf.h"
  #define MAX_OPEN_FILES 8
+
+ #ifdef CONFIG_UART_DEBUG
+  #define UART0_ENABLE
+  #define UART0_BAUDRATE CONFIG_UART_DEBUG_RATE
+ #endif
+
+ #ifdef CONFIG_UART_DEBUG_SW
+  #ifndef CONFIG_UART_DEBUG_SW_PORT
+   #define CONFIG_UART_DEBUG_SW_PORT 1
+  #endif
+ #endif
+
+ #ifndef UART0_ENABLE
+  #define UART0_ENABLE
+  #define DYNAMIC_UART
+
+  #ifdef CONFIG_UART_BUF_SHIFT
+   #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
+  #endif
+
+  #ifdef CONFIG_UART_BAUDRATE
+   #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
+  #endif
+ #endif
+
+
 #else
  #define MAX_OPEN_FILES 3      // SD 1.0 and later let us have more than one open file, each additional file uses 30 bytes RAM
  // 3 files lets us use E/A easily.  source, object, listing.
@@ -47,30 +73,6 @@
 
 #include "configure.h"
 /* ----- Common definitions for all AVR hardware variants ------ */
-
-#ifdef CONFIG_UART_DEBUG
-#define UART0_ENABLE
-#define UART0_BAUDRATE CONFIG_UART_DEBUG_RATE
-#endif
-
-#ifdef CONFIG_UART_DEBUG_SW
-#ifndef CONFIG_UART_DEBUG_SW_PORT
-#define CONFIG_UART_DEBUG_SW_PORT 1
-#endif
-#endif
-
-#ifndef UART0_ENABLE
-#define UART0_ENABLE
-#define DYNAMIC_UART
-
-#ifdef CONFIG_UART_BUF_SHIFT
-#define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
-#endif
-
-#ifdef CONFIG_UART_BAUDRATE
-#define UART0_BAUDRATE CONFIG_UART_BAUDRATE
-#endif
-#endif
 
 
 #if CONFIG_HARDWARE_VARIANT == 1

@@ -5,6 +5,8 @@
  *      Author: brain
  */
 
+#if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW
+
 #include <avr/pgmspace.h>
 
 #include "config.h"
@@ -104,3 +106,4 @@ void debug_init(void) {
 #endif
 
 }
+#endif
