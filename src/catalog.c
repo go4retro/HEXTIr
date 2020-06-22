@@ -147,7 +147,19 @@ char* cat_bytes_to_kb(uint32_t bytes, char* buf, uint8_t len) {
     kb = 99;
     rb = 9;
   }
-  snprintf(buf, len, "%2d.%d", kb, rb);
+  // next 11 lines replace snprintf
+  if (kb<9) {
+	  if (len>0) buf[0] =' ';
+	  if (len>1)  buf[1]=kb + '0';
+  }
+  else {
+	  if (len>0) buf[0]=kb/10 + '0';
+	  if (len>1) buf[1]=kb%10 + '0';
+  }
+  if (len>2) buf[2]='.';
+  if (len>3) buf[3]=rb + '0';
+  if (len>4) buf[4]=0;
+  //snprintf(buf, len, "%2d.%d", kb, rb); // costs 2k extra
   return buf;
 }
 
