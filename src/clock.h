@@ -15,30 +15,19 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    led.h: Definitions for the LEDs
-
+    rtc.h: Real time clock device defines and prototypes
 */
 
-#ifndef LED_H
-#define LED_H
-#ifdef __cplusplus
-extern "C"{
-#endif
+#ifndef SRC_CLOCK_H
+#define SRC_CLOCK_H
 
 #include "config.h"
+#include "hexops.h"
+#include "registry.h"
 
-/* LED-to-bit mapping */
-// TODO make enum.
-#define LED_ERROR      1
-#define LED_BUSY       2
 
-//extern volatile uint8_t led_state;
+void clock_reset(void);
+void clock_register(registry_t *registry);
+void clock_init(void);
 
-void set_error_led(uint8_t state);
-void set_busy_led(uint8_t state);
-uint8_t get_led_state(void);
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
-#endif
+#endif /* SRC_CLOCK_H */

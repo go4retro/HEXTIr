@@ -27,7 +27,7 @@
 #include "drive.h"
 #include "eeprom.h"
 #include "serial.h"
-#include "rtc.h"
+#include "clock.h"
 #include "printer.h"
 #include "configure.h"
 #include "registry.h"
@@ -75,7 +75,7 @@ void setup(void) {
   timer_init();
   drv_init();
   ser_init();
-  rtc_init();
+  clock_init();
   prn_init();
   cfg_init();
 

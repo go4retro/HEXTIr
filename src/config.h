@@ -64,14 +64,13 @@
  #define MAX_OPEN_FILES 3      // SD 1.0 and later let us have more than one open file, each additional file uses 30 bytes RAM
  // 3 files lets us use E/A easily.  source, object, listing.
 
- #define INCLUDE_CLOCK
  #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #endif
 
+#define INCLUDE_CLOCK
 #define INCLUDE_PRINTER
 #define INCLUDE_SERIAL
 
-#include "configure.h"
 /* ----- Common definitions for all AVR hardware variants ------ */
 
 
@@ -317,6 +316,14 @@ static inline void wakeup_pin_init(void) {
 
 /* ---------------- End of user-configurable options ---------------- */
 
+/* Software I2C lines for the RTC and display */
+#  define SOFTI2C_PORT    PORTC
+#  define SOFTI2C_PIN     PINC
+#  define SOFTI2C_DDR     DDRC
+#  define SOFTI2C_BIT_SCL PIN5
+#  define SOFTI2C_BIT_SDA PIN4
+#  define SOFTI2C_DELAY   6
+
 #ifndef SYSTEM_TICK_HANDLER
 
 static inline void timer_config(void) {
@@ -379,5 +386,22 @@ static inline void leds_sleep(void) {
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
+
+/* ----- Translate CONFIG_RTC_* symbols to HAVE_RTC symbol ----- */
+#if defined(CONFIG_RTC_SOFTWARE) || \
+    defined(CONFIG_RTC_PCF8583)  || \
+    defined(CONFIG_RTC_DSRTC)
+#  define HAVE_RTC
+#  define HAVE_I2C
+
+/* calculate the number of enabled RTCs */
+#  if defined(CONFIG_RTC_SOFTWARE) + \
+      defined(CONFIG_RTC_PCF8583)  + \
+      defined(CONFIG_RTC_DSRTC)  > 1
+#    define NEED_RTCMUX
+#  endif
+#endif
+
+#include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?
 
 #endif /*CONFIG_H*/

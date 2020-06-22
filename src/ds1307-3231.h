@@ -24,47 +24,16 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    timer.c: System timer (and LED enabler)
-
+    ds1307-3231.h: RTC support for DS1307/DS3231 chips
 */
 
-#include "config.h"
-#include "integer.h"
-#include "led.h"
-#include "softrtc.h"
+#ifndef DS1307_3231_H
+#define DS1307_3231_H
 
-#include "timer.h"
+#include "time.h"
 
-volatile tick_t ticks;
+void dsrtc_get(struct tm *time);
+void dsrtc_set(struct tm *time);
+void dsrtc_init(void);
 
-#ifdef INCLUDE_POWERMGMT
-extern volatile uint8_t led_pwr_enable;  // this volatile transitions to 0 before we sleep, and ffh when not sleeping.
-#else
-#define led_pwr_enable  0xff             // w no power management, just always do busy led when active.
 #endif
-
-/* The main timer interrupt */
-SYSTEM_TICK_HANDLER {
-  uint8_t state;
-
-  ticks++;
-
-  state = get_led_state();
-  if (state & LED_ERROR) {
-    if ((ticks & 15) == 0)
-      toggle_led();
-  } else {
-    set_led((state & LED_BUSY) & led_pwr_enable );
-  }
-
-#ifdef CONFIG_RTC_SOFTWARE
-  /* send tick to the software RTC emulation */
-  softrtc_tick();
-#endif
-}
-
-
-void timer_init(void) {
-  timer_config();
-  //set_error_led(TRUE);  //Just to test LED...
-}

@@ -10,12 +10,13 @@
 
 #include <avr/io.h>
 
-#define SWUART0_TX_OUT     PORTC
+//TODO move these to config.h
+#define SWUART0_TX_OUT     PORTD
 #define SWUART0_TX_PIN     _BV(PIN5)
-#define SWUART0_TX_DDR     DDRC
-#define SWUART1_TX_OUT     PORTC
-#define SWUART1_TX_PIN     _BV(PIN4)
-#define SWUART1_TX_DDR     DDRC
+#define SWUART0_TX_DDR     DDRD
+#define SWUART1_TX_OUT     PORTD
+#define SWUART1_TX_PIN     _BV(PIN6)
+#define SWUART1_TX_DDR     DDRD
 #define SWUART_MAX_BPS    115200
 #define SWUART_HANDLER    ISR(TIMER2_COMPA_vect)
 #define SWUART_PORTS      2

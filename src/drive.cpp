@@ -270,7 +270,7 @@ static uint8_t hex_drv_verify(pab_t pab) {
 
 */
 static uint8_t hex_drv_write(pab_t pab) {
-  uint8_t rc = HEXERR_SUCCESS;
+  uint8_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint16_t i;
   UINT written;
@@ -283,7 +283,7 @@ static uint8_t hex_drv_write(pab_t pab) {
   len = pab.datalen;
   res = (file != NULL ? FR_OK : FR_NO_FILE);
 
-  while (len && rc == HEXERR_SUCCESS && res == FR_OK ) {
+  while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
     rc = hex_get_data(buffer, i);
 
@@ -322,7 +322,7 @@ static uint8_t hex_drv_write(pab_t pab) {
     }
   }
 
-  if (rc == HEXERR_SUCCESS) {
+  if (rc == HEXSTAT_SUCCESS) {
     switch (res) {
       case FR_OK:
         rc = HEXSTAT_SUCCESS;

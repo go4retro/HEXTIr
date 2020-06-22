@@ -24,47 +24,39 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    timer.c: System timer (and LED enabler)
+    i2c.h: Definitions for I2C transfers
 
+    There is no i2c.c, the functions defined here are currently implemented
+    by softi2c.c. An additional implementation using the hardware I2C/TWI
+    peripheral should implement the same functions so either implementation
+    can be used.
 */
 
-#include "config.h"
-#include "integer.h"
-#include "led.h"
-#include "softrtc.h"
+#ifndef I2C_H
+#define I2C_H
 
-#include "timer.h"
+#ifdef HAVE_I2C
 
-volatile tick_t ticks;
+typedef struct i2cblock_s {
+  unsigned int       length;
+  void              *data;
+  struct i2cblock_s *next;
+} i2cblock_t;
 
-#ifdef INCLUDE_POWERMGMT
-extern volatile uint8_t led_pwr_enable;  // this volatile transitions to 0 before we sleep, and ffh when not sleeping.
+void i2c_init(void);
+uint8_t i2c_write_register(uint8_t address, uint8_t reg, uint8_t val);
+uint8_t i2c_write_registers(uint8_t address, uint8_t startreg, uint8_t count, const void *data);
+int16_t i2c_read_register(uint8_t address, uint8_t reg);
+uint8_t i2c_read_registers(uint8_t address, uint8_t startreg, uint8_t count, void *data);
+
+/* send a chain of i2cblock_t over the bus */
+uint8_t i2c_write_blocks(uint8_t address, i2cblock_t *head);
+
+/* write @writeblocks i2cblock_t over the bus, switch to read mode and fill the remaining ones */
+uint8_t i2c_read_blocks(uint8_t address, i2cblock_t *head, unsigned char writeblocks);
+
 #else
-#define led_pwr_enable  0xff             // w no power management, just always do busy led when active.
+#  define i2c_init() do {} while (0)
 #endif
 
-/* The main timer interrupt */
-SYSTEM_TICK_HANDLER {
-  uint8_t state;
-
-  ticks++;
-
-  state = get_led_state();
-  if (state & LED_ERROR) {
-    if ((ticks & 15) == 0)
-      toggle_led();
-  } else {
-    set_led((state & LED_BUSY) & led_pwr_enable );
-  }
-
-#ifdef CONFIG_RTC_SOFTWARE
-  /* send tick to the software RTC emulation */
-  softrtc_tick();
 #endif
-}
-
-
-void timer_init(void) {
-  timer_config();
-  //set_error_led(TRUE);  //Just to test LED...
-}

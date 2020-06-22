@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    main.c: Main application /or  hexbus.ino - used for building with arduino (same file).
+    main.c: Main application
 */
 
 #include <stddef.h>
@@ -24,6 +24,7 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 
+#include "clock.h"
 #include "config.h"
 #include "configure.h"
 #include "debug.h"
@@ -35,7 +36,6 @@
 #include "printer.h"
 #include "powermgmt.h"
 #include "registry.h"
-#include "rtc.h"
 #include "serial.h"
 #include "swuart.h"
 #include "configure.h"
@@ -73,7 +73,7 @@ static uint8_t hex_reset_bus(pab_t pab) {
     drv_reset();
     prn_reset();
     ser_reset();
-    rtc_reset();
+    clock_reset();
     cfg_reset();
   }
   // release the bus ignoring any further action on bus. no response sent.
@@ -179,7 +179,7 @@ void setup_registry(void)
   drv_register(&registry);
   prn_register(&registry);
   ser_register(&registry);
-  rtc_register(&registry);
+  clock_register(&registry);
   return;
 }
 
@@ -202,16 +202,15 @@ void loop(void) { // Arduino main loop routine.
 
 #ifndef ARDUINO
 
+  debug_init();
  // setup stuff for main
   board_init();
-  debug_init();
   hex_init();
   disk_init();
   leds_init();
   timer_init();
   drv_init();
   ser_init();
-  rtc_init();
   prn_init();
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
 #if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
@@ -223,11 +222,14 @@ void loop(void) { // Arduino main loop routine.
 
   sei();
 
+
   debug_putcrlf();
   debug_puts_P(PSTR(TOSTRING(CONFIG_HARDWARE_NAME)));
   debug_puts_P(PSTR(" Version: "));
   debug_puts_P(PSTR(VERSION));
   debug_putcrlf();
+
+  clock_init();
 
 #endif
 

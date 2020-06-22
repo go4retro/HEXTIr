@@ -74,14 +74,15 @@ void swuart_setrate(uint8_t port, uint16_t bpsrate) {
   rate[port] = bpsrate;
 }
 
+//#define SWUART_TEST
 
 void swuart_init(void) {
   swuart_config();
-#if SWUART_TEST
+#ifdef SWUART_TEST
   sei();
 
   swuart_setrate(0, SB0300);
-  swuart_setrate(1, SB9600);
+  swuart_setrate(1, SB57600);
 
   while(1) {
     swuart_puts(0, "Hello world!\n\r");

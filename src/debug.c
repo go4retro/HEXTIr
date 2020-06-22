@@ -1,11 +1,24 @@
 /*
- * debug.c
- *
- *  Created on: Jun 20, 2020
- *      Author: brain
- */
+    HEXTIr-SD - Texas Instruments HEX-BUS SD Mass Storage Device
+    Copyright Jim Brain and RETRO Innovations, 2017
 
-#if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; version 2 of the License only.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+    debug.c: simple abnstracted debug functionality, which can be piped to serial
+             or other output mechanism
+
+*/
 
 #include <avr/pgmspace.h>
 
@@ -14,6 +27,8 @@
 #include "uart.h"
 
 #include "debug.h"
+
+#if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW
 
 void debug_putc(uint8_t data) {
 #ifdef CONFIG_UART_DEBUG_SW
@@ -104,6 +119,5 @@ void debug_init(void) {
   uart_init();
   // rate set in init
 #endif
-
 }
 #endif
