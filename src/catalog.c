@@ -11,9 +11,9 @@
 // ------------------------- OLD/PGM catalog -------------------------
 
 //extern FATFS fs;  // from main.c
-//static const PROGMEM
+static const PROGMEM
 UCHAR   pgm_header[] = {0x80,0x03};
-//static const PROGMEM
+static const PROGMEM
 UCHAR   pgm_trailer[] = {0xff,0x7f,0x03,0x86,0x00,0x20, 0x00};
 
 static const uint8_t pgm_header_len = 4;  // number of bytes in pgm_header + 2 bytes for file length
