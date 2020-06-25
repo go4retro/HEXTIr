@@ -71,6 +71,7 @@ typedef struct _luntbl_t {
   DIR dir;
   luntype_t type;
   uint16_t dirnum;
+  char* pattern;
 } luntbl_t;
 
 uint8_t open_files = 0;
@@ -109,6 +110,7 @@ static file_t* reserve_lun(uint8_t lun) {
       files[i].used = TRUE;
       files[i].lun = lun;
       files[i].type = LUN_FILE;
+      files[i].pattern = (char*)NULL;
       open_files++;
       set_busy_led(TRUE);
       return &(files[i].file);
@@ -125,6 +127,7 @@ static luntbl_t* reserve_lun2(uint8_t lun) {
       files[i].used = TRUE;
       files[i].lun = lun;
       files[i].type = LUN_DIR;
+      files[i].pattern = (char*)NULL;
       open_files++;
       set_busy_led(TRUE);
       return &(files[i]);
@@ -139,6 +142,8 @@ static void free_lun(uint8_t lun) {
   for(i=0;i < MAX_OPEN_FILES; i++) {
     if(files[i].used && files[i].lun == lun) {
       files[i].used = FALSE;
+      if (files[i].pattern != (char*) NULL)
+    	  free(files[i].pattern);
       open_files--;
       set_busy_led(open_files);
     }
@@ -180,7 +185,7 @@ static uint8_t hex_read_catalog(pab_t pab) {
 
       char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
 
-      if (cat_skip_file(filename))
+      if (cat_skip_file(filename, lun->pattern))
     	continue; // skip certain files like "." and ".."
 
       char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
@@ -236,7 +241,7 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
 	  }
 
 	  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-	  if (cat_skip_file(filename))
+	  if (cat_skip_file(filename, lun->pattern))
 		  continue; // skip certain files like "." and "..", next do .. while
 	  uart_trace(filename, 0, strlen(filename));
 	  uart_putcrlf();
@@ -638,9 +643,25 @@ static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
   }
   else {
 	lun = reserve_lun2(pab.lun);
+
 	if(lun != NULL) {
-	  char* dirpath = (strlen((char*)buffer) > 1 ? (char*)&(buffer[1]) : "/");
-	  lun->dirnum = cat_get_num_entries(&fs, dirpath);
+	  char* string = (char*)buffer;
+	  if (strlen(string)<2 || string[1]!='/') {
+		string[0] = '/';
+	  }
+	  else {
+		string = (char*)&buffer[1];
+	  }
+	  char* dirpath = strtok(string, ":");
+	  char* pattern = strtok(NULL, ":");
+	  size_t len = strlen(dirpath);
+	  if (len>1 && dirpath[len-1] == '/')
+		  dirpath[len-1] = '\0';
+	  //char* dirpath = (strlen((char*)buffer) > 1 ? (char*)&(buffer[1]) : "/");
+	  lun->dirnum = cat_get_num_entries(&fs, dirpath, pattern);
+	  if (pattern != (char*)NULL)
+		  lun->pattern = strdup(pattern); // store pattern
+	  uart_trace(pattern, 0, strlen(pattern));
 	  // the file size is either the length of the PGM file for OLD/PGM or the max. length of the txt file for OPEN/INPUT.
 	  fsize = (pab.lun == 0 ? cat_file_length_pgm(lun->dirnum)  : cat_max_file_length_txt());
 	  res = f_opendir(&fs, &(lun->dir), (UCHAR*)dirpath); // open the director

@@ -107,7 +107,7 @@ void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char 
 
 // ----------------------------- common -----------------------------------
 // Get number of directory (=catalog) entries.
-uint16_t cat_get_num_entries(FATFS* fsp, const char* directory) {
+uint16_t cat_get_num_entries(FATFS* fsp, const char* directory, const char* pattern) {
   FRESULT res;
   DIR dir;
   FILINFO fno;
@@ -122,7 +122,7 @@ fno.lfn = lfn;
     if (res != FR_OK || fno.fname[0] == 0)
       break;  // break on error or end of dir
     char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-    if (cat_skip_file(filename))
+    if (cat_skip_file(filename, pattern))
     	continue; // skip certain files like "." and ".."
     count++;
   }
@@ -131,12 +131,30 @@ fno.lfn = lfn;
 }
 
 // Return true if catalog entry shall be skipped.
-BOOL cat_skip_file(const char* filename) {
+BOOL cat_skip_file(const char* filename, const char* pattern) {
 	BOOL skip = FALSE;
 	if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
 		skip = TRUE;
 	}
+	else if (pattern != (char*)NULL) {
+		skip = (wild_cmp(pattern, filename) == 0 ? TRUE : FALSE); // skip, if pattern does not match
+	}
 	return skip;
+}
+
+int wild_cmp(const char *pattern, const char *string)
+{
+  if(*pattern=='\0' && *string=='\0') // Check if string is at end or not
+	  return 1;
+
+  if(*pattern=='?' || *pattern==*string) //Check for single character missing or match
+    return wild_cmp(pattern+1,string+1);
+		
+  if(*pattern=='*')  // Check for multiple character missing
+    return wild_cmp((char*)(pattern+1),string) || (*string!='\0' && wild_cmp(pattern, string+1));
+
+
+  return 0;
 }
 
 // Convert bytes to kBytes and format to ##.# . In case size >= 100kB returns 99.9.
