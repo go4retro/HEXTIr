@@ -147,7 +147,7 @@ int wild_cmp(const char *pattern, const char *string)
   if(*pattern=='\0' && *string=='\0') // Check if string is at end or not
 	  return 1;
 
-  if(*pattern=='?' || *pattern==*string) //Check for single character missing or match
+  if((*pattern=='?' && *string!='\0')|| *pattern==*string) //Check for single character missing or match
     return wild_cmp(pattern+1,string+1);
 		
   if(*pattern=='*')  // Check for multiple character missing

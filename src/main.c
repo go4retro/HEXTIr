@@ -645,23 +645,30 @@ static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
 	lun = reserve_lun2(pab.lun);
 
 	if(lun != NULL) {
+	  // remove the leading $
 	  char* string = (char*)buffer;
-	  if (strlen(string)<2 || string[1]!='/') {
-		string[0] = '/';
+	  if (strlen(string)<2 || string[1]!='/') { // if just $ or $ABC..
+		string[0] = '/'; // $ -> /, $ABC/ -> /ABC/
 	  }
 	  else {
-		string = (char*)&buffer[1];
+		string = (char*)&buffer[1]; // $/ABC/... -> /ABC/...
 	  }
-	  char* dirpath = strtok(string, ":");
-	  char* pattern = strtok(NULL, ":");
-	  size_t len = strlen(dirpath);
-	  if (len>1 && dirpath[len-1] == '/')
-		  dirpath[len-1] = '\0';
-	  //char* dirpath = (strlen((char*)buffer) > 1 ? (char*)&(buffer[1]) : "/");
+	  // separate into directory path and pattern
+	  char* dirpath = string;
+	  char* pattern = (char*)NULL;
+	  char* s =  strrchr(string, '/');
+	  if (strlen(s) > 1) {       // there is a pattern
+	    pattern = strdup(s+1);   // copy pattern to store it, will be freed in free_lun
+ 	    *(s+1) = '\0';           // set new terminating zero for dirpath
+ 	    uart_trace(pattern,0,strlen(pattern));
+	  }
+	  // if not the root slash, remove slash from dirpath
+	  if (strlen(dirpath)>1 && dirpath[strlen(dirpath)-1] == '/')
+		dirpath[strlen(dirpath)-1] = '\0';
+	  // get the number of catalog entries from dirpath that match the pattern
 	  lun->dirnum = cat_get_num_entries(&fs, dirpath, pattern);
 	  if (pattern != (char*)NULL)
-		  lun->pattern = strdup(pattern); // store pattern
-	  uart_trace(pattern, 0, strlen(pattern));
+		  lun->pattern = pattern; // store pattern, will be freed in free_lun
 	  // the file size is either the length of the PGM file for OLD/PGM or the max. length of the txt file for OPEN/INPUT.
 	  fsize = (pab.lun == 0 ? cat_file_length_pgm(lun->dirnum)  : cat_max_file_length_txt());
 	  res = f_opendir(&fs, &(lun->dir), (UCHAR*)dirpath); // open the director
