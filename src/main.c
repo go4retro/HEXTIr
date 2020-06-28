@@ -18,6 +18,8 @@
     main.c: Main application
 */
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "config.h"
@@ -27,6 +29,7 @@
 #include "led.h"
 #include "timer.h"
 #include "uart.h"
+#include "catalog.h"
 
 FATFS fs;
 uint8_t buffer[40];
@@ -51,10 +54,14 @@ typedef struct _pab_raw_t {
 #define FILEATTR_WRITE    2
 #define FILEATTR_PROTECT  4
 #define FILEATTR_DISPLAY  8
+#define FILEATTR_CATALOG  0x80
 
 typedef struct _file_t {
   FIL fp;
+  DIR dir;
   uint8_t attr;
+  uint16_t dirnum;
+  char* pattern;
 } file_t;
 
 typedef struct _luntbl_t {
@@ -86,6 +93,8 @@ static file_t* reserve_lun(uint8_t lun) {
     if(!files[i].used) {
       files[i].used = TRUE;
       files[i].lun = lun;
+      files[i].file.pattern = (char*)NULL;
+      files[i].file.attr = 0;
       open_files++;
       set_busy_led(TRUE);
       return &(files[i].file);
@@ -100,6 +109,8 @@ static void free_lun(uint8_t lun) {
   for(i=0;i < MAX_OPEN_FILES; i++) {
     if(files[i].used && files[i].lun == lun) {
       files[i].used = FALSE;
+      if (files[i].file.pattern != (char*) NULL)
+    	  free(files[i].file.pattern);
       open_files--;
       set_busy_led(open_files);
     }
@@ -113,6 +124,130 @@ static void init(void) {
     files[i].used = FALSE;
   }
 }
+
+
+static uint8_t hex_read_catalog(pab_t pab) {
+  uint8_t rc;
+  BYTE res = FR_OK;
+  file_t* file;
+  FILINFO fno;
+  # ifdef _MAX_LFN_LENGTH
+  UCHAR lfn[_MAX_LFN_LENGTH+1];
+  fno.lfn = lfn;
+  #endif
+
+  uart_putc('r');
+  file = find_lun(pab.lun);
+  hex_release_bus_recv();
+  _delay_us(200);
+  if(file != NULL) {
+    hex_puti(cat_file_length_pgm(file->dirnum), FALSE);  // send full length of file
+    cat_open_pgm(file->dirnum);
+    uint16_t i = 1;
+    while(i <= file->dirnum && res == FR_OK) {
+      memset(lfn,0,sizeof(lfn));
+      res = f_readdir(&file->dir, &fno);                   // read a directory item
+      if (res != FR_OK || fno.fname[0] == 0)
+        break;  // break on error or end of dir
+
+      char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+
+      if (cat_skip_file(filename, file->pattern))
+    	continue; // skip certain files like "." and ".."
+
+      char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+
+      uart_trace(filename, 0, strlen(filename));
+      uart_putcrlf();
+
+      hex_release_bus_send();
+
+      cat_write_record_pgm(i++,fno.fsize, filename,attrib);
+
+      uart_putcrlf();
+    }
+    hex_release_bus_send();
+    cat_close_pgm();
+    uart_putc('>');
+    hex_release_bus_send();
+    rc = HEXSTAT_SUCCESS;
+  } else {
+    hex_puti(0, FALSE);  // null file
+    rc = HEXSTAT_NOT_OPEN;
+  }
+  hex_putc(rc, FALSE);    // status code
+  return 0;
+}
+
+static uint8_t hex_read_catalog_txt(pab_t pab) {
+  uint8_t rc;
+  BYTE res = FR_OK;
+  file_t* file;
+  FILINFO fno;
+  # ifdef _MAX_LFN_LENGTH
+  UCHAR lfn[_MAX_LFN_LENGTH+1];
+  fno.lfn = lfn;
+  #endif
+
+  uart_putc('r');
+  file = find_lun(pab.lun);
+  hex_release_bus_recv();
+  _delay_us(200);
+  if(file != NULL) {
+	// the loop is to be able to skip files that shall not be listed in the catalog
+	// else we only go through the loop once
+    do {
+	  memset(lfn,0,sizeof(lfn));
+	  res = f_readdir(&file->dir, &fno); // read a directory item
+	  if (res != FR_OK) {
+		  break; // break on error, leave do .. while loop
+	  }
+	  if (fno.fname[0] == 0) {
+		    res = FR_NO_FILE; // OK  to set this ?
+		  break;  // break on end of dir, leave do .. while loop
+	  }
+
+	  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+	  if (cat_skip_file(filename, file->pattern))
+		  continue; // skip certain files like "." and "..", next do .. while
+	  uart_trace(filename, 0, strlen(filename));
+	  uart_putcrlf();
+
+	  char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+
+	  hex_release_bus_send();
+
+	  // write the calatog entry for OPEN/INPUT
+	  cat_write_txt(&(file->dirnum), fno.fsize, filename, attrib);
+
+	  break; // success, leave the do .. while loop
+    } while(1);
+
+    hex_release_bus_send(); // in the right place ?
+
+    switch(res) {
+      case FR_OK:
+        rc = HEXSTAT_SUCCESS;
+        break;
+      case FR_NO_FILE:
+      	hex_puti(0, FALSE); // zero length data
+    	rc = HEXSTAT_EOF;
+    	break;
+      default:
+        hex_puti(0, FALSE); // zero length data
+        rc = HEXSTAT_DEVICE_ERR;
+        break;
+    }
+  } else {
+    hex_puti(0, FALSE);  // null file
+    rc = HEXSTAT_NOT_OPEN;
+  }
+  hex_putc(rc, FALSE);    // status code
+  return 0;
+}
+
+
+
 
 static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   uint16_t i = 0;
@@ -134,6 +269,60 @@ static int16_t hex_getdata(uint8_t buf[256], uint16_t len) {
   }
   return HEXERR_SUCCESS;
 }
+
+static int8_t hex_return_status(pab_t pab) {
+	uint8_t rc = HEXSTAT_SUCCESS;
+	file_t* file;
+	BYTE res = FR_OK;
+	BYTE status = 0x0;
+
+	uart_putc('>');
+
+	file = find_lun(pab.lun);
+	if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
+		// EOF on catalog for OPEN/INPUT only
+		// each INPUT on the catalog decrements lun->dirnum
+		if (pab.lun != 0 ) {
+		  if (file->dirnum == 0) {
+			 status = 0x80; // EOF on catalog for OPEN/INPUT only
+		  }
+		}
+	}
+	else {
+		res = (file != NULL ? FR_OK : FR_NO_FILE);
+		if (file->fp.fptr == file->fp.fsize) {
+			status = 0x80; // EOF on file
+		}
+	}
+
+	if(rc == HEXSTAT_SUCCESS) {
+		switch(res) {
+		case FR_OK:
+			  rc = HEXSTAT_SUCCESS;
+			break;
+		default:
+			rc = HEXSTAT_DEVICE_ERR;
+			break;
+		}
+	}
+
+
+
+	uart_putc('>');
+	hex_release_bus_recv();
+	_delay_us(200);
+	if(!hex_is_bav()) { // we can send response
+		hex_puti(1, FALSE);
+		hex_putc(status, FALSE);
+//		hex_puti(0, FALSE);  // zero length data
+		hex_putc(rc, FALSE);    // status code
+		return HEXERR_SUCCESS;
+	} else {
+		return HEXERR_BAV;
+	}
+}
+
+
 
 /*
  * https://github.com/m5dk2n comments:
@@ -350,43 +539,133 @@ static uint8_t hex_read(pab_t pab) {
   BYTE res = FR_OK;
   file_t* file;
 
-  uart_putc('<');
+  uart_putc('R');
   file = find_lun(pab.lun);
-  hex_release_bus_recv();
-  _delay_us(200);
+  if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
+    if (pab.lun == 0 ) {
+      uart_putc('P');
+        return hex_read_catalog(pab);
+    }
+    else {
+      uart_putc('T');
+        return hex_read_catalog_txt(pab);
+    }
+  }
   if(file != NULL) {
-    hex_puti(file->fp.fsize, TRUE);  // send full length of file
-    while(len < file->fp.fsize) {
-      res = f_read(&(file->fp), buffer, sizeof(buffer), &read);
-      if(!res) {
-        uart_putc(13);
-        uart_putc(10);
-        uart_trace(buffer,0,read);
-      }
-      hex_release_bus_send();
-      if(FR_OK == res) {
-        for(i = 0; i < read; i++) {
-          hex_putc(buffer[i], (i + 1) == read);
+    hex_release_bus_recv();
+    _delay_us(200);
+    if(file != NULL) {
+      hex_puti(file->fp.fsize, TRUE);  // send full length of file
+      while(len < file->fp.fsize) {
+        res = f_read(&(file->fp), buffer, sizeof(buffer), &read);
+        if(!res) {
+          uart_putc(13);
+          uart_putc(10);
+          uart_trace(buffer,0,read);
         }
-        len+=read;
-      }  // TODO if reading fails, we need to error out.
+        hex_release_bus_send();
+        if(FR_OK == res) {
+          for(i = 0; i < read; i++) {
+            hex_putc(buffer[i], (i + 1) == read);
+          }
+          len+=read;
+        }  // TODO if reading fails, we need to error out.
+      }
+      switch(res) {
+        case FR_OK:
+          rc = HEXSTAT_SUCCESS;
+          break;
+        default:
+          rc = HEXSTAT_DEVICE_ERR;
+          break;
+      }
+      uart_putc('>');
+      hex_release_bus_send();
+    } else {
+      hex_puti(0, FALSE);  // null lun
+      rc = HEXSTAT_NOT_OPEN;
     }
-    switch(res) {
-      case FR_OK:
-        rc = HEXSTAT_SUCCESS;
-        break;
-      default:
-        rc = HEXSTAT_DEVICE_ERR;
-        break;
-    }
-    uart_putc('>');
-    hex_release_bus_send();
   } else {
     hex_puti(0, FALSE);  // null file
     rc = HEXSTAT_NOT_OPEN;
   }
   hex_putc(rc, FALSE);    // status code
   return 0;
+}
+
+static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
+  uint8_t rc = HEXERR_SUCCESS;
+  uint16_t fsize = 0;
+  file_t *file;
+  BYTE res = FR_OK;
+
+  uart_putc('o');
+  if (!(att & OPENMODE_READ)) {
+	// send back error on anything not OPENMODE_READ
+	res =  FR_IS_READONLY;
+  }
+  else {
+	file = reserve_lun(pab.lun);
+
+	if(file != NULL) {
+	  file->attr |= FILEATTR_CATALOG;
+	  // remove the leading $
+	  char* string = (char*)buffer;
+	  if (strlen(string)<2 || string[1]!='/') { // if just $ or $ABC..
+		string[0] = '/'; // $ -> /, $ABC/ -> /ABC/
+	  }
+	  else {
+		string = (char*)&buffer[1]; // $/ABC/... -> /ABC/...
+	  }
+	  // separate into directory path and pattern
+	  char* dirpath = string;
+	  char* pattern = (char*)NULL;
+	  char* s =  strrchr(string, '/');
+	  if (strlen(s) > 1) {       // there is a pattern
+	    pattern = strdup(s+1);   // copy pattern to store it, will be freed in free_lun
+ 	    *(s+1) = '\0';           // set new terminating zero for dirpath
+ 	    uart_trace(pattern,0,strlen(pattern));
+	  }
+	  // if not the root slash, remove slash from dirpath
+	  if (strlen(dirpath)>1 && dirpath[strlen(dirpath)-1] == '/')
+		dirpath[strlen(dirpath)-1] = '\0';
+	  // get the number of catalog entries from dirpath that match the pattern
+	  file->dirnum = cat_get_num_entries(&fs, dirpath, pattern);
+	  if (pattern != (char*)NULL)
+	    file->pattern = pattern; // store pattern, will be freed in free_lun
+	  // the file size is either the length of the PGM file for OLD/PGM or the max. length of the txt file for OPEN/INPUT.
+	  fsize = (pab.lun == 0 ? cat_file_length_pgm(file->dirnum)  : cat_max_file_length_txt());
+	  res = f_opendir(&fs, &(file->dir), (UCHAR*)dirpath); // open the director
+	}
+	else {
+	  // too many open files.
+	  rc = HEXSTAT_MAX_LUNS;
+	}
+  }
+  if (rc == HEXSTAT_SUCCESS) {
+    switch(res) {
+      case FR_OK:
+        rc = HEXSTAT_SUCCESS;
+        break;
+      case FR_IS_READONLY:
+        rc = HEXSTAT_OUTPUT_MODE_ERR; // is this the right return value ?
+        break;
+      default:
+        rc = HEXSTAT_NOT_FOUND;
+      break;
+    }
+  }
+  hex_release_bus_recv();
+  _delay_us(200);  // wait a bit...
+  if(!hex_is_bav()) { // we can send response
+    hex_puti(2, FALSE);    // claims it is accepted buffer length, but looks to really be my return buffer length...
+    hex_puti(fsize, FALSE);
+    hex_putc(rc, FALSE);    // status code
+    uart_putcrlf();
+    return HEXERR_SUCCESS;
+  }
+  uart_putc('E');
+  return HEXERR_BAV;
 }
 
 static uint8_t hex_open(pab_t pab) {
@@ -400,7 +679,8 @@ static uint8_t hex_open(pab_t pab) {
   file_t* file;
   BYTE res;
 
-  uart_putc('>');
+
+  uart_putc('O');
   hex_release_bus_recv();
   while(i < 3) {
     if(hex_is_bav()){
@@ -424,6 +704,15 @@ static uint8_t hex_open(pab_t pab) {
     return HEXERR_BAV;
   buffer[pab.datalen - 3] = 0; // terminate the string
 
+  //*****************************************************
+  // special file name "$" -> catalog
+  char* path=((char)buffer[0]=='$' ? "$" : (char*)buffer);
+
+  if ((char)buffer[0]=='$') {
+	  return hex_open_catalog(pab, att);
+  }
+  //*******************************************************
+
   switch (att & (0x80 | 0x40)) {
     case 0x00:  // append mode
       mode = FA_WRITE;
@@ -440,7 +729,7 @@ static uint8_t hex_open(pab_t pab) {
   }
   file = reserve_lun(pab.lun);
   if(file != NULL) {
-    res = f_open(&fs,&(file->fp),(UCHAR *)buffer,mode);
+    res = f_open(&fs,&(file->fp),(UCHAR *)path,mode);
     switch(res) {
       case FR_OK:
         rc = HEXSTAT_SUCCESS;
@@ -497,17 +786,22 @@ static uint8_t hex_close(pab_t pab) {
   uart_putc('<');
   file = find_lun(pab.lun);
   if(file != NULL) {
-    res = f_close(&(file->fp));
-    free_lun(pab.lun);
-    switch(res) {
-      case FR_OK:
-        rc = HEXSTAT_SUCCESS;
-        break;
-      case FR_INVALID_OBJECT:
-      case FR_NOT_READY:
-      default:
-        rc = HEXSTAT_DEVICE_ERR;
-        break;
+    if(file->attr & FILEATTR_CATALOG) {
+      free_lun(pab.lun);
+      rc = HEXSTAT_SUCCESS;
+    } else {
+      res = f_close(&(file->fp));
+      free_lun(pab.lun);
+      switch(res) {
+        case FR_OK:
+          rc = HEXSTAT_SUCCESS;
+          break;
+        case FR_INVALID_OBJECT:
+        case FR_NOT_READY:
+        default:
+          rc = HEXSTAT_DEVICE_ERR;
+          break;
+      }
     }
   } else {
     rc = HEXSTAT_NOT_OPEN;
@@ -651,6 +945,9 @@ int main(void) {
             	break;
               case HEXCMD_DELETE:
             	  hex_delete(pabdata.pab);
+            	  break;
+              case HEXCMD_RETURN_STATUS:
+            	  hex_return_status(pabdata.pab);
             	  break;
               case HEXCMD_FORMAT:
                 hex_format(pabdata.pab);

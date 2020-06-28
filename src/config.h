@@ -129,7 +129,7 @@ static inline void board_init(void) {
 #  define HEX_BAV_DDR         DDRD
 #  define HEX_BAV_OUT         PORTD
 #  define HEX_BAV_IN          PIND
-#  define HEX_BAV_PIN         _BV(PIN7)
+#  define HEX_BAV_PIN         _BV(PIN2)
 
 #  define HEX_DATA_DDR        DDRC
 #  define HEX_DATA_OUT        PORTC
@@ -174,18 +174,18 @@ static inline void device_hw_address_init(void) {
 }
 
 static inline void leds_init(void) {
-  DDRD |= _BV(PIN2);
+  DDRD |= _BV(PIN7);
 }
 
 static inline __attribute__((always_inline)) void set_led(uint8_t state) {
   if (state)
-    PORTD |= _BV(PIN2);
+    PORTD |= _BV(PIN7);
   else
-    PORTD &= ~_BV(PIN2);
+    PORTD &= ~_BV(PIN7);
 }
 
 static inline void toggle_led(void) {
-  PORTD ^= _BV(PIN2);
+  PORTD ^= _BV(PIN7);
 }
 
 static inline void board_init(void) {

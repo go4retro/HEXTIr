@@ -70,6 +70,7 @@ SRC += timer.c
 SRC += spi.c
 SRC += hexbus.c
 SRC += led.c
+SRC += catalog.c
 
 ifneq ($(CONFIG_NO_SD),y)
   SRC += sdcard.c
