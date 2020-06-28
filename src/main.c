@@ -18,6 +18,7 @@
     main.c: Main application
 */
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -53,25 +54,20 @@ typedef struct _pab_raw_t {
 #define FILEATTR_WRITE    2
 #define FILEATTR_PROTECT  4
 #define FILEATTR_DISPLAY  8
+#define FILEATTR_CATALOG  0x80
 
 typedef struct _file_t {
   FIL fp;
+  DIR dir;
   uint8_t attr;
+  uint16_t dirnum;
+  char* pattern;
 } file_t;
-
-typedef enum _luntype_t {
-  LUN_FILE,
-  LUN_DIR
-} luntype_t;
 
 typedef struct _luntbl_t {
   uint8_t used;
   uint8_t lun;
   file_t file;
-  DIR dir;
-  luntype_t type;
-  uint16_t dirnum;
-  char* pattern;
 } luntbl_t;
 
 uint8_t open_files = 0;
@@ -90,18 +86,6 @@ static file_t* find_lun(uint8_t lun) {
   return NULL;
 }
 
-static luntbl_t* find_lun2(uint8_t lun) {
-  uint8_t i;
-
-  for(i=0;i < MAX_OPEN_FILES; i++) {
-    if(files[i].used && files[i].lun == lun) {
-      return &(files[i]);
-    }
-  }
-  uart_putc('n');
-  return NULL;
-}
-
 static file_t* reserve_lun(uint8_t lun) {
   uint8_t i;
 
@@ -109,28 +93,11 @@ static file_t* reserve_lun(uint8_t lun) {
     if(!files[i].used) {
       files[i].used = TRUE;
       files[i].lun = lun;
-      files[i].type = LUN_FILE;
-      files[i].pattern = (char*)NULL;
+      files[i].file.pattern = (char*)NULL;
+      files[i].file.attr = 0;
       open_files++;
       set_busy_led(TRUE);
       return &(files[i].file);
-    }
-  }
-  return NULL;
-}
-
-static luntbl_t* reserve_lun2(uint8_t lun) {
-  uint8_t i;
-
-  for(i = 0; i < MAX_OPEN_FILES; i++) {
-    if(!files[i].used) {
-      files[i].used = TRUE;
-      files[i].lun = lun;
-      files[i].type = LUN_DIR;
-      files[i].pattern = (char*)NULL;
-      open_files++;
-      set_busy_led(TRUE);
-      return &(files[i]);
     }
   }
   return NULL;
@@ -142,8 +109,8 @@ static void free_lun(uint8_t lun) {
   for(i=0;i < MAX_OPEN_FILES; i++) {
     if(files[i].used && files[i].lun == lun) {
       files[i].used = FALSE;
-      if (files[i].pattern != (char*) NULL)
-    	  free(files[i].pattern);
+      if (files[i].file.pattern != (char*) NULL)
+    	  free(files[i].file.pattern);
       open_files--;
       set_busy_led(open_files);
     }
@@ -162,7 +129,7 @@ static void init(void) {
 static uint8_t hex_read_catalog(pab_t pab) {
   uint8_t rc;
   BYTE res = FR_OK;
-  luntbl_t* lun;
+  file_t* file;
   FILINFO fno;
   # ifdef _MAX_LFN_LENGTH
   UCHAR lfn[_MAX_LFN_LENGTH+1];
@@ -170,22 +137,22 @@ static uint8_t hex_read_catalog(pab_t pab) {
   #endif
 
   uart_putc('r');
-  lun = find_lun2(pab.lun);
+  file = find_lun(pab.lun);
   hex_release_bus_recv();
   _delay_us(200);
-  if(lun != NULL) {
-    hex_puti(cat_file_length_pgm(lun->dirnum), FALSE);  // send full length of file
-    cat_open_pgm(lun->dirnum);
+  if(file != NULL) {
+    hex_puti(cat_file_length_pgm(file->dirnum), FALSE);  // send full length of file
+    cat_open_pgm(file->dirnum);
     uint16_t i = 1;
-    while(i <= lun->dirnum && res == FR_OK) {
+    while(i <= file->dirnum && res == FR_OK) {
       memset(lfn,0,sizeof(lfn));
-      res = f_readdir(&lun->dir, &fno);                   // read a directory item
+      res = f_readdir(&file->dir, &fno);                   // read a directory item
       if (res != FR_OK || fno.fname[0] == 0)
         break;  // break on error or end of dir
 
       char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
 
-      if (cat_skip_file(filename, lun->pattern))
+      if (cat_skip_file(filename, file->pattern))
     	continue; // skip certain files like "." and ".."
 
       char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
@@ -215,7 +182,7 @@ static uint8_t hex_read_catalog(pab_t pab) {
 static uint8_t hex_read_catalog_txt(pab_t pab) {
   uint8_t rc;
   BYTE res = FR_OK;
-  luntbl_t* lun;
+  file_t* file;
   FILINFO fno;
   # ifdef _MAX_LFN_LENGTH
   UCHAR lfn[_MAX_LFN_LENGTH+1];
@@ -223,15 +190,15 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
   #endif
 
   uart_putc('r');
-  lun = find_lun2(pab.lun);
+  file = find_lun(pab.lun);
   hex_release_bus_recv();
   _delay_us(200);
-  if(lun != NULL) {
+  if(file != NULL) {
 	// the loop is to be able to skip files that shall not be listed in the catalog
 	// else we only go through the loop once
     do {
 	  memset(lfn,0,sizeof(lfn));
-	  res = f_readdir(&lun->dir, &fno); // read a directory item
+	  res = f_readdir(&file->dir, &fno); // read a directory item
 	  if (res != FR_OK) {
 		  break; // break on error, leave do .. while loop
 	  }
@@ -241,7 +208,7 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
 	  }
 
 	  char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-	  if (cat_skip_file(filename, lun->pattern))
+	  if (cat_skip_file(filename, file->pattern))
 		  continue; // skip certain files like "." and "..", next do .. while
 	  uart_trace(filename, 0, strlen(filename));
 	  uart_putcrlf();
@@ -251,7 +218,7 @@ static uint8_t hex_read_catalog_txt(pab_t pab) {
 	  hex_release_bus_send();
 
 	  // write the calatog entry for OPEN/INPUT
-	  cat_write_txt(&(lun->dirnum), fno.fsize, filename, attrib);
+	  cat_write_txt(&(file->dirnum), fno.fsize, filename, attrib);
 
 	  break; // success, leave the do .. while loop
     } while(1);
@@ -308,22 +275,20 @@ static int8_t hex_return_status(pab_t pab) {
 	file_t* file;
 	BYTE res = FR_OK;
 	BYTE status = 0x0;
-	luntbl_t* lun;
 
 	uart_putc('>');
 
-	lun = find_lun2(pab.lun);
-	if(lun != NULL && lun->type == LUN_DIR) {
+	file = find_lun(pab.lun);
+	if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
 		// EOF on catalog for OPEN/INPUT only
 		// each INPUT on the catalog decrements lun->dirnum
 		if (pab.lun != 0 ) {
-		  if (lun->dirnum == 0) {
+		  if (file->dirnum == 0) {
 			 status = 0x80; // EOF on catalog for OPEN/INPUT only
 		  }
 		}
 	}
 	else {
-		file = &(lun->file);
 		res = (file != NULL ? FR_OK : FR_NO_FILE);
 		if (file->fp.fptr == file->fp.fsize) {
 			status = 0x80; // EOF on file
@@ -572,23 +537,21 @@ static uint8_t hex_read(pab_t pab) {
   uint16_t len = 0;
   UINT read;
   BYTE res = FR_OK;
-  luntbl_t* lun;
   file_t* file;
 
   uart_putc('R');
-  lun = find_lun2(pab.lun);
-  if(lun != NULL && lun->type == LUN_DIR) {
-	if (pab.lun == 0 ) {
-	  uart_putc('P');
-      return hex_read_catalog(pab);
-	}
-	else {
-	  uart_putc('T');
-      return hex_read_catalog_txt(pab);
-	}
+  file = find_lun(pab.lun);
+  if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
+    if (pab.lun == 0 ) {
+      uart_putc('P');
+        return hex_read_catalog(pab);
+    }
+    else {
+      uart_putc('T');
+        return hex_read_catalog_txt(pab);
+    }
   }
-  if(lun != NULL) {
-    file = &(lun->file);
+  if(file != NULL) {
     hex_release_bus_recv();
     _delay_us(200);
     if(file != NULL) {
@@ -633,7 +596,7 @@ static uint8_t hex_read(pab_t pab) {
 static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
   uint8_t rc = HEXERR_SUCCESS;
   uint16_t fsize = 0;
-  luntbl_t *lun;
+  file_t *file;
   BYTE res = FR_OK;
 
   uart_putc('o');
@@ -642,9 +605,10 @@ static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
 	res =  FR_IS_READONLY;
   }
   else {
-	lun = reserve_lun2(pab.lun);
+	file = reserve_lun(pab.lun);
 
-	if(lun != NULL) {
+	if(file != NULL) {
+	  file->attr |= FILEATTR_CATALOG;
 	  // remove the leading $
 	  char* string = (char*)buffer;
 	  if (strlen(string)<2 || string[1]!='/') { // if just $ or $ABC..
@@ -666,12 +630,12 @@ static uint8_t hex_open_catalog(pab_t pab, uint8_t att) {
 	  if (strlen(dirpath)>1 && dirpath[strlen(dirpath)-1] == '/')
 		dirpath[strlen(dirpath)-1] = '\0';
 	  // get the number of catalog entries from dirpath that match the pattern
-	  lun->dirnum = cat_get_num_entries(&fs, dirpath, pattern);
+	  file->dirnum = cat_get_num_entries(&fs, dirpath, pattern);
 	  if (pattern != (char*)NULL)
-		  lun->pattern = pattern; // store pattern, will be freed in free_lun
+	    file->pattern = pattern; // store pattern, will be freed in free_lun
 	  // the file size is either the length of the PGM file for OLD/PGM or the max. length of the txt file for OPEN/INPUT.
-	  fsize = (pab.lun == 0 ? cat_file_length_pgm(lun->dirnum)  : cat_max_file_length_txt());
-	  res = f_opendir(&fs, &(lun->dir), (UCHAR*)dirpath); // open the director
+	  fsize = (pab.lun == 0 ? cat_file_length_pgm(file->dirnum)  : cat_max_file_length_txt());
+	  res = f_opendir(&fs, &(file->dir), (UCHAR*)dirpath); // open the director
 	}
 	else {
 	  // too many open files.
@@ -816,33 +780,27 @@ static uint8_t hex_open(pab_t pab) {
 
 static uint8_t hex_close(pab_t pab) {
   uint8_t rc;
-  luntbl_t *lun;
   file_t* file;
   BYTE res;
 
   uart_putc('<');
-  lun = find_lun2(pab.lun);
-  if(lun != NULL) {
-    if(lun->type == LUN_DIR) {
+  file = find_lun(pab.lun);
+  if(file != NULL) {
+    if(file->attr & FILEATTR_CATALOG) {
       free_lun(pab.lun);
       rc = HEXSTAT_SUCCESS;
     } else {
-      file = &(lun->file);
-      if(file != NULL) {
-        res = f_close(&(file->fp));
-        free_lun(pab.lun);
-        switch(res) {
-          case FR_OK:
-            rc = HEXSTAT_SUCCESS;
-            break;
-          case FR_INVALID_OBJECT:
-          case FR_NOT_READY:
-          default:
-            rc = HEXSTAT_DEVICE_ERR;
-            break;
-        }
-      } else {
-        rc = HEXSTAT_NOT_OPEN;
+      res = f_close(&(file->fp));
+      free_lun(pab.lun);
+      switch(res) {
+        case FR_OK:
+          rc = HEXSTAT_SUCCESS;
+          break;
+        case FR_INVALID_OBJECT:
+        case FR_NOT_READY:
+        default:
+          rc = HEXSTAT_DEVICE_ERR;
+          break;
       }
     }
   } else {

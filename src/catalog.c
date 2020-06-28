@@ -158,9 +158,15 @@ int wild_cmp(const char *pattern, const char *string)
 }
 
 // Convert bytes to kBytes and format to ##.# . In case size >= 100kB returns 99.9.
+// TODO might make sense to send values < 1024 as actual bytes, since they will take the same number of chars...
 char* cat_bytes_to_kb(uint32_t bytes, char* buf, uint8_t len) {
   int kb = bytes / 1024;
-  int rb = (int)round(((bytes % 1024)/1024.0)*10);
+  //int rb = (int)round(((bytes % 1024)/1024.0)*10);
+  int rb = (bytes % 1024)/(1024 / 10);
+  //if (rb == 10) { // bugfix
+  //  kb = kb + 1;
+  //  rb = 0;
+  //}
   if (kb > 99) { // return 99.9 for files >= 100 kB
     kb = 99;
     rb = 9;
