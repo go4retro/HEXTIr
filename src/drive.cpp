@@ -416,6 +416,7 @@ static uint8_t hex_drv_read(pab_t pab) {
           }
           entry.close();
           // Do we have at least 12 bytes left in buffer?
+          // name,size,flag
           if ( sizeof(buffer) - fsize > 12 ) {
             strcat((char *)buffer, ",");
             fsize = strlen((char *)buffer);

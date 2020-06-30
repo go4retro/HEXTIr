@@ -101,16 +101,16 @@ void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char 
     char* size_kb = cat_bytes_to_kb(fsize, buf, sizeof(buf));
 
 	int len = strlen(size_kb) + 1 + strlen(filename) + 1 + 1; // length of data transmitted
-	transmit_word(len);                                     // length
+	transmit_word(len);                                       // length
 	for(i = 0; i < strlen(size_kb)  ; i++) {                  // file size in kilo bytes, 4 byte
-	  transmit_byte(size_kb[i]);                            //
+	  transmit_byte(size_kb[i]);                              //
 	}                                                         //
-	transmit_byte(',');                                     // "," separator, 1 byte
+	transmit_byte(',');                                       // "," separator, 1 byte
 	for(i = 0; i < strlen(filename); i++) {                   // file name , max. _MAX_LFN_LENGTH bytes
-	  transmit_byte(filename[i]);                           //
+	  transmit_byte(filename[i]);                             //
 	}                                                         //
-	transmit_byte(',');                                     // "," separator, 1 byte
-	transmit_byte(attrib);                                   // file attribute, 1 byte
+	transmit_byte(',');                                       // "," separator, 1 byte
+	transmit_byte(attrib);                                    // file attribute, 1 byte
 
 	*dirnum = *dirnum - 1; // decrement dirnum, used here as entries left to detect EOF for catalog when dirnum = 0
 }
@@ -207,14 +207,12 @@ uint8_t hex_read_catalog(file_t *file) {
   #endif
 
   debug_puts_P(PSTR("\n\rRead PGM Catalog\n\r"));
-  //hex_release_bus();
-  //_delay_us(200);
   if(file != NULL) { // TODO remove this, as we've already checked for !NULL in drv_read
     transmit_word(cat_file_length_pgm(file->dirnum));  // send full length of file
     cat_open_pgm(file->dirnum);
     uint16_t i = 1;
     while(i <= file->dirnum && res == FR_OK) {
-      memset(lfn,0,sizeof(lfn));
+      memset(lfn, 0, sizeof(lfn));
       res = f_readdir(&file->dir, &fno);                   // read a directory item
       if (res != FR_OK || fno.fname[0] == 0)
         break;  // break on error or end of dir
@@ -222,23 +220,16 @@ uint8_t hex_read_catalog(file_t *file) {
       char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
 
       if (cat_skip_file(filename, file->pattern))
-      continue; // skip certain files like "." and ".."
+        continue; // skip certain files like "." and ".."
 
       char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
 
       debug_trace(filename, 0, strlen(filename));
-      debug_putcrlf();
 
-      //hex_release_bus();
-
-      cat_write_record_pgm(i++,fno.fsize, filename,attrib);
-
-      debug_putcrlf();
+      cat_write_record_pgm(i++, fno.fsize, filename, attrib);
     }
-    //hex_release_bus();
     cat_close_pgm();
-    debug_putc('>');
-    //hex_release_bus();
+    //debug_putc('>');
     rc = HEXSTAT_SUCCESS;
   } else {
     transmit_word(0);  // null file
@@ -258,40 +249,34 @@ uint8_t hex_read_catalog_txt(file_t * file) {
   fno.lfn = lfn;
   #endif
 
-  debug_putc('r');
-  hex_release_bus();
-  _delay_us(200);
+  debug_puts_P(PSTR("\n\rRead TXT Catalog\n\r"));
   if(file != NULL) {  // TODO remove this, as we already checked in drv_read
   // the loop is to be able to skip files that shall not be listed in the catalog
   // else we only go through the loop once
     do {
-    memset(lfn,0,sizeof(lfn));
-    res = f_readdir(&file->dir, &fno); // read a directory item
-    if (res != FR_OK) {
-      break; // break on error, leave do .. while loop
-    }
-    if (fno.fname[0] == 0) {
-        res = FR_NO_FILE; // OK  to set this ?
-      break;  // break on end of dir, leave do .. while loop
-    }
+      memset(lfn, 0, sizeof(lfn));
+      res = f_readdir(&file->dir, &fno); // read a directory item
+      if (res != FR_OK) {
+        break; // break on error, leave do .. while loop
+      }
+      if (fno.fname[0] == 0) {
+          res = FR_NO_FILE; // OK  to set this ?
+        break;  // break on end of dir, leave do .. while loop
+      }
 
-    char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
-    if (cat_skip_file(filename, file->pattern))
-      continue; // skip certain files like "." and "..", next do .. while
-    debug_trace(filename, 0, strlen(filename));
-    debug_putcrlf();
+      char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+      if (cat_skip_file(filename, file->pattern))
+        continue; // skip certain files like "." and "..", next do .. while
+      debug_trace(filename, 0, strlen(filename));
 
-    char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+      char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
 
-    hex_release_bus();
+      // write the calatog entry for OPEN/INPUT
+      cat_write_txt(&(file->dirnum), fno.fsize, filename, attrib);
 
-    // write the calatog entry for OPEN/INPUT
-    cat_write_txt(&(file->dirnum), fno.fsize, filename, attrib);
-
-    break; // success, leave the do .. while loop
+      // TODO why is the break below needed?
+      break; // success, leave the do .. while loop
     } while(1);
-
-    hex_release_bus(); // in the right place ?
 
     switch(res) {
       case FR_OK:
@@ -299,8 +284,8 @@ uint8_t hex_read_catalog_txt(file_t * file) {
         break;
       case FR_NO_FILE:
         transmit_word(0); // zero length data
-      rc = HEXSTAT_EOF;
-      break;
+        rc = HEXSTAT_EOF;
+        break;
       default:
         transmit_word(0); // zero length data
         rc = HEXSTAT_DEVICE_ERR;
@@ -311,7 +296,8 @@ uint8_t hex_read_catalog_txt(file_t * file) {
     rc = HEXSTAT_NOT_OPEN;
   }
   transmit_byte(rc);    // status code
-  return 0;
+  hex_finish();
+  return HEXERR_SUCCESS;
 }
 
 uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
@@ -328,7 +314,7 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
       file->attr |= FILEATTR_CATALOG;
       // remove the leading $
       char* string = (char*)buffer;
-      if (strlen(string)<2 || string[1]!='/') { // if just $ or $ABC..
+      if (strlen(string) < 2 || string[1] != '/') { // if just $ or $ABC..
         string[0] = '/'; // $ -> /, $ABC/ -> /ABC/
       } else {
         string = (char*)&buffer[1]; // $/ABC/... -> /ABC/...
@@ -370,8 +356,6 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
       break;
     }
   }
-  //hex_release_bus();
-  //_delay_us(200);  // wait a bit...
   if(!hex_is_bav()) { // we can send response
     if(rc == HEXSTAT_SUCCESS) {
       transmit_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
@@ -379,7 +363,6 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
       transmit_word(0);
       transmit_byte(HEXSTAT_SUCCESS);    // status code
       hex_finish();
-      debug_putcrlf();
       return HEXERR_SUCCESS;
     } else {
       hex_send_final_response( rc );
