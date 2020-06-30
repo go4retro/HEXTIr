@@ -22,6 +22,7 @@
 
 #include "config.h"
 
+#include "catalog.h"
 #include "debug.h"
 #include "ff.h"
 #include "hexbus.h"
@@ -362,6 +363,18 @@ static uint8_t hex_drv_read(pab_t pab) {
 
   file = find_lun(pab.lun);
 
+#ifndef ARDUINO
+  if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
+    if (pab.lun == 0 ) {
+      debug_putc('P');
+        return hex_read_catalog(file);
+    }
+    else {
+      debug_putc('T');
+        return hex_read_catalog_txt(file);
+    }
+  }
+#endif
   if (file != NULL) {
     if ( !(file->attr & FILEATTR_CATALOG ) ) {
 #ifdef ARDUINO
@@ -446,8 +459,7 @@ static uint8_t hex_drv_read(pab_t pab) {
         res = f_read(&(file->fp), buffer, len, &read);
 
         if (!res) {
-          debug_putc(13);
-          debug_putc(10);
+          debug_putcrlf();
           debug_trace(buffer, 0, read);
         }
 
@@ -524,6 +536,15 @@ static uint8_t hex_drv_open(pab_t pab) {
     return HEXERR_BAV; // BAV ERR.
   }
 
+#ifndef ARDUINO
+  //*****************************************************
+  // special file name "$" -> catalog
+  if ((char)buffer[3]=='$') {
+    file = reserve_lun(pab.lun);
+    return hex_open_catalog(file, pab.lun, att);  // check file!= null in there
+  }
+  //*******************************************************
+#endif
 #ifdef ARDUINO
 
   // for now, until we get rid of SD library in Arduino build.
@@ -585,7 +606,7 @@ static uint8_t hex_drv_open(pab_t pab) {
 
 #ifdef ARDUINO
 
-        if ( (att & OPENMODE_UPDATE) == OPENMODE_WRITE ) {
+        if ( (att & OPENMODE_MASK) == OPENMODE_WRITE ) {
           // Open for write only, remove pre-existing file!
           if ( SD.exists( (const char *)&buffer[3] ) ) {
             SD.remove( (const char *)&buffer[3] );
@@ -605,7 +626,7 @@ static uint8_t hex_drv_open(pab_t pab) {
             }
           }
 
-          if ( (att & OPENMODE_UPDATE) == OPENMODE_APPEND ) {
+          if ( (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
             file->fp.seek( file->fp.size() ); // position for append.
           } else {
             // If we are open for input, output, or update, position at start!
@@ -675,7 +696,7 @@ static uint8_t hex_drv_open(pab_t pab) {
 
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXERR_SUCCESS ) {
-      switch (att & OPENMODE_UPDATE) {
+      switch (att & OPENMODE_MASK) {
 
         // when opening to write, or read/write
         default:
@@ -711,7 +732,7 @@ static uint8_t hex_drv_open(pab_t pab) {
         transmit_word( 4 );
         transmit_word( fsize );
         transmit_word( 0 );      // position
-        transmit_byte( HEXERR_SUCCESS );
+        transmit_byte( HEXSTAT_SUCCESS );
         hex_finish();
       } else {
         hex_send_final_response( rc );
@@ -746,7 +767,9 @@ static uint8_t hex_drv_close(pab_t pab) {
     file->fp.close();
     res = FR_OK;
 #else
-    res = f_close(&(file->fp));
+    if(!(file->attr & FILEATTR_CATALOG)) {
+      res = f_close(&(file->fp));
+    }
 #endif
     free_lun(pab.lun);
     switch (res) {

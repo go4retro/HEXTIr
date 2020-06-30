@@ -83,6 +83,7 @@ SRC += configure.c
 SRC += swuart.c
 SRC += debug.c
 SRC += uart.c
+SRC += catalog.c
 
 ifneq ($(CONFIG_NO_SD),y)
   SRC += sdcard.c
