@@ -245,6 +245,8 @@ uint8_t hex_read_catalog_txt(file_t * file) {
   UCHAR lfn[_MAX_LFN_LENGTH+1];
   fno.lfn = lfn;
   #endif
+  char* filename;
+  char attrib;
 
   debug_puts_P(PSTR("\n\rRead TXT Catalog\n\r"));
 #ifndef ARDUINO
@@ -261,7 +263,7 @@ uint8_t hex_read_catalog_txt(file_t * file) {
       break;  // break on end of dir, leave do .. while loop
     }
 
-    char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+    filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
     if (cat_skip_file(filename, file->pattern))
       continue; // skip certain files like "." and "..", next do .. while
     break; // success, leave the do .. while loop
@@ -271,7 +273,7 @@ uint8_t hex_read_catalog_txt(file_t * file) {
     case FR_OK:
       debug_trace(filename, 0, strlen(filename));
 
-      char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+      attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
 
       // write the calatog entry for OPEN/INPUT
       cat_write_txt(&(file->dirnum), fno.fsize, filename, attrib);

@@ -231,7 +231,7 @@ void loop(void) { // Arduino main loop routine.
 
   clock_init();
 
-#endif
+#endif // No ARDUINO
 
   setup_registry();
 
