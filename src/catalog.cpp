@@ -224,6 +224,7 @@ uint8_t hex_read_catalog(file_t *file) {
   BYTE res = FR_OK;
   char *filename;
   char attrib;
+  uint32_t fsize;
 #ifdef ARDUINO
   File entry;
 #else
@@ -235,26 +236,27 @@ uint8_t hex_read_catalog(file_t *file) {
 #endif
 
   debug_puts_P(PSTR("\n\rRead PGM Catalog\n\r"));
-#ifndef ARDUINO
   transmit_word(cat_file_length_pgm(file->dirnum));  // send full length of file
   cat_open_pgm(file->dirnum);
   uint16_t i = 1;
   while(i <= file->dirnum && res == FR_OK) {
-#ifdef _MAX_LFN_LENGTH
+#if !defined ARDUINO && defined _MAX_LFN_LENGTH
     memset(lfn, 0, sizeof(lfn));
 #endif
 #ifdef ARDUINO
     entry = file->fp.openNextFile();
-    if (!entry)) {
+    if (!entry)
       break;  // break on error or end of dir
     filename = entry.name();
     attrib = (entry.isDirectory() ? 'D' : 'F');
+    fsize = (entry.isDirectory() ? 0 : entry.size());
 #else
     res = f_readdir(&file->dir, &fno);                   // read a directory item
     if (res != FR_OK || fno.fname[0] == 0)
       break;  // break on error or end of dir
     filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
     attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+    fsize = fno.fsize;
 #endif
 
     if (cat_skip_file(filename, file->pattern))
@@ -262,15 +264,10 @@ uint8_t hex_read_catalog(file_t *file) {
 
     debug_trace(filename, 0, strlen(filename));
 
-#ifdef ARDUINO
-    // write a record from SD Lib.
-#else
-    cat_write_record_pgm(i++, fno.fsize, filename, attrib);
-#endif
+    cat_write_record_pgm(i++, fsize, filename, attrib);
   }
   cat_close_pgm();
   //debug_putc('>');
-#endif
   rc = HEXSTAT_SUCCESS;
   transmit_byte( rc ); // status byte transmit
   hex_finish();
