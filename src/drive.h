@@ -34,14 +34,6 @@
 
 #include "diskio.h"
 
-typedef struct _file_t {
-  FIL fp;
-  DIR dir;
-  uint8_t attr;
-  uint16_t dirnum;
-  char* pattern;
-} file_t;
-
 #else
 
   #include <SPI.h>
@@ -51,13 +43,20 @@ typedef struct _file_t {
 // We'll define our own FILE_WRITE_NEW when the mode specified for open is just write, not append.
 #define FILE_WRITE_NEW    (O_READ | O_WRITE | O_CREAT)
 
+#endif // arduino
 
 typedef struct _file_t {
+#ifdef ARDUINO
   File fp;
+#else
+  FIL fp;
+#endif
+  DIR dir;
   uint8_t attr;
+  uint16_t dirnum;
+  char* pattern;
 } file_t;
 
-#endif // arduino
 
 typedef struct _luntbl_t {
   uint8_t used;

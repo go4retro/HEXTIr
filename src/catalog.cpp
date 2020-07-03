@@ -117,21 +117,43 @@ void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char 
 
 // ----------------------------- common -----------------------------------
 // Get number of directory (=catalog) entries.
+#ifdef ARDUINO
+uint16_t cat_get_num_entries(const char* directory, const char* pattern) {
+  File entry;
+  File file;
+#else
 uint16_t cat_get_num_entries(FATFS* fsp, const char* directory, const char* pattern) {
-  FRESULT res;
   DIR dir;
   FILINFO fno;
 # ifdef _MAX_LFN_LENGTH
 UCHAR lfn[_MAX_LFN_LENGTH+1];
 fno.lfn = lfn;
 #endif
+#endif
+  FRESULT res;
   uint16_t count = 0;
+  char* filename;
+
+#ifdef ARDUINO
+  file = SD.open(directory);
+  while(res == FR_OK) {
+    entry = file.openNextFile();
+    if(!entry)
+      res = FR_NO_FILE;
+    else
+    if (res != FR_OK || entry.name()[0] == 0)
+#else
   res = f_opendir(fsp, &dir, (UCHAR*)directory); // open the directory
   while(res == FR_OK) {
     res = f_readdir(&dir, &fno);                   // read a directory item
     if (res != FR_OK || fno.fname[0] == 0)
+#endif
       break;  // break on error or end of dir
-    char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+#ifdef ARDUINO
+    filename = entry.name();
+#else
+    filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+#endif
     if (cat_skip_file(filename, pattern))
     	continue; // skip certain files like "." and ".."
     count++;
@@ -200,11 +222,17 @@ char* cat_bytes_to_kb(uint32_t bytes, char* buf, uint8_t len) {
 uint8_t hex_read_catalog(file_t *file) {
   uint8_t rc;
   BYTE res = FR_OK;
+  char *filename;
+  char attrib;
+#ifdef ARDUINO
+  File entry;
+#else
   FILINFO fno;
   # ifdef _MAX_LFN_LENGTH
   UCHAR lfn[_MAX_LFN_LENGTH+1];
   fno.lfn = lfn;
   #endif
+#endif
 
   debug_puts_P(PSTR("\n\rRead PGM Catalog\n\r"));
 #ifndef ARDUINO
@@ -212,21 +240,33 @@ uint8_t hex_read_catalog(file_t *file) {
   cat_open_pgm(file->dirnum);
   uint16_t i = 1;
   while(i <= file->dirnum && res == FR_OK) {
+#ifdef _MAX_LFN_LENGTH
     memset(lfn, 0, sizeof(lfn));
+#endif
+#ifdef ARDUINO
+    entry = file->fp.openNextFile();
+    if (!entry)) {
+      break;  // break on error or end of dir
+    filename = entry.name();
+    attrib = (entry.isDirectory() ? 'D' : 'F');
+#else
     res = f_readdir(&file->dir, &fno);                   // read a directory item
     if (res != FR_OK || fno.fname[0] == 0)
       break;  // break on error or end of dir
-
-    char* filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+    filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+    attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+#endif
 
     if (cat_skip_file(filename, file->pattern))
       continue; // skip certain files like "." and ".."
 
-    char attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
-
     debug_trace(filename, 0, strlen(filename));
 
+#ifdef ARDUINO
+    // write a record from SD Lib.
+#else
     cat_write_record_pgm(i++, fno.fsize, filename, attrib);
+#endif
   }
   cat_close_pgm();
   //debug_putc('>');
@@ -239,31 +279,49 @@ uint8_t hex_read_catalog(file_t *file) {
 
 uint8_t hex_read_catalog_txt(file_t * file) {
   uint8_t rc;
+#ifdef ARDUINO
+  File entry;
+#else
   BYTE res = FR_OK;
   FILINFO fno;
   # ifdef _MAX_LFN_LENGTH
   UCHAR lfn[_MAX_LFN_LENGTH+1];
   fno.lfn = lfn;
   #endif
+#endif
   char* filename;
   char attrib;
+  uint32_t size;
 
   debug_puts_P(PSTR("\n\rRead TXT Catalog\n\r"));
 #ifndef ARDUINO
   // the loop is to be able to skip files that shall not be listed in the catalog
   // else we only go through the loop once
   do {
+#ifdef _MAX_LFN_LENGTH
     memset(lfn, 0, sizeof(lfn));
+#endif
+#ifdef ARDUINO
+    entry = file->fp.openNextFile();
+    if(!entry)
+      break; // no more entries.
+    filename = entry.name();
+    attrib = (entry.isDirectory() ? 'D' : 'F');
+    size = entry.size();
+#else
     res = f_readdir(&file->dir, &fno); // read a directory item
     if (res != FR_OK) {
       break; // break on error, leave do .. while loop
     }
-    if (fno.fname[0] == 0) {
+    filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+    attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
+    size = fno.fsize;
+#endif
+    if (filename[0] == 0) {
         res = FR_NO_FILE; // OK  to set this ?
       break;  // break on end of dir, leave do .. while loop
     }
 
-    filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
     if (cat_skip_file(filename, file->pattern))
       continue; // skip certain files like "." and "..", next do .. while
     break; // success, leave the do .. while loop
@@ -273,10 +331,9 @@ uint8_t hex_read_catalog_txt(file_t * file) {
     case FR_OK:
       debug_trace(filename, 0, strlen(filename));
 
-      attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
-
       // write the calatog entry for OPEN/INPUT
-      cat_write_txt(&(file->dirnum), fno.fsize, filename, attrib);
+      // TODO can the below have a bad return code?
+      cat_write_txt(&(file->dirnum), size, filename, attrib);
       rc = HEXSTAT_SUCCESS;
       break;
     case FR_NO_FILE:
@@ -294,13 +351,13 @@ uint8_t hex_read_catalog_txt(file_t * file) {
   return HEXERR_SUCCESS;
 }
 
+// TODO modify to support Arduino directories.
 uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
   uint8_t rc = HEXERR_SUCCESS;
   uint16_t fsize = 0;
   BYTE res = FR_OK;
 
   debug_puts_P(PSTR("\n\rOpen Catalog\n\r"));
-#ifndef ARDUINO
   if (!(att & OPENMODE_READ)) {
   // send back error on anything not OPENMODE_READ
     res =  FR_IS_READONLY;
@@ -327,12 +384,20 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
       if (strlen(dirpath)>1 && dirpath[strlen(dirpath)-1] == '/')
         dirpath[strlen(dirpath)-1] = '\0';
       // get the number of catalog entries from dirpath that match the pattern
+#ifdef ARDUINO
+      file->dirnum = cat_get_num_entries(dirpath, pattern);
+#else
       file->dirnum = cat_get_num_entries(&fs, dirpath, pattern);
+#endif
       if (pattern != (char*)NULL)
         file->pattern = pattern; // store pattern, will be freed in free_lun
       // the file size is either the length of the PGM file for OLD/PGM or the max. length of the txt file for OPEN/INPUT.
       fsize = (lun == 0 ? cat_file_length_pgm(file->dirnum)  : cat_max_file_length_txt());
+#ifdef ARDUINO
+      file->fp = SD.open(dirpath);
+#else
       res = f_opendir(&fs, &(file->dir), (UCHAR*)dirpath); // open the director
+#endif
     } else {
       // too many open files.
       rc = HEXSTAT_MAX_LUNS;
@@ -351,7 +416,6 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
       break;
     }
   }
-#endif
   if(!hex_is_bav()) { // we can send response
     if(rc == HEXSTAT_SUCCESS) {
       transmit_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...

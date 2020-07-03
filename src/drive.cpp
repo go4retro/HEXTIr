@@ -376,63 +376,21 @@ static uint8_t hex_drv_read(pab_t pab) {
   }
 #endif
   if (file != NULL) {
-    if ( !(file->attr & FILEATTR_CATALOG ) ) {
 #ifdef ARDUINO
-      // amount remaining to read from file
-      fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
+    // amount remaining to read from file
+    fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
 #else
-      fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
+    fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
 #endif
-      if ( fsize == 0 ) {
-        res = FR_EOF;
-      } else {
-        // size of buffer provided by host (amount to send)
-        len = pab.buflen;
-
-        if ( fsize > pab.buflen ) {
-          fsize = pab.buflen;
-        }
-      }
-    } else {
-
-      // Read next catalog entry.
-
-#ifdef ARDUINO
-      {
-        File entry = file->fp.openNextFile();
-        uint32_t osize = 0;
-        uint8_t flag = 0;
-
-        fsize = 0;
-        if ( !entry ) {
-          res = FR_EOF;
-        } else {
-          memset(buffer, 0, sizeof(buffer));
-          strcpy((char *)&buffer[0], entry.name() );
-          if ( entry.isDirectory() ) {
-            flag = F_ISDIRECTORY;
-          } else {
-            osize = entry.size();
-          }
-          entry.close();
-          // Do we have at least 12 bytes left in buffer?
-          // name,size,flag
-          if ( sizeof(buffer) - fsize > 12 ) {
-            strcat((char *)buffer, ",");
-            fsize = strlen((char *)buffer);
-            ltoa( osize, (char *)&buffer[fsize], 10);
-            strcat((char *)buffer, ",");
-            fsize = strlen((char *)buffer );
-            itoa( flag, (char *)&buffer[fsize], 10);
-            fsize = strlen((char *)buffer );
-          }
-        }
-      }
-#else
-      // TODO: read next available directory entry using FatFS
+    if ( fsize == 0 ) {
       res = FR_EOF;
-      fsize = 0;
-#endif
+    } else {
+      // size of buffer provided by host (amount to send)
+      len = pab.buflen;
+
+      if ( fsize > pab.buflen ) {
+        fsize = pab.buflen;
+      }
     }
 
     // send how much we are going to send
@@ -537,7 +495,6 @@ static uint8_t hex_drv_open(pab_t pab) {
     return HEXERR_BAV; // BAV ERR.
   }
 
-#ifndef ARDUINO
   //*****************************************************
   // special file name "$" -> catalog
   if ((char)buffer[3]=='$') {
@@ -545,7 +502,6 @@ static uint8_t hex_drv_open(pab_t pab) {
     return hex_open_catalog(file, pab.lun, att);  // check file!= null in there
   }
   //*******************************************************
-#endif
 #ifdef ARDUINO
 
   // for now, until we get rid of SD library in Arduino build.
@@ -618,31 +574,26 @@ static uint8_t hex_drv_open(pab_t pab) {
         // Now, open our file in proper mode. create it if we need to.
         file->fp = SD.open( (const char *)&buffer[3], mode );
 
-        if ( !(file->attr & FILEATTR_CATALOG ) ) {
 
-          // Any mode other than create new file?
-          if ( mode != FILE_WRITE_NEW ) {
-            if ( !SD.exists( (const char *)&buffer[3] )) {
-              res = FR_DENIED;
-            }
-          }
-
-          if ( (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
-            file->fp.seek( file->fp.size() ); // position for append.
-          } else {
-            // If we are open for input, output, or update, position at start!
-            file->fp.seek( 0 );
+        // Any mode other than create new file?
+        if ( mode != FILE_WRITE_NEW ) {
+          if ( !SD.exists( (const char *)&buffer[3] )) {
+            res = FR_DENIED;
           }
         }
+
+        if ( (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
+          file->fp.seek( file->fp.size() ); // position for append.
+        } else {
+          // If we are open for input, output, or update, position at start!
+          file->fp.seek( 0 );
+        }
 #else
-        // TODO: manage open of a directory if file->attr == FILEATTR_CATALOG
-        if ( !(file->attr & FILEATTR_CATALOG ) ) {
-          if ( pab.datalen < BUFSIZE - 1 ) {
-            res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
-          }
-          if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
-            res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
-          }
+        if ( pab.datalen < BUFSIZE - 1 ) {
+          res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
+        }
+        if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
+          res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
         }
 #endif
 
@@ -655,13 +606,11 @@ static uint8_t hex_drv_open(pab_t pab) {
         case FR_OK:
           rc = HEXSTAT_SUCCESS;
           fsize = 0;
-          if ( !(file->attr & FILEATTR_CATALOG) ) {
 #ifdef ARDUINO
-            fsize = file->fp.size();
+          fsize = file->fp.size();
 #else
-            fsize = file->fp.fsize;
+          fsize = file->fp.fsize;
 #endif
-          }
           break;
 
         case FR_IS_READONLY:
@@ -1007,7 +956,6 @@ void drv_start(void) {
     if (f_mount(1, &fs) == FR_OK) {
       fs_initialized = TRUE;
     }
-
 #endif
 
   }
