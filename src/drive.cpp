@@ -363,7 +363,6 @@ static uint8_t hex_drv_read(pab_t pab) {
 
   file = find_lun(pab.lun);
 
-#ifndef ARDUINO
   if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab.lun == 0 ) {
       debug_putc('P');
@@ -374,7 +373,6 @@ static uint8_t hex_drv_read(pab_t pab) {
         return hex_read_catalog_txt(file);
     }
   }
-#endif
   if (file != NULL) {
 #ifdef ARDUINO
     // amount remaining to read from file
