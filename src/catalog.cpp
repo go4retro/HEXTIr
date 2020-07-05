@@ -276,10 +276,10 @@ uint8_t hex_read_catalog(file_t *file) {
 
 uint8_t hex_read_catalog_txt(file_t * file) {
   uint8_t rc;
+  BYTE res = FR_OK;
 #ifdef ARDUINO
   File entry;
 #else
-  BYTE res = FR_OK;
   FILINFO fno;
   # ifdef _MAX_LFN_LENGTH
   UCHAR lfn[_MAX_LFN_LENGTH+1];
@@ -291,13 +291,9 @@ uint8_t hex_read_catalog_txt(file_t * file) {
   uint32_t size;
 
   debug_puts_P(PSTR("\n\rRead TXT Catalog\n\r"));
-#ifndef ARDUINO
   // the loop is to be able to skip files that shall not be listed in the catalog
   // else we only go through the loop once
   do {
-#ifdef _MAX_LFN_LENGTH
-    memset(lfn, 0, sizeof(lfn));
-#endif
 #ifdef ARDUINO
     entry = file->fp.openNextFile();
     if(!entry)
@@ -306,6 +302,9 @@ uint8_t hex_read_catalog_txt(file_t * file) {
     attrib = (entry.isDirectory() ? 'D' : 'F');
     size = entry.size();
 #else
+# ifdef _MAX_LFN_LENGTH
+    memset(lfn, 0, sizeof(lfn));
+# endif
     res = f_readdir(&file->dir, &fno); // read a directory item
     if (res != FR_OK) {
       break; // break on error, leave do .. while loop
@@ -342,13 +341,11 @@ uint8_t hex_read_catalog_txt(file_t * file) {
       rc = HEXSTAT_DEVICE_ERR;
       break;
   }
-#endif
   transmit_byte(rc);    // status code
   hex_finish();
   return HEXERR_SUCCESS;
 }
 
-// TODO modify to support Arduino directories.
 uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
   uint8_t rc = HEXERR_SUCCESS;
   uint16_t fsize = 0;
