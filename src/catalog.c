@@ -173,7 +173,7 @@ static int wild_cmp(const char *pattern, const char *string)
 
 // Return the number of digits of a decimal number.
 static uint32_t number_of_digits(uint32_t num) {
-  return  (num == 0) ? 1  : ((uint32_t)log10((double)num) + 1);
+  return  (num == 0) ? 1  : ((uint32_t)log10(num) + 1);
 }
 
 static char* left_pad_with_blanks(char *buf, uint8_t width) {
