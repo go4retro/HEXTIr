@@ -9,7 +9,7 @@
 #include "catalog.h"
 
 // ------------------------ local functions --------------------------
-static const FILE_SIZE_WIDTH = 5; // width of file size format
+static const uint8_t FILE_SIZE_WIDTH = 5; // width of file size format
 
 static int wild_cmp(const char *pattern, const char *string);
 static uint32_t number_of_digits(uint32_t num);
@@ -170,9 +170,10 @@ static int wild_cmp(const char *pattern, const char *string)
   return 0;
 }
 
+
 // Return the number of digits of a decimal number.
 static uint32_t number_of_digits(uint32_t num) {
-  return  (num == 0) ? 1  : ((uint32_t)log10(num) + 1);
+  return  (num == 0) ? 1  : ((uint32_t)log10((double)num) + 1);
 }
 
 static char* left_pad_with_blanks(char *buf, uint8_t width) {
@@ -198,21 +199,21 @@ static char* left_pad_with_blanks(char *buf, uint8_t width) {
  * 99999  -> "99999"    bytes
  * 100000 -> " 97.6"    kiB
  * 1023999-> "999.9"    kiB
- * 1024000-> "?????"    with too small
+ * 1024000-> "?????"    width too small
  */
 static char* format_file_size(uint32_t bytes, char* buf, uint8_t width) {
   if (number_of_digits(bytes) <= width)  {
-    itoa(bytes,buf,10);
+    ltoa(bytes,buf,10);
     left_pad_with_blanks(buf, width);
   }
   else {
     int kb = bytes / 1024;
     if ( number_of_digits(kb)+2 <= width) {
       int rb = (bytes % 1024)/(1024 / 10.0);
-      itoa(kb,buf,10);
+      ltoa(kb,buf,10);
       int l=strlen(buf);
       buf[l]='.';
-      itoa(rb,&buf[l+1],10);
+      ltoa(rb,&buf[l+1],10);
       left_pad_with_blanks(buf, width);
     }
     else {
