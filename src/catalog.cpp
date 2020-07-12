@@ -359,11 +359,11 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
     if(file != NULL) {
       file->attr |= FILEATTR_CATALOG;
       // remove the leading $
-      char* string = (char*)buffer;
+      char* string = (char*)&buffer[3];
       if (strlen(string) < 2 || string[1] != '/') { // if just $ or $ABC..
         string[0] = '/'; // $ -> /, $ABC/ -> /ABC/
       } else {
-        string = (char*)&buffer[1]; // $/ABC/... -> /ABC/...
+        string = (char*)&buffer[4]; // $/ABC/... -> /ABC/...
       }
       // separate into directory path and pattern
       char* dirpath = string;
