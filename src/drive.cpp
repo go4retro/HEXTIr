@@ -897,6 +897,16 @@ static uint8_t hex_drv_status( pab_t pab ) {
           st |= FILE_EOF_REACHED;
         }
       }
+      else { // FILEATTR_CATALOG
+#ifdef ARDUINO
+    	  // TODO
+#else
+        if (file->dirnum == 0) {
+          // debug_puts_P(PSTR("\n\rEOF\n\r"));
+          st |= FILE_EOF_REACHED;
+        }
+#endif
+      }
     }
   }
   if ( !hex_is_bav() ) {
