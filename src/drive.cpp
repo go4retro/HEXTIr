@@ -90,6 +90,7 @@ static file_t* reserve_lun(uint8_t lun) {
     if (!files[i].used) {
       files[i].used = TRUE;
       files[i].lun = lun;
+      files[i].file.pattern = (char*)NULL;
       files[i].file.attr = 0; // ensure clear attr before use
       open_files++;
       set_busy_led(TRUE);
@@ -106,6 +107,8 @@ static void free_lun(uint8_t lun) {
   for (i = 0; i < MAX_OPEN_FILES; i++) {
     if (files[i].used && files[i].lun == lun) {
       files[i].used = FALSE;
+      if (files[i].file.pattern != (char*) NULL)
+    	  free(files[i].file.pattern);
       open_files--;
       set_busy_led(open_files);
       if ( !open_files ) {
@@ -894,6 +897,11 @@ static uint8_t hex_drv_status( pab_t pab ) {
 #else
         if ( file->fp.fptr == file->fp.fsize ) {
 #endif
+          st |= FILE_EOF_REACHED;
+        }
+      }
+      else { // FILEATTR_CATALOG
+        if (file->dirnum == 0) {
           st |= FILE_EOF_REACHED;
         }
       }
