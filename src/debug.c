@@ -25,7 +25,6 @@
 #include "config.h"
 #include "swuart.h"
 #include "uart.h"
-
 #include "debug.h"
 
 #if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW
@@ -115,7 +114,7 @@ void debug_init(void) {
 #ifdef CONFIG_UART_DEBUG_SW
   swuart_init();
   swuart_setrate(CONFIG_UART_DEBUG_SW_PORT, CALC_SWBPS(CONFIG_UART_DEBUG_RATE));
-#elif CONFIG_UART_DEBUG
+#elif defined CONFIG_UART_DEBUG
   uart_init();
   // rate set in init
 #endif
