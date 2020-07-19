@@ -201,9 +201,8 @@ void loop(void) { // Arduino main loop routine.
   BYTE res;
 
 #ifndef ARDUINO
-
   debug_init();
- // setup stuff for main
+  // setup stuff for main
   board_init();
   hex_init();
   disk_init();
