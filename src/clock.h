@@ -25,9 +25,14 @@
 #include "hexops.h"
 #include "registry.h"
 
-
+#ifdef INCLUDE_CLOCK
 void clock_reset(void);
 void clock_register(registry_t *registry);
 void clock_init(void);
+#else
+#define clock_reset()     do {} while(0)
+#define clock_register(X) do {} while(0)
+#define clock_init()      do {} while(0)
+#endif
 
 #endif /* SRC_CLOCK_H */

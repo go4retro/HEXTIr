@@ -32,6 +32,7 @@
 
 #ifndef RTC_H
 #define RTC_H
+#ifdef HAVE_RTC
 
 #include "time.h"
 
@@ -56,4 +57,13 @@ void rtc_set(struct tm *time);
 uint8_t bcd2int(uint8_t value);
 uint8_t int2bcd(uint8_t value);
 
+#else
+
+#define rtc_init()  do {} while(0)
+#define rtc_get(x)  do {} while(0)
+#define rtc_set(x)  do {} while(0)
+#define bcd2int(x)  do {} while(0)
+#define int2bcd(x)  do {} while(0)
+
+#endif
 #endif

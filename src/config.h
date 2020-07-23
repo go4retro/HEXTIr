@@ -67,7 +67,6 @@
  #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #endif
 
-#define INCLUDE_CLOCK
 #define INCLUDE_PRINTER
 #define INCLUDE_SERIAL
 
@@ -400,6 +399,10 @@ static inline void leds_sleep(void) {
       defined(CONFIG_RTC_DSRTC)  > 1
 #    define NEED_RTCMUX
 #  endif
+#endif
+
+#if defined HAVE_RTC || CONFIG_HARDWARE_VARIANT == 3
+#  define INCLUDE_CLOCK
 #endif
 
 #include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?
