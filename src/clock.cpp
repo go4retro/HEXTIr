@@ -326,13 +326,6 @@ static uint8_t hex_rtc_reset( pab_t pab ) {
 }
 
 
-void clock_reset() {
-  if ( rtc_open ) {
-    rtc_open = 0;
-  }
-  return;
-}
-
 /*
    Command handling registry for device
 */
@@ -355,6 +348,18 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_INVALID_MARKER
 };
 
+
+// Arduino IDE compiles all cpp files, so need to exclude these APIs if clock
+// is disabled
+
+#ifdef INCLUDE_CLOCK
+
+void clock_reset() {
+  if ( rtc_open ) {
+    rtc_open = 0;
+  }
+  return;
+}
 
 void clock_register(registry_t *registry) {
   uint8_t i = registry->num_devices;
@@ -393,3 +398,5 @@ void clock_init() {
 #endif
   return;
 }
+
+#endif
