@@ -18,6 +18,7 @@
     drive.cpp: Drive-based device functions.
 */
 #include <string.h>
+#include <stdlib.h>
 #include <avr/pgmspace.h>
 
 #include "config.h"

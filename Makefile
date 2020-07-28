@@ -74,8 +74,6 @@ SRC += hexbus.c
 SRC += hexops.c
 SRC += led.c
 SRC += serial.c
-SRC += clock.c
-SRC += rtc.c
 SRC += printer.c
 SRC += powermgmt.c
 SRC += eeprom.c
@@ -84,6 +82,7 @@ SRC += swuart.c
 SRC += debug.c
 SRC += uart.c
 SRC += catalog.c
+
 
 ifneq ($(CONFIG_NO_SD),y)
   SRC += sdcard.c
@@ -97,13 +96,24 @@ ifeq ($(CONFIG_UART_DEBUG_SW),y)
   SRC += swuart.c
 endif
 
+ifeq ($(CONFIG_RTC_SOFTWARE),y)
+  SRC += ds1307-3231.c
+  SRC += rtc.c
+  SRC += clock.c
+  SRC += softi2c.c
+endif
+
 ifeq ($(CONFIG_RTC_DSRTC),y)
   SRC += ds1307-3231.c
+  SRC += rtc.c
+  SRC += clock.c
   SRC += softi2c.c
 endif
 
 ifeq ($(CONFIG_RTC_PCF8583),y)
   SRC += pcf8583.c
+  SRC += rtc.c
+  SRC += clock.c
   SRC += softi2c.c
 endif
 
