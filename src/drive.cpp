@@ -380,20 +380,38 @@ static uint8_t hex_drv_read(pab_t pab) {
 #ifdef ARDUINO
     // amount remaining to read from file
     fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
+    if (fsize !=0 && pab.lun != 0 && !(file->attr && FILEATTR_DISPLAY)) {
+      // if data stored in INTERNAL format send next value
+      uint8_t val_len; // length of next value
+      uint32_t val_ptr = file->fp.position();
+      read = file->fp.read( (char *)&val_len, 1 );
+      res = (read ? FR_OK : FR_RW_ERROR);
+      fsize = (res == FR_OK ? val_len + 1 : 0);
+      file->fp.seek(val_ptr);
+    }
 #else
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
+    if (fsize !=0 && pab.lun != 0 && !(file->attr && FILEATTR_DISPLAY)) {
+      // if data stored in INTERNAL format send next value
+      uint8_t val_len; // length of next value
+      DWORD val_ptr = file->fp.fptr;
+      res = f_read(&(file->fp), &val_len, 1, &read);
+      fsize = (res == FR_OK ? val_len + 1 : 0);
+      f_lseek(&(file->fp), val_ptr);
+    }
 #endif
-    if ( fsize == 0 ) {
-      res = FR_EOF;
-    } else {
-      // size of buffer provided by host (amount to send)
-      len = pab.buflen;
+    if (res == FR_OK) {
+      if ( fsize == 0 ) {
+        res = FR_EOF;
+      } else {
+        // size of buffer provided by host (amount to send)
+        len = pab.buflen;
 
-      if ( fsize > pab.buflen ) {
-        fsize = pab.buflen;
+        if ( fsize > pab.buflen ) {
+          fsize = pab.buflen;
+        }
       }
     }
-
     // send how much we are going to send
     rc = transmit_word( fsize );
 
@@ -409,20 +427,13 @@ static uint8_t hex_drv_read(pab_t pab) {
 #ifdef ARDUINO
         memset((char *)buffer, 0, sizeof( buffer ));
         read = file->fp.read( (char *)buffer, len );
-        if ( read ) {
-          res = FR_OK;
-        } else {
-          res = FR_RW_ERROR;
-        }
+        res = (read ? FR_OK : FR_RW_ERROR);
 #else
-
         res = f_read(&(file->fp), buffer, len, &read);
-
         if (!res) {
           debug_putcrlf();
           debug_trace(buffer, 0, read);
         }
-
 #endif
       } else {
         // catalog entry, if that's what we're reading, is already in buffer.
@@ -430,6 +441,7 @@ static uint8_t hex_drv_read(pab_t pab) {
       }
 
       if (FR_OK == res) {
+
         for (i = 0; i < read; i++) {
           rc = transmit_byte(buffer[i]);
         }
