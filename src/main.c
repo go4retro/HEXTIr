@@ -31,6 +31,8 @@
 #include "uart.h"
 #include "catalog.h"
 
+#define FR_EOF     255    // We need an EOF error for hexbus_read.
+
 FATFS fs;
 uint8_t buffer[40];
 
@@ -555,9 +557,31 @@ static uint8_t hex_read(pab_t pab) {
     hex_release_bus_recv();
     _delay_us(200);
     if(file != NULL) {
-      hex_puti(file->fp.fsize, TRUE);  // send full length of file
-      while(len < file->fp.fsize) {
-        res = f_read(&(file->fp), buffer, sizeof(buffer), &read);
+      uint16_t fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
+      if (fsize !=0 && pab.lun != 0 ) {
+    	// if data stored in INTERNAL format send next value
+    	uint8_t val_len; // length of next value
+    	DWORD val_ptr = file->fp.fptr;
+    	res = f_read(&(file->fp), &val_len, 1, &read);
+    	fsize = (res == FR_OK ? val_len + 1 : 0);
+    	f_lseek(&(file->fp), val_ptr);
+      }
+      if (res == FR_OK) {
+        if ( fsize == 0 ) {
+          res = FR_EOF;
+        } else {
+          // size of buffer provided by host (amount to send)
+          //len = pab.buflen;
+
+          if ( fsize > pab.buflen ) {
+            fsize = pab.buflen;
+          }
+        }
+      }
+      hex_puti(fsize, TRUE);  // send full length of file
+      while(len < fsize) {
+    	UINT num_read = ( fsize > sizeof( buffer ) ) ? sizeof( buffer ) : fsize;
+        res = f_read(&(file->fp), buffer, num_read, &read);
         if(!res) {
           uart_putc(13);
           uart_putc(10);
@@ -574,6 +598,9 @@ static uint8_t hex_read(pab_t pab) {
       switch(res) {
         case FR_OK:
           rc = HEXSTAT_SUCCESS;
+          break;
+        case FR_EOF:
+          rc = HEXSTAT_EOF;
           break;
         default:
           rc = HEXSTAT_DEVICE_ERR;
@@ -727,8 +754,13 @@ static uint8_t hex_open(pab_t pab) {
       mode = FA_READ;
       break;
   }
+
+
+
+
   file = reserve_lun(pab.lun);
   if(file != NULL) {
+
     res = f_open(&fs,&(file->fp),(UCHAR *)path,mode);
     switch(res) {
       case FR_OK:
@@ -766,10 +798,17 @@ static uint8_t hex_open(pab_t pab) {
       case OPENMODE_READ: // read
         hex_puti(fsize, FALSE);
         break;
-      default: //
-        if(!len) // len = 0 means list "<device>.<filename>" or open #<> for writing, thus we should add CRLF to each line.
-          file->attr |= FILEATTR_DISPLAY;
-        hex_puti((len ? len : sizeof(buffer)), FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
+      default: //  when opening to write, or read/write
+    	if (!(( att & OPENMODE_INTERNAL) || (pab.lun != 0))) { // if NOT open mode = INTERNAL, let's add CR/LF to end of line (display form).
+    	  file->attr |= FILEATTR_DISPLAY;
+    	}
+    	 if ( len == 0 ) {
+    	   len = sizeof(buffer);
+    	 } else {
+    	    // otherwise, we know. and do NOT allow fileattr display under any circumstance.
+    	    file->attr &= ~FILEATTR_DISPLAY;
+    	}
+        hex_puti(len, FALSE);  // this is evidently the value we should send back.  Not sure what one does if one needs to send two of these.
         break;
     }
     hex_putc(rc, FALSE);    // status code
