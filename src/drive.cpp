@@ -314,23 +314,16 @@ static uint8_t hex_drv_write(pab_t pab) {
     return HEXERR_BAV;
   }
 
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) { // if w data in DISPLAY mode
-	int bufflen;
-	if (pab.lun == 0) { // add CRLF to data (for LIST command)
-      buffer[0] = 13;
-      buffer[1] = 10;
-      bufflen = 2;
-	}
-	else { // add comma separator to data ( for PRINT data command)
-	  buffer[0] = ',';
-	  bufflen = 1;
-	}
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && pab.lun == 0) { // if w data in DISPLAY mode and LUN == 0
+    // add CRLF to data (for LIST command)
+	buffer[0] = 13;
+	buffer[1] = 10;
 #ifdef ARDUINO
-    written = (file->fp).write( buffer, bufflen );
+    written = (file->fp).write( buffer, 2 );
 #else
-    res = f_write(&(file->fp), buffer, bufflen, &written);
+    res = f_write(&(file->fp), buffer, 2, &written);
 #endif
-    if (written != bufflen) {
+    if (written != 2) {
       rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
     }
   }
@@ -403,18 +396,27 @@ static uint8_t hex_drv_read(pab_t pab) {
     if (fsize !=0 && pab.lun != 0) {
       if (file->attr & FILEATTR_DISPLAY) {
     	char token;
-    	char delimit[] = ",;";
+    	char delimit[] = " ,;"; // blank, comma, semicolon
     	char openblock[] = "\"'";
     	char closeblock[] = "\"'";
     	char *block = NULL;
     	int iBlock = 0;
     	int iBlockIndex = 0;
     	int val_len = 0;
+    	int iData = 0;
     	DWORD val_ptr = file->fp.fptr;
     	res = f_read(&(file->fp), &token, 1, &read);
     	while (res == FR_OK && read == 1) {
     	  val_len++;
-          if ( iBlock) {
+    	  if ( !iData && strchr ( delimit, token) != NULL) { // eat up heading delims
+    		res = f_read(&(file->fp), &token, 1, &read);
+    		continue;
+    	  }
+    	  else {
+    		  iData = 1; // data start found
+    	  }
+
+    	  if ( iBlock) {
             if ( closeblock[iBlockIndex] == token) {
               iBlock = 0;
             }
@@ -427,9 +429,11 @@ static uint8_t hex_drv_read(pab_t pab) {
             res = f_read(&(file->fp), &token, 1, &read);
             continue;
           }
-          if ( strchr ( delimit, token) != NULL) {
-            break;
-          }
+
+    	  if ( strchr ( delimit, token) != NULL) {  // stop on first trailing delim
+    		break;
+    	  }
+
           res = f_read(&(file->fp), &token, 1, &read);
     	}
     	f_lseek(&(file->fp), val_ptr);
