@@ -365,8 +365,8 @@ uint16_t value_size_display(file_t* file) {
   UINT read;
   char token;
   char delimit[] = " ";     // delimiter chars to separate values when in DISPLAY mode ( a blank)
-  char openblock[] = "\"'"; // start chars of a block
-  char closeblock[] = "\"'";// end chars of a block
+  char openblock[] = "\"'"; // characters that start a block
+  char closeblock[] = "\"'";// characters that terminate a block
   char *block = NULL;
   int iBlock = 0;
   int iBlockIndex = 0;
