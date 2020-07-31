@@ -314,15 +314,23 @@ static uint8_t hex_drv_write(pab_t pab) {
     return HEXERR_BAV;
   }
 
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) { // add CRLF to data
-    buffer[0] = 13;
-    buffer[1] = 10;
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) { // if w data in DISPLAY mode
+	int bufflen;
+	if (pab.lun == 0) { // add CRLF to data (for LIST command)
+      buffer[0] = 13;
+      buffer[1] = 10;
+      bufflen = 2;
+	}
+	else { // add comma separator to data ( for PRINT data command)
+	  buffer[0] = ',';
+	  bufflen = 1;
+	}
 #ifdef ARDUINO
-    written = (file->fp).write( buffer, 2 );
+    written = (file->fp).write( buffer, bufflen );
 #else
-    res = f_write(&(file->fp), buffer, 2, &written);
+    res = f_write(&(file->fp), buffer, bufflen, &written);
 #endif
-    if (written != 2) {
+    if (written != bufflen) {
       rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
     }
   }
@@ -381,7 +389,7 @@ static uint8_t hex_drv_read(pab_t pab) {
 #ifdef ARDUINO
     // amount remaining to read from file
     fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
-    if (fsize !=0 && pab.lun != 0 && !(file->attr && FILEATTR_DISPLAY)) {
+    if (fsize !=0 && pab.lun != 0 && !(file->attr & FILEATTR_DISPLAY)) {
       // if data stored in INTERNAL format send next value
       uint8_t val_len; // length of next value
       uint32_t val_ptr = file->fp.position();
@@ -392,14 +400,51 @@ static uint8_t hex_drv_read(pab_t pab) {
     }
 #else
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize !=0 && pab.lun != 0 && !(file->attr && FILEATTR_DISPLAY)) {
-      // if data stored in INTERNAL format send next value
-      uint8_t val_len; // length of next value
-      DWORD val_ptr = file->fp.fptr;
-      res = f_read(&(file->fp), &val_len, 1, &read);
-      fsize = (res == FR_OK ? val_len + 1 : 0);
-      f_lseek(&(file->fp), val_ptr);
+    if (fsize !=0 && pab.lun != 0) {
+      if (file->attr & FILEATTR_DISPLAY) {
+    	char token;
+    	char delimit[] = ",;";
+    	char openblock[] = "\"'";
+    	char closeblock[] = "\"'";
+    	char *block = NULL;
+    	int iBlock = 0;
+    	int iBlockIndex = 0;
+    	int val_len = 0;
+    	DWORD val_ptr = file->fp.fptr;
+    	res = f_read(&(file->fp), &token, 1, &read);
+    	while (res == FR_OK && read == 1) {
+    	  val_len++;
+          if ( iBlock) {
+            if ( closeblock[iBlockIndex] == token) {
+              iBlock = 0;
+            }
+            res = f_read(&(file->fp), &token, 1, &read);
+            continue;
+          }
+          if ( ( block = strchr ( openblock, token)) != NULL) {
+            iBlock = 1;
+            iBlockIndex = block - openblock;
+            res = f_read(&(file->fp), &token, 1, &read);
+            continue;
+          }
+          if ( strchr ( delimit, token) != NULL) {
+            break;
+          }
+          res = f_read(&(file->fp), &token, 1, &read);
+    	}
+    	f_lseek(&(file->fp), val_ptr);
+    	fsize = (res == FR_OK ? val_len : 0);
+      }
+      else {
+        // if data stored in INTERNAL format send next value
+        uint8_t val_len; // length of next value
+        DWORD val_ptr = file->fp.fptr;
+        res = f_read(&(file->fp), &val_len, 1, &read);
+        fsize = (res == FR_OK ? val_len + 1 : 0);
+        f_lseek(&(file->fp), val_ptr);
+      }
     }
+
 #endif
     if (res == FR_OK) {
       if ( fsize == 0 ) {
@@ -496,7 +541,6 @@ static uint8_t hex_drv_open(pab_t pab) {
   BYTE res = FR_OK;
 
   debug_puts_P(PSTR("\n\rOpen File\n\r"));
-
   len = 0;
 
   memset(buffer, 0, sizeof(buffer));
@@ -508,6 +552,8 @@ static uint8_t hex_drv_open(pab_t pab) {
     hex_release_bus();
     return HEXERR_BAV; // BAV ERR.
   }
+  debug_puthex(att);
+
 
   //*****************************************************
   // special file name "$" -> catalog
@@ -567,6 +613,7 @@ static uint8_t hex_drv_open(pab_t pab) {
 
       if ( pab.datalen < BUFSIZE - 1 ) {
 
+    	/* TODO can this be removed?
         if ( ( att & OPENMODE_READ ) == OPENMODE_READ ) {
           if ( buffer[ pab.datalen - 1 ] == '$' ) {
             // Are we attempting to open a catalog?
@@ -574,7 +621,7 @@ static uint8_t hex_drv_open(pab_t pab) {
             file->attr |= FILEATTR_CATALOG;
           }
         }
-
+    	*/
 #ifdef ARDUINO
 
         if ( (att & OPENMODE_MASK) == OPENMODE_WRITE ) {
@@ -664,8 +711,7 @@ static uint8_t hex_drv_open(pab_t pab) {
 
         // when opening to write, or read/write
         default:
-
-          if (!(( att & OPENMODE_INTERNAL) || (pab.lun != 0))) { // if NOT open mode = INTERNAL, let's add CR/LF to end of line (display form).
+          if (!(att & OPENMODE_INTERNAL)) {
             file->attr |= FILEATTR_DISPLAY;
           }
           // if we don't know how big its going to be... we may need multiple writes.
@@ -680,6 +726,9 @@ static uint8_t hex_drv_open(pab_t pab) {
 
         // when opening to read-only
         case OPENMODE_READ:
+          if (!(att & OPENMODE_INTERNAL)) {
+        	file->attr |= FILEATTR_DISPLAY;
+          }
           // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
           if (pab.lun != 0 ) {
             if (len) {
