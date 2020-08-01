@@ -125,6 +125,121 @@ static void free_lun(uint8_t lun) {
   }
 }
 
+/**
+ * Get the size of the next value stored in INTERNAL format.
+ */
+static uint16_t next_value_size_internal(file_t* file) {
+  // if data stored in INTERNAL format send next value
+  uint16_t read;    // how many bytes are read
+  uint8_t val_len;  // length of next value
+  uint32_t val_ptr; // start position in file
+  uint8_t res;      // read result
+
+
+#ifdef ARDUINO
+  val_ptr = file->fp.position();
+  read = file->fp.read( (char *)&val_len, 1 );
+  res = (read ? FR_OK : FR_RW_ERROR);
+  file->fp.seek(val_ptr);
+#else
+  val_ptr= file->fp.fptr;
+  res = f_read(&(file->fp), &val_len, 1, &read);
+  f_lseek(&(file->fp), val_ptr);
+#endif
+  return (res == FR_OK ? val_len + 1 : 0);
+}
+
+
+
+/**
+ * Get the size of the next value stored in DISPLAY format.
+ */
+static uint16_t next_value_size_display(file_t* file) {
+  BYTE res;
+  UINT read;
+  char token;
+  char delimit[] = " ";     // delimiter chars to separate values when in DISPLAY mode ( a blank)
+  char openblock[] = "\"'"; // characters that start a block
+  char closeblock[] = "\"'";// characters that terminate a block
+  char *block = NULL;
+  int iBlock = 0;
+  int iBlockIndex = 0;
+  int val_len = 0;
+  int iData = 0;
+  uint32_t val_ptr;
+#ifdef ARDUINO
+  val_ptr = file->fp.position();
+  read = file->fp.read( (char *)&token, 1 );
+  res = (read ? FR_OK : FR_RW_ERROR);
+#else
+  val_ptr = file->fp.fptr;
+  res = f_read(&(file->fp), &token, 1, &read);
+#endif
+  while (res == FR_OK && read == 1) {
+	val_len++;
+	if (!iData && strchr(delimit, token) != NULL) { // eat up heading delimiters
+#ifdef ARDUINO
+	  read = file->fp.read( (char *)&token, 1 );
+	  res = (read ? FR_OK : FR_RW_ERROR);
+#else
+	  res = f_read(&(file->fp), &token, 1, &read);
+#endif
+	  continue;
+	}
+	else {
+	  iData = 1; // data start found ( first non-delimiter char)
+	}
+	if (iBlock) { // if token is in block
+	  if (closeblock[iBlockIndex] == token) { // block ends
+		iBlock = 0;
+	  }
+#ifdef ARDUINO
+	  read = file->fp.read( (char *)&token, 1 );
+	  res = (read ? FR_OK : FR_RW_ERROR);
+#else
+	  res = f_read(&(file->fp), &token, 1, &read);
+#endif
+	  continue;
+	}
+	if ((block = strchr(openblock, token)) != NULL) { // block starts
+	  iBlock = 1;
+	  iBlockIndex = block - openblock;
+#ifdef ARDUINO
+	  read = file->fp.read( (char *)&token, 1 );
+	  res = (read ? FR_OK : FR_RW_ERROR);
+#else
+	  res = f_read(&(file->fp), &token, 1, &read);
+#endif
+	  continue;
+	}
+	if (strchr(delimit, token) != NULL) { // stop on first trailing delimiter
+	  break;
+	}
+#ifdef ARDUINO
+	read = file->fp.read( (char *)&token, 1 );
+	res = (read ? FR_OK : FR_RW_ERROR);
+#else
+	res = f_read(&(file->fp), &token, 1, &read);
+#endif
+  }
+#ifdef ARDUINO
+  file->fp.seek(val_ptr);
+#else
+  f_lseek(&(file->fp), val_ptr);
+#endif
+  return (res == FR_OK ? val_len : 0);
+}
+
+/**
+ * Get the size of the next stored value.
+ */
+static uint16_t next_value_size(file_t* file) {
+	if (file->attr & FILEATTR_DISPLAY) {
+	  return next_value_size_display(file);
+	} else {
+	  return next_value_size_internal(file);
+	}
+}
 
 /*
    https://github.com/m5dk2n comments:
@@ -349,69 +464,6 @@ static uint8_t hex_drv_write(pab_t pab) {
   return HEXERR_SUCCESS;
 }
 
-uint16_t value_size_internal(file_t* file) {
-  // if data stored in INTERNAL format send next value
-  UINT read;
-  uint8_t val_len; // length of next value
-
-  DWORD val_ptr= file->fp.fptr;
-  BYTE res = f_read(&(file->fp), &val_len, 1, &read);
-  f_lseek(&(file->fp), val_ptr);
-  return (res == FR_OK ? val_len + 1 : 0);
-}
-
-uint16_t value_size_display(file_t* file) {
-  BYTE res;
-  UINT read;
-  char token;
-  char delimit[] = " ";     // delimiter chars to separate values when in DISPLAY mode ( a blank)
-  char openblock[] = "\"'"; // characters that start a block
-  char closeblock[] = "\"'";// characters that terminate a block
-  char *block = NULL;
-  int iBlock = 0;
-  int iBlockIndex = 0;
-  int val_len = 0;
-  int iData = 0;
-  DWORD val_ptr = file->fp.fptr;
-  res = f_read(&(file->fp), &token, 1, &read);
-  while (res == FR_OK && read == 1) {
-	val_len++;
-	if (!iData && strchr(delimit, token) != NULL) { // eat up heading delimiters
-	  res = f_read(&(file->fp), &token, 1, &read);
-	  continue;
-	}
-	else {
-	  iData = 1; // data start found ( first non-delimiter char)
-	}
-	if (iBlock) { // if token is in block
-	  if (closeblock[iBlockIndex] == token) { // block ends
-		iBlock = 0;
-	  }
-	  res = f_read(&(file->fp), &token, 1, &read);
-	  continue;
-	}
-	if ((block = strchr(openblock, token)) != NULL) { // block starts
-	  iBlock = 1;
-	  iBlockIndex = block - openblock;
-	  res = f_read(&(file->fp), &token, 1, &read);
-	  continue;
-	}
-	if (strchr(delimit, token) != NULL) { // stop on first trailing delimiter
-	  break;
-	}
-	res = f_read(&(file->fp), &token, 1, &read);
-  }
-  f_lseek(&(file->fp), val_ptr);
-  return (res == FR_OK ? val_len : 0);
-}
-
-uint16_t value_size(file_t* file) {
-	if (file->attr & FILEATTR_DISPLAY) {
-	  return value_size_display(file);
-	} else {
-	  return value_size_internal(file);
-	}
-}
 
 /*
    hex_drv_read() -
@@ -457,7 +509,7 @@ static uint8_t hex_drv_read(pab_t pab) {
 #else
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
     if (fsize != 0 && pab.lun != 0) {
-      fsize = value_size(file);
+      fsize = next_value_size(file);
     }
 
 #endif
@@ -1126,3 +1178,6 @@ void drv_init(void) {
   fs_initialized = FALSE;
   return;
 }
+
+
+
