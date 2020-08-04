@@ -153,14 +153,21 @@ static uint16_t next_value_size_internal(file_t* file) {
 
 /**
  * Get the size of the next value stored in DISPLAY format.
+ * Values stored in DISPLAY format are found to be separated by one or more spaces (0x20), that is
+ * spaces are the delimiters between two values. The end of a value is reached, when a space char
+ * has been found. But a value can start with one or more spaces. These heading spaces are counted
+ * and contribute for the value size; they are not treated as delimiters.
+ * When the first non-space char is detected the data part of the value starts. The first space
+ * found after the data part is the delimiter. Spaces can too be part of the data part of a string
+ * value. For not to be treated as delimiters the string value has to be put in quotes to form a 'block'.
  */
 static uint16_t next_value_size_display(file_t* file) {
   BYTE res;
   UINT read;
   char token;
-  char delimit[] = " ";     // delimiter chars to separate values when in DISPLAY mode ( a blank)
-  char openblock[] = "\"'"; // characters that start a block
-  char closeblock[] = "\"'";// characters that terminate a block
+  char delimit[] = " ";    // delimiter chars to separate values when in DISPLAY mode ( a space char)
+  char openblock[] = "\""; // characters that start a block
+  char closeblock[] = "\"";// characters that terminate a block
   char *block = NULL;
   int iBlock = 0;
   int iBlockIndex = 0;
@@ -168,16 +175,16 @@ static uint16_t next_value_size_display(file_t* file) {
   int iData = 0;
   uint32_t val_ptr;
 #ifdef ARDUINO
-  val_ptr = file->fp.position();
+  val_ptr = file->fp.position(); // save the current position for to restore
   read = file->fp.read( (char *)&token, 1 );
   res = (read ? FR_OK : FR_RW_ERROR);
 #else
-  val_ptr = file->fp.fptr;
+  val_ptr = file->fp.fptr; // save the current position for to restore
   res = f_read(&(file->fp), &token, 1, &read);
 #endif
   while (res == FR_OK && read == 1) {
 	val_len++;
-	if (!iData && strchr(delimit, token) != NULL) { // eat up heading delimiters
+	if (!iData && strchr(delimit, token) != NULL) { // eat up heading spaces
 #ifdef ARDUINO
 	  read = file->fp.read( (char *)&token, 1 );
 	  res = (read ? FR_OK : FR_RW_ERROR);
@@ -223,9 +230,9 @@ static uint16_t next_value_size_display(file_t* file) {
 #endif
   }
 #ifdef ARDUINO
-  file->fp.seek(val_ptr);
+  file->fp.seek(val_ptr); // re-position the file pointer
 #else
-  f_lseek(&(file->fp), val_ptr);
+  f_lseek(&(file->fp), val_ptr); // re-position the file pointer
 #endif
   return (res == FR_OK ? val_len : 0);
 }
@@ -497,22 +504,14 @@ static uint8_t hex_drv_read(pab_t pab) {
 #ifdef ARDUINO
     // amount remaining to read from file
     fsize = (uint16_t)file->fp.size() - (uint16_t)file->fp.position(); // amount of data in file that can be sent.
-    if (fsize !=0 && pab.lun != 0 && !(file->attr & FILEATTR_DISPLAY)) {
-      // if data stored in INTERNAL format send next value
-      uint8_t val_len; // length of next value
-      uint32_t val_ptr = file->fp.position();
-      read = file->fp.read( (char *)&val_len, 1 );
-      res = (read ? FR_OK : FR_RW_ERROR);
-      fsize = (res == FR_OK ? val_len + 1 : 0);
-      file->fp.seek(val_ptr);
-    }
 #else
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab.lun != 0) {
-      fsize = next_value_size(file);
+#endif
+    if (fsize != 0 && pab.lun != 0) { // for 'normal' files (lun != 0) send data value by value
+      // amount of data for next value to be sent
+      fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
 
-#endif
     if (res == FR_OK) {
       if ( fsize == 0 ) {
         res = FR_EOF;
