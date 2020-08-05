@@ -436,16 +436,26 @@ static uint8_t hex_drv_write(pab_t pab) {
     return HEXERR_BAV;
   }
 
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && pab.lun == 0) { // if w data in DISPLAY mode and LUN == 0
-    // add CRLF to data (for LIST command)
-	buffer[0] = 13;
-	buffer[1] = 10;
+  // if in DISPLAY mode
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
+	uint16_t nBytes;
+	if (pab.lun == 0) {
+      // add CRLF to data (for LIST command)
+	  buffer[0] = 13;
+	  buffer[1] = 10;
+	  nBytes = 2;
+	}
+	else {
+	  // add SPACE to data (for PRINT command (as delimiter, just to be sure there is one)
+	  buffer[0] = 32;
+	  nBytes = 1;
+	}
 #ifdef ARDUINO
-    written = (file->fp).write( buffer, 2 );
+    written = (file->fp).write( buffer, nBytes );
 #else
-    res = f_write(&(file->fp), buffer, 2, &written);
+    res = f_write(&(file->fp), buffer, nBytes, &written);
 #endif
-    if (written != 2) {
+    if (written != nBytes) {
       rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
     }
   }
