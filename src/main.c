@@ -127,6 +127,93 @@ static void init(void) {
   }
 }
 
+/**
+ * Get the size of the next value stored in INTERNAL format.
+ */
+static uint16_t next_value_size_internal(file_t* file) {
+  // if data stored in INTERNAL format send next value
+  uint16_t read;    // how many bytes are read
+  uint8_t val_len;  // length of next value
+  uint32_t val_ptr; // start position in file
+  uint8_t res;      // read result
+
+  val_ptr= file->fp.fptr;
+  res = f_read(&(file->fp), &val_len, 1, &read);
+  f_lseek(&(file->fp), val_ptr);
+  return (res == FR_OK ? val_len + 1 : 0);
+}
+
+
+
+/**
+ * Get the size of the next value stored in DISPLAY format.
+ * Values stored in DISPLAY format are found to be separated by one or more spaces (0x20), that is
+ * spaces are the delimiters between two values. The end of a value is reached, when a space char
+ * has been found. But a value can start with one or more spaces. These heading spaces are counted
+ * and contribute for the value size; they are not treated as delimiters.
+ * When the first non-space char is detected the data part of the value starts. The first space
+ * found after the data part is the delimiter. Spaces can too be part of the data part of a string
+ * value. For not to be treated as delimiters the string value has to be put in quotes to form a 'block'.
+ */
+static uint16_t next_value_size_display(file_t* file) {
+  BYTE res;
+  UINT read;
+  char token;
+  char delimit[] = " ";    // delimiter chars to separate values when in DISPLAY mode ( a space char)
+  char openblock[] = "\""; // characters that start a block
+  char closeblock[] = "\"";// characters that terminate a block
+  char *block = NULL;
+  int iBlock = 0;
+  int iBlockIndex = 0;
+  int val_len = 0;
+  int iData = 0;
+  uint32_t val_ptr;
+
+  val_ptr = file->fp.fptr; // save the current position for to restore
+  res = f_read(&(file->fp), &token, 1, &read);
+  while (res == FR_OK && read == 1) {
+	val_len++;
+	if (!iData && strchr(delimit, token) != NULL) { // eat up heading spaces
+	  res = f_read(&(file->fp), &token, 1, &read);
+	  continue;
+	}
+	else {
+	  iData = 1; // data start found ( first non-delimiter char)
+	}
+	if (iBlock) { // if token is in block
+	  if (closeblock[iBlockIndex] == token) { // block ends
+		iBlock = 0;
+	  }
+	  res = f_read(&(file->fp), &token, 1, &read);
+	  continue;
+	}
+	if ((block = strchr(openblock, token)) != NULL) { // block starts
+	  iBlock = 1;
+	  iBlockIndex = block - openblock;
+	  res = f_read(&(file->fp), &token, 1, &read);
+	  continue;
+	}
+	if (strchr(delimit, token) != NULL) { // stop on first trailing delimiter
+	  break;
+	}
+	res = f_read(&(file->fp), &token, 1, &read);
+  }
+  f_lseek(&(file->fp), val_ptr); // re-position the file pointer
+  return (res == FR_OK ? val_len : 0);
+}
+
+/**
+ * Get the size of the next stored value.
+ */
+static uint16_t next_value_size(file_t* file) {
+	if (file->attr & FILEATTR_DISPLAY) {
+	  return next_value_size_display(file);
+	} else {
+	  return next_value_size_internal(file);
+	}
+}
+
+
 
 static uint8_t hex_read_catalog(pab_t pab) {
   uint8_t rc;
@@ -504,12 +591,22 @@ static int8_t hex_write(pab_t pab) {
     }
     len -= i;
   }
-  if(file != NULL && (file->attr & FILEATTR_DISPLAY)) { // add CRLF to data
-    buffer[0] = 13;
-    buffer[1] = 10;
-    res = f_write(&(file->fp), buffer, 2, &written);
-    if(written != 2)
-      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+  if(file != NULL && (file->attr & FILEATTR_DISPLAY)) { // if w data in DISPLAY mode
+	if (pab.lun == 0) { // LUN == 0
+	  // add CRLF to data, for LIST command
+      buffer[0] = 13;
+      buffer[1] = 10;
+      res = f_write(&(file->fp), buffer, 2, &written);
+      if(written != 2)
+        rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    }
+    else { // LUN != 0
+	  // add BLANK to data (as delimiter, just to be sure there is one), for PRINT command
+	  buffer[0] = 32;
+	  res = f_write(&(file->fp), buffer, 1, &written);
+	  if(written != 1)
+	    rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    }
   }
   if(rc == HEXSTAT_SUCCESS) {
     switch(res) {
@@ -558,13 +655,9 @@ static uint8_t hex_read(pab_t pab) {
     _delay_us(200);
     if(file != NULL) {
       uint16_t fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-      if (fsize !=0 && pab.lun != 0 ) {
-    	// if data stored in INTERNAL format send next value
-    	uint8_t val_len; // length of next value
-    	DWORD val_ptr = file->fp.fptr;
-    	res = f_read(&(file->fp), &val_len, 1, &read);
-    	fsize = (res == FR_OK ? val_len + 1 : 0);
-    	f_lseek(&(file->fp), val_ptr);
+      if (fsize != 0 && pab.lun != 0) { // for 'normal' files (lun != 0) send data value by value
+        // amount of data for next value to be sent
+        fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
       }
       if (res == FR_OK) {
         if ( fsize == 0 ) {
@@ -796,10 +889,13 @@ static uint8_t hex_open(pab_t pab) {
     hex_puti(2, FALSE);    // claims it is accepted buffer length, but looks to really be my return buffer length...
     switch(att & (OPENMODE_WRITE | OPENMODE_READ)) {
       case OPENMODE_READ: // read
+    	if (!(att & OPENMODE_INTERNAL)) {
+       	  file->attr |= FILEATTR_DISPLAY;
+    	}
         hex_puti(fsize, FALSE);
         break;
       default: //  when opening to write, or read/write
-    	if (!(( att & OPENMODE_INTERNAL) || (pab.lun != 0))) { // if NOT open mode = INTERNAL, let's add CR/LF to end of line (display form).
+    	if (!(att & OPENMODE_INTERNAL)) {
     	  file->attr |= FILEATTR_DISPLAY;
     	}
     	 if ( len == 0 ) {
