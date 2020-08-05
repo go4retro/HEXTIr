@@ -24,7 +24,7 @@
 
 #include <avr/io.h>
 
-#define BUFSIZE       64
+#define BUFSIZE       256
 
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
  #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
