@@ -34,7 +34,7 @@
 #define FR_EOF     255    // We need an EOF error for hexbus_read.
 
 FATFS fs;
-uint8_t buffer[256];
+uint8_t buffer[255];
 
 typedef struct _pab_t {
   uint8_t dev;
