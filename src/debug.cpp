@@ -25,16 +25,36 @@
 #include "config.h"
 #include "swuart.h"
 #include "uart.h"
+
+#ifdef ARDUINO
+#include <Arduino.h>
+#include <HardwareSerial.h>
+#endif
+
 #include "debug.h"
 
-#if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW
+#if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW || defined ARDUINO_UART_DEBUG
 
 void debug_putc(uint8_t data) {
 #ifdef CONFIG_UART_DEBUG_SW
   swuart_putc(CONFIG_UART_DEBUG_SW_PORT, data);
+#ifdef CONFIG_UART_DEBUG_FLUSH
+  swuart_flush();
 #endif
+#endif
+
 #ifdef CONFIG_UART_DEBUG
   uart_putc(data);
+#ifdef CONFIG_UART_DEBUG_FLUSH
+  uart_flush();
+#endif
+#endif
+
+#ifdef ARDUINO_UART_DEBUG
+  Serial.write(data);
+#ifdef CONFIG_UART_DEBUG_FLUSH
+  Serial.flush();
+#endif
 #endif
 }
 
