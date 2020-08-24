@@ -83,7 +83,10 @@ static inline void swuart_set_tx_pin(uint8_t port, uint8_t val) {
 
 void swuart_putc(uint8_t p, char character);
 void swuart_puts(uint8_t p, const char* string);
+void swuart_puts_P(uint8_t port, const char *text);
+void swuart_putcrlf(uint8_t port);
 void swuart_setrate(uint8_t port, uint16_t bpsrate);
+void swuart_flush(void);
 void swuart_init(void);
 
 #endif /* SRC_SWUART_H_ */

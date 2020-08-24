@@ -452,9 +452,14 @@ static uint8_t hex_drv_write(pab_t pab) {
 	}
 #ifdef ARDUINO
     written = (file->fp).write( buffer, nBytes );
+    res = (written == nBytes ? FR_OK : FR_RW_ERROR);
 #else
     res = f_write(&(file->fp), buffer, nBytes, &written);
 #endif
+    if (!res) {
+      debug_putcrlf();
+      debug_trace(buffer, 0, written);
+    }
     if (written != nBytes) {
       rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
     }
@@ -552,11 +557,11 @@ static uint8_t hex_drv_read(pab_t pab) {
         res = (read ? FR_OK : FR_RW_ERROR);
 #else
         res = f_read(&(file->fp), buffer, len, &read);
+#endif
         if (!res) {
           debug_putcrlf();
           debug_trace(buffer, 0, read);
         }
-#endif
       } else {
         // catalog entry, if that's what we're reading, is already in buffer.
         read = fsize; // 0 if no entry, else size of entry in buffer.
@@ -689,15 +694,6 @@ static uint8_t hex_drv_open(pab_t pab) {
 
       if ( pab.datalen < BUFSIZE - 1 ) {
 
-    	/* TODO can this be removed?
-        if ( ( att & OPENMODE_READ ) == OPENMODE_READ ) {
-          if ( buffer[ pab.datalen - 1 ] == '$' ) {
-            // Are we attempting to open a catalog?
-            buffer[ pab.datalen - 1 ] = '/';
-            file->attr |= FILEATTR_CATALOG;
-          }
-        }
-    	*/
 #ifdef ARDUINO
 
         if ( (att & OPENMODE_MASK) == OPENMODE_WRITE ) {
@@ -1187,6 +1183,3 @@ void drv_init(void) {
   fs_initialized = FALSE;
   return;
 }
-
-
-

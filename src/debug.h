@@ -1,7 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW
+#if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW || defined ARDUINO_UART_DEBUG
 void debug_putc(uint8_t data);
 void debug_puts(const char *text);
 void debug_puts_P(const char *text);

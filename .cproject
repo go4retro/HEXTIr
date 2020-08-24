@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration buildProperties="" id="cdt.managedbuild.toolchain.gnu.cross.base.25867035" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+				<configuration buildProperties="" id="cdt.managedbuild.toolchain.gnu.cross.base.25867035" name="Default" optionalBuildProperties="" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.25867035.1003262982" name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.885070211" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.base">
 							<option id="cdt.managedbuild.option.gnu.cross.prefix.2107649558" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix"/>

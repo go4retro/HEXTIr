@@ -222,12 +222,6 @@ void loop(void) { // Arduino main loop routine.
   sei();
 
 
-  debug_putcrlf();
-  debug_puts_P(PSTR(TOSTRING(CONFIG_HARDWARE_NAME)));
-  debug_puts_P(PSTR(" Version: "));
-  debug_puts_P(PSTR(VERSION));
-  debug_putcrlf();
-
   clock_init();
 
 #endif // No ARDUINO
@@ -240,7 +234,11 @@ void loop(void) { // Arduino main loop routine.
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-
+  debug_putcrlf();
+  debug_puts_P(PSTR(TOSTRING(CONFIG_HARDWARE_NAME)));
+  debug_puts_P(PSTR(" Version: "));
+  debug_puts_P(PSTR(VERSION));
+  debug_putcrlf();
 
   while (TRUE) {
 

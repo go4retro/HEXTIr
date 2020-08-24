@@ -20,6 +20,7 @@
 
 #include <string.h>
 #include <avr/pgmspace.h>
+#include <util/delay.h>
 
 #include "config.h"
 #include "hexbus.h"
@@ -72,6 +73,9 @@ static uint8_t hex_prn_open(pab_t pab) {
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXSTAT_SUCCESS )
     {
+#ifndef ARDUINO
+      swuart_setrate(0, SB115200);
+#endif
       prn_open = 1;  // our printer is NOW officially open.
       len = len ? len : sizeof(buffer);
       hex_send_size_response( len );
@@ -143,6 +147,7 @@ static uint8_t hex_prn_write(pab_t pab) {
       for(uint8_t j = 0; j < i; j++) {
         swuart_putc(0, buffer[j]);
       }
+      swuart_flush();
 #endif
       written = 1; // indicate we actually wrote some data
     }
@@ -159,8 +164,8 @@ static uint8_t hex_prn_write(pab_t pab) {
     Serial.write(buffer, 2);
     delayMicroseconds(176);
 #else
-    swuart_putc(0, 13);
-    swuart_putc(0, 10);
+    swuart_putcrlf(0);
+    swuart_flush();
 #endif
   }
   /*

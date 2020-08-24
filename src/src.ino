@@ -24,6 +24,7 @@
 #include "led.h"
 #include "timer.h"
 #include "ff.h"
+#include "debug.h"
 #include "drive.h"
 #include "eeprom.h"
 #include "serial.h"
@@ -70,6 +71,7 @@ void dateTime(uint16_t* theDate, uint16_t* theTime)
 */
 void setup(void) {
   board_init();
+  debug_init();
   hex_init();
   leds_init();
   timer_init();
@@ -83,7 +85,7 @@ void setup(void) {
 
   sei();
 
-#ifdef INCLUDE_PRINTER
+#if defined INCLUDE_PRINTER || defined ARDUINO_UART_DEBUG
   Serial.begin(115200);
   // Ensure serial initialized before proceeding.
   while (!Serial) {

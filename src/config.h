@@ -24,7 +24,6 @@
 
 #include <avr/io.h>
 
-#define BUFSIZE       255
 
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
  #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
@@ -34,6 +33,8 @@
 #ifndef ARDUINO
  #include "autoconf.h"
  #define MAX_OPEN_FILES 8
+ // TODO this is temporary.  We need to get BUFSIZE back to 255 for all variants.
+ #define BUFSIZE       255
 
  #ifdef CONFIG_UART_DEBUG
   #define UART0_ENABLE
@@ -61,10 +62,19 @@
 
 
 #else
+ //#define ARDUINO_UART_DEBUG
+ // This needs to be moved somewhere else...
+ #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
+ #define VERSION "0.9.0.0"
+
  #define MAX_OPEN_FILES 3      // SD 1.0 and later let us have more than one open file, each additional file uses 30 bytes RAM
  // 3 files lets us use E/A easily.  source, object, listing.
 
  #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+
+ // TODO this is temporary.  We need to get BUFSIZE back to 255 for all variants.
+ #define BUFSIZE       64
+
 #endif
 
 #define INCLUDE_PRINTER

@@ -8,6 +8,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 #include <util/delay.h>
 
 #include "swuart.h"
@@ -68,10 +69,30 @@ void swuart_puts(uint8_t port, const char* string){
 }
 
 
+void swuart_puts_P(uint8_t port, const char *text) {
+  uint8_t ch;
+
+  while ((ch = pgm_read_byte(text++))) {
+    swuart_putc(port, ch);
+  }
+}
+
+
+void swuart_putcrlf(uint8_t port) {
+  swuart_putc(port, 13);
+  swuart_putc(port, 10);
+}
+
+
+
 void swuart_setrate(uint8_t port, uint16_t bpsrate) {
   if(port < SWUART_PORTS)
   count[port] = 0;
   rate[port] = bpsrate;
+}
+
+void swuart_flush(void) {
+  while(running) {;}
 }
 
 //#define SWUART_TEST
