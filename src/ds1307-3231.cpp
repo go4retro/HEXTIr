@@ -95,9 +95,7 @@ void dsrtc_get(struct tm *time) {
   time->tm_year = bcd2int(tmp[REG_YEAR]) + 100 * !!(tmp[REG_MONTH] & 0x80) + 100;
   // FIXME: Leap year calculation is wrong in 2100
 }
-#ifndef ARDUINO
 void rtc_get(struct tm *time) __attribute__ ((weak, alias("dsrtc_get")));
-#endif
 
 /* Set the time in the RTC */
 void dsrtc_set(struct tm *time) {
@@ -124,9 +122,7 @@ void dsrtc_set(struct tm *time) {
 
   rtc_state = RTC_OK;
 }
-#ifndef ARDUINO
 void rtc_set(struct tm *time) __attribute__ ((weak, alias("dsrtc_set")));
-#endif
 
 /* detect DS RTC type and initialize */
 void dsrtc_init(void) {
@@ -173,6 +169,4 @@ void dsrtc_init(void) {
 fail:
   debug_putcrlf();
 }
-#ifndef ARDUINO
 void rtc_init(void) __attribute__ ((weak, alias("dsrtc_init")));
-#endif

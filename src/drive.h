@@ -29,28 +29,10 @@
 
 #define F_ISDIRECTORY        1
 
-
-#ifndef ARDUINO
-
 #include "diskio.h"
 
-#else
-
-  #include <SPI.h>
-  #include <SD.h>
-
-// FILE_WRITE is used for open-for-append (creating file if it doesn't exist).
-// We'll define our own FILE_WRITE_NEW when the mode specified for open is just write, not append.
-#define FILE_WRITE_NEW    (O_READ | O_WRITE | O_CREAT)
-
-#endif // arduino
-
 typedef struct _file_t {
-#ifdef ARDUINO
-  File fp;
-#else
   FIL fp;
-#endif
   DIR dir;
   uint8_t attr;
   uint16_t dirnum;

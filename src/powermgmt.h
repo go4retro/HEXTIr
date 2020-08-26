@@ -37,5 +37,4 @@ void sleep_the_system( void );
 #ifdef __cplusplus
 } // extern "C"
 #endif
-
 #endif /* POWERMGMT_H */

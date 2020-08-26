@@ -99,37 +99,37 @@ static void execute_command(pab_t pab)
   // device code.
 
   // If the incoming device code is NOT 0, then start at index 1
-  // and proceed forward.  
-  // If no handler is found, IGNORE the command, unless the 
-  // device code within the PAB IS found to be in our registry.  
-  // If it is found, then we'll use the "unsupported" command 
+  // and proceed forward.
+  // If no handler is found, IGNORE the command, unless the
+  // device code within the PAB IS found to be in our registry.
+  // If it is found, then we'll use the "unsupported" command
   // default handler.
   if ( pab.dev != 0 ) {
     i++;
   }
-  
+
   while ( i < registry.num_devices ) {
     // does the incoming PAB have a device in this group in the registry?
-    if ( ( registry.entry[ i ].device_code_start <= pab.dev ) && 
+    if ( ( registry.entry[ i ].device_code_start <= pab.dev ) &&
          ( registry.entry[ i ].device_code_end >= pab.dev ) )
     {
       // If so...
-      // this entry will handle our device code. 
+      // this entry will handle our device code.
       // Search for a matching command index now.
       op = registry.entry[ i ].command;
       j = 0;
       // Find a matching command code in this device's table, if present
-      do 
+      do
       {
         cmd = pgm_read_byte( &op[j] );
         j++;
       } while ( ( cmd != HEXCMD_INVALID_MARKER ) && cmd != pab.cmd );
       // If we found the command, we have the index to the operations routine
       if ( cmd == pab.cmd ) {
-        // found it!        
+        // found it!
         j--;  // here's the cmd index
         // fetch the handler for this command for this device group.
-        handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );        
+        handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );
         (handler)( pab );
         // and exit the command processor
         return;
@@ -142,7 +142,7 @@ static void execute_command(pab_t pab)
     // otherwise; let's move to possibly the next device group in the registry
     i++;
   }
-  // If the device is not supported at all, then treat as a null. 
+  // If the device is not supported at all, then treat as a null.
   // Release the HSK line and simply wait for BAV to go high indicating end of message.
   // This is the best we can do, as someone else may be acting on this message.
   hex_null(pab);
@@ -187,7 +187,7 @@ void setup_registry(void)
 #ifndef ARDUINO
 // Non-Arduino makefile entry point
 int main(void) __attribute__((OS_main));
-int main(void) { 
+int main(void) {
 #else
 // Arduino entry for running system
 void loop(void) { // Arduino main loop routine.
@@ -216,7 +216,7 @@ void loop(void) { // Arduino main loop routine.
   uart_init();
   swuart_init();
 #endif
-  
+
   config = ee_get_config();
 
   sei();
@@ -268,7 +268,7 @@ void loop(void) { // Arduino main loop routine.
       if ( !ignore_cmd ) {
         if ( !( ( pabdata.pab.dev == 0 ) ||
                 ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] )
-                || ( pabdata.pab.dev == device_address[ CONFIG_GROUP ] ) 
+                || ( pabdata.pab.dev == device_address[ CONFIG_GROUP ] )
 #ifdef INCLUDE_PRINTER
                 ||
                 (( pabdata.pab.dev == device_address[ PRINTER_GROUP ] ) )

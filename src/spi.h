@@ -29,7 +29,6 @@
 */
 #ifndef SPI_H
 #define SPI_H
-#ifndef ARDUINO
 
 #include "config.h"
 
@@ -137,5 +136,4 @@ static inline void spi_rx_block(void *data, unsigned int length) {
 /* Switch speed of SPI interface */
 void spi_set_speed(spi_speed_t speed);
 
-#endif
 #endif

@@ -25,6 +25,9 @@
 
 #ifndef PCF8583_H
 #define PCF8583_H
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 #include "time.h"
 
@@ -32,4 +35,7 @@ void pcf8583_get(struct tm *time);
 void pcf8583_set(struct tm *time);
 void pcf8583_init(void);
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif

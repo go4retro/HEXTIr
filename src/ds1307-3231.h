@@ -29,6 +29,9 @@
 
 #ifndef DS1307_3231_H
 #define DS1307_3231_H
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 #include "time.h"
 
@@ -36,4 +39,7 @@ void dsrtc_get(struct tm *time);
 void dsrtc_set(struct tm *time);
 void dsrtc_init(void);
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif

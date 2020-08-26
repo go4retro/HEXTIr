@@ -194,7 +194,7 @@ static inline void board_init(void) {
 
 
 static inline void wakeup_pin_init(void) {
-  ;
+  DDRD &= ~_BV(PIN2);
 }
 
 
@@ -219,6 +219,7 @@ static inline void pwr_irq_disable(void) {
 #define CONFIG_RTC_DSRTC
 #define NEED_RTCMUX
 #define HAVE_I2C
+#define CONFIG_SD_AUTO_RETRIES 10
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -239,11 +240,42 @@ static inline void pwr_irq_disable(void) {
 #  define LED_BUSY_OUT        PORTD
 #  define LED_BUSY_PIN        _BV(PIN7)
 
+/* 250kHz slow, 2MHz fast */
+#  define SPI_DIVISOR_SLOW 64
+#  define SPI_DIVISOR_FAST 8
 
 // PB.0/.1 which are SDcard detect and WP for non-Arduino build are
 // repurposed in the Arduino build to be a software serial port using
 // the SoftwareSerial library.
 
+static inline void sdcard_interface_init(void) {
+#ifdef ARDUINO_AVR_UNO
+  DDRB  &= ~_BV(PB0);  // wp
+  PORTB |=  _BV(PB0);
+  DDRB  &= ~_BV(PB1);  // detect
+  PORTB |=  _BV(PB1);
+  PCICR |= _BV(PCIE0);
+  //EICRB |=  _BV(ISC60);
+  PCMSK0 |= _BV(PCINT0);
+  //EIMSK |=  _BV(INT6);
+#endif
+}
+
+static inline uint8_t sdcard_detect(void) {
+#ifdef ARDUINO_AVR_UNO
+  return !(PINB & _BV(PIN1));
+#else
+  return 0;
+#endif
+}
+
+static inline uint8_t sdcard_wp(void) {
+#ifdef ARDUINO_AVR_UNO
+  return PINB & _BV(PIN0);
+#else
+  return 0;
+#endif
+}
 
 static inline void board_init(void) {
 }
@@ -374,8 +406,6 @@ static inline void leds_sleep(void) {
 }
 
 
-#ifndef ARDUINO
-
 /* An interrupt for detecting card changes implies hotplugging capability */
 #if defined(SD_CHANGE_HANDLER) || defined (CF_CHANGE_HANDLER)
 #  define HAVE_HOTPLUG
@@ -395,8 +425,6 @@ static inline void leds_sleep(void) {
 #ifndef HAVE_SD_LED
 # define set_sd_led(x) do {} while (0)
 #endif
-
-#endif // build-using-arduino
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)

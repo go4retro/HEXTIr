@@ -98,9 +98,7 @@ void pcf8583_get(struct tm *time) {
 
   time->tm_year = tmp.words[0]-1900;
 }
-#ifndef ARDUINO
 void rtc_get(struct tm *time) __attribute__ ((weak, alias("pcf8583_get")));
-#endif
 
 /* Set the time in the RTC */
 void pcf8583_set(struct tm *time) {
@@ -125,9 +123,7 @@ void pcf8583_set(struct tm *time) {
   i2c_write_register(PCF8583_ADDR, REG_CONTROL, CTL_START_CLOCK);
   rtc_state = RTC_OK;
 }
-#ifndef ARDUINO
 void rtc_set(struct tm *time) __attribute__ ((weak, alias("pcf8583_set")));
-#endif
 
 void pcf8583_init(void) {
   uint8_t tmp[4];
@@ -155,6 +151,4 @@ void pcf8583_init(void) {
 
   debug_putcrlf();
 }
-#ifndef ARDUINO
 void rtc_init(void) __attribute__ ((weak, alias("pcf8583_init")));
-#endif
