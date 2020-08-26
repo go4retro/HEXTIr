@@ -29,6 +29,8 @@
 #include "eeprom.h"
 #include "serial.h"
 #include "clock.h"
+#include "rtc.h"
+#include "time.h"
 #include "printer.h"
 #include "configure.h"
 #include "registry.h"
@@ -37,14 +39,20 @@ extern config_t * config;
 
 #ifdef INCLUDE_CLOCK
 
-#include <DS3231.h>
+//#include <DS3231.h>
 #include <SD.h>
 #include <Wire.h>
 
-extern DS3231 clock_peripheral;       // Our CLOCK : access via the HexBus at device code 230-239
+//extern DS3231 clock_peripheral;       // Our CLOCK : access via the HexBus at device code 230-239
 
 void dateTime(uint16_t* theDate, uint16_t* theTime)
 {
+  struct tm t;
+  rtc_get(&t);
+  *theDate = FAT_DATE(t.tm_year + 2000, t.tm_mon, t.tm_mday);
+  *theTime = FAT_TIME(t.tm_hour, t.tm_min, t.tm_sec);
+
+  /*
   unsigned int year;
   byte month,day,hour,minute,second;
   bool cen,pm;
@@ -57,7 +65,7 @@ void dateTime(uint16_t* theDate, uint16_t* theTime)
   second = clock_peripheral.getSecond();
   
   *theDate = FAT_DATE(year, month, day);
-  *theTime = FAT_TIME(hour, minute, second);
+  *theTime = FAT_TIME(hour, minute, second);*/
 
   return;
 }
@@ -77,13 +85,14 @@ void setup(void) {
   timer_init();
   drv_init();
   ser_init();
-  clock_init();
   prn_init();
   cfg_init();
 
   config = ee_get_config();
 
   sei();
+
+  clock_init();
 
 #if defined INCLUDE_PRINTER || defined ARDUINO_UART_DEBUG
   Serial.begin(115200);

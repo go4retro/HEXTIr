@@ -63,9 +63,6 @@
 
 #else
  //#define ARDUINO_UART_DEBUG
- // This needs to be moved somewhere else...
- #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
- #define VERSION "0.9.0.0"
 
  #define MAX_OPEN_FILES 3      // SD 1.0 and later let us have more than one open file, each additional file uses 30 bytes RAM
  // 3 files lets us use E/A easily.  source, object, listing.
@@ -215,6 +212,14 @@ static inline void pwr_irq_disable(void) {
 
 #elif CONFIG_HARDWARE_VARIANT == 3
 /* ---------- Hardware configuration: Arduino with low power sleep---------- */
+
+// This needs to be moved somewhere else...
+#define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
+#define VERSION "0.9.0.0"
+#define CONFIG_RTC_DSRTC
+#define NEED_RTCMUX
+#define HAVE_I2C
+
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
 #  define HEX_HSK_IN          PIND

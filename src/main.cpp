@@ -24,8 +24,8 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 
-#include "clock.h"
 #include "config.h"
+#include "clock.h"
 #include "configure.h"
 #include "debug.h"
 #include "drive.h"
@@ -201,9 +201,9 @@ void loop(void) { // Arduino main loop routine.
   BYTE res;
 
 #ifndef ARDUINO
+  board_init();
   debug_init();
   // setup stuff for main
-  board_init();
   hex_init();
   disk_init();
   leds_init();
@@ -220,7 +220,6 @@ void loop(void) { // Arduino main loop routine.
   config = ee_get_config();
 
   sei();
-
 
   clock_init();
 

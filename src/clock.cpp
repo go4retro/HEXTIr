@@ -24,24 +24,18 @@
 #include "config.h"
 #include "hexbus.h"
 #include "hexops.h"
-#ifdef ARDUINO
- #include <DS3231.h>
- #include <Wire.h>
-#else
- #include "rtc.h"
-#endif
+#include "rtc.h"
+#include "time.h"
+
 #include "clock.h"
 
 // Global references
 extern uint8_t buffer[BUFSIZE];
 // Global defines
-#ifdef ARDUINO
-DS3231            clock_peripheral;       // Our CLOCK : access via the HexBus at device code 230-239
-#endif
 volatile uint8_t  rtc_open = 0;
 
 /*
-   Open access to RTC module. Begin Wire, Begin DS3231
+   Open access to RTC module.
    WORK IN MAJOR PROGRESS.
    These routines will currently flag an unused parameter 'pab' warning...
 */
@@ -63,9 +57,6 @@ static uint8_t hex_rtc_open( pab_t pab ) {
     if ( !rtc_open ) {
       if ( att & OPENMODE_MASK ) {
         len = len ? len : sizeof(buffer);
-#ifdef ARDUINO
-        clock_peripheral.setClockMode(false);
-#endif
         rtc_open = att;
         transmit_word( 4 );
         transmit_word( len );
@@ -109,48 +100,11 @@ static uint8_t hex_rtc_read(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
   uint16_t y;
-#ifdef ARDUINO
-  RTClib RTC;
-#endif
   char buf[8];
 
   memset( (char *)buffer, 0, sizeof(buffer) );
   if ( rtc_open & OPENMODE_READ )
   {
-#ifdef ARDUINO
-    DateTime now = RTC.now();
-
-    buf[0] = 0;
-    y = now.year();
-    itoa( y, buf, 10 );
-    strcpy((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = now.month();
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = now.day();
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = now.hour();
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = now.minute();
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = now.second();
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    len = strlen( (char *)buffer );
-#else
     struct tm t;
     rtc_get(&t);
     buf[0] = 0;
@@ -183,7 +137,6 @@ static uint8_t hex_rtc_read(pab_t pab) {
     itoa( i, buf, 10 );
     strcat((char *)buffer, buf );
     len = strlen( (char *)buffer );
-#endif
   } else if ( rtc_open ) { // not open for INPUT?
     rc = HEXSTAT_ATTR_ERR;
   } else {
@@ -267,14 +220,6 @@ static uint8_t hex_rtc_write( pab_t pab ) {
                   if ( t_array[4] < 60 ) { // minutes between 00 and 59
                     if ( t_array[5] < 60 ) { // seconds between 00 and 59
                       rc = HEXSTAT_SUCCESS;
-#ifdef ARDUINO
-                      clock_peripheral.setYear( (byte)t_array[ 0 ] );
-                      clock_peripheral.setMonth( (byte)t_array[ 1 ] );
-                      clock_peripheral.setDate( (byte)t_array[ 2 ] );
-                      clock_peripheral.setHour( (byte)t_array[ 3 ] );
-                      clock_peripheral.setMinute( (byte)t_array[ 4 ] );
-                      clock_peripheral.setSecond( (byte)t_array[ 5 ] );
-#else
                       struct tm t;
                       t.tm_year = t_array[ 0 ];
                       t.tm_mon = t_array[ 1 ];
@@ -283,7 +228,6 @@ static uint8_t hex_rtc_write( pab_t pab ) {
                       t.tm_min = t_array[ 4 ];
                       t.tm_sec = t_array[ 5 ];
                       rtc_set(&t);
-#endif
                     }
                   }
                 }
@@ -374,28 +318,7 @@ void clock_register(registry_t *registry) {
 
 
 void clock_init() {
-#ifdef ARDUINO
-  RTClib RTC;
-  DateTime now;
-
-  Wire.begin();  // bring up the I2C interface
-
-  clock_peripheral.setClockMode(false);
-  now = RTC.now();
-
-  // If clock has not been previously set; let's init to a base date/time for now.
-  if ( now.year() == 2000 && now.month() == 1 && now.day() == 1 ) {
-    clock_peripheral.setYear(20);  // Jan 1, 2020 midnight?
-    clock_peripheral.setMonth(1);
-    clock_peripheral.setDate(1);
-    clock_peripheral.setHour(0);
-    clock_peripheral.setMinute(00);
-    clock_peripheral.setSecond(00);
-  }
-
-#else
   rtc_init();
-#endif
   return;
 }
 
