@@ -29,6 +29,8 @@
 
 #include "clock.h"
 
+#ifdef INCLUDE_CLOCK
+
 // Global references
 extern uint8_t buffer[BUFSIZE];
 // Global defines
@@ -108,7 +110,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
     struct tm t;
     rtc_get(&t);
     buf[0] = 0;
-    y = t.tm_year;
+    y = t.tm_year + 1900;
     itoa( y, buf, 10 );
     strcpy((char *)buffer, buf );
     strcat((char *)buffer, "," );
@@ -292,12 +294,6 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_INVALID_MARKER
 };
 
-
-// Arduino IDE compiles all cpp files, so need to exclude these APIs if clock
-// is disabled
-
-#ifdef INCLUDE_CLOCK
-
 void clock_reset() {
   if ( rtc_open ) {
     rtc_open = 0;
@@ -318,7 +314,20 @@ void clock_register(registry_t *registry) {
 
 
 void clock_init() {
+  struct tm t;
+
   rtc_init();
+
+  // if RTC has been stopped, store default date in it.
+  if(rtc_get_state() == RTC_INVALID) {
+    t.tm_year = __YEAR__ - 1900;
+    t.tm_mon = __MONTH__;
+    t.tm_mday = __DAY__;
+    t.tm_hour = __HOUR__;
+    t.tm_min = __MIN__;
+    t.tm_sec = __SEC__;
+    rtc_set(&t);
+  }
   return;
 }
 

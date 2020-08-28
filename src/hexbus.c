@@ -42,6 +42,7 @@ uint8_t hex_is_bav(void) {
 */
 static void hex_bav_hi(void) {
   HEX_BAV_DDR &= ~HEX_BAV_PIN;   // HI-Z BAV
+  HEX_BAV_OUT |= HEX_BAV_PIN;    // Bring pullups online
   _delay_us(2);                  // Allow signal to reach HI-Z (need delay since we do not monitor this)
 }
 
@@ -62,6 +63,7 @@ static void hex_bav_lo(void) {
 */
 static void hex_hsk_hi(void) {
   HEX_HSK_DDR &= ~HEX_HSK_PIN;  // HI-Z HSK
+  HEX_HSK_OUT |= HEX_HSK_PIN;   // bring pullups online
 }
 
 /*

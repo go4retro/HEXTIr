@@ -306,7 +306,7 @@ uint8_t uart_data_available(void);
 void uart_putcrlf(void);
 
 #else
-#  define uart_init()           do {} while(0)
+#define uart_init()             do {} while(0)
 #define uart_getc()             0
 #define uart_putc(x)            do {} while(0)
 #define uart_puthex(x)          do {} while(0)
@@ -314,7 +314,6 @@ void uart_putcrlf(void);
 #define uart_flush()            do {} while(0)
 #define uart_puts_P(x)          do {} while(0)
 #define uart_putcrlf()          do {} while(0)
-
 #endif
 
 #if defined UART0_ENABLE

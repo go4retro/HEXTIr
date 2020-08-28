@@ -24,7 +24,6 @@
 extern "C"{
 #endif
 
-
 #ifdef INCLUDE_POWERMGMT
 
 void sleep_the_system( void );

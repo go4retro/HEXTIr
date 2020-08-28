@@ -24,7 +24,6 @@
 
 #include <avr/io.h>
 
-
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
  #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
  // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
@@ -32,9 +31,6 @@
 
 #ifndef ARDUINO
  #include "autoconf.h"
- #define MAX_OPEN_FILES 8
- // TODO this is temporary.  We need to get BUFSIZE back to 255 for all variants.
- #define BUFSIZE       255
 
  #ifdef CONFIG_UART_DEBUG
   #define UART0_ENABLE
@@ -63,21 +59,17 @@
 
 #else
  //#define ARDUINO_UART_DEBUG
-
- #define MAX_OPEN_FILES 3      // SD 1.0 and later let us have more than one open file, each additional file uses 30 bytes RAM
- // 3 files lets us use E/A easily.  source, object, listing.
-
- #define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
-
- // TODO this is temporary.  We need to get BUFSIZE back to 255 for all variants.
- #define BUFSIZE       64
-
 #endif
 
-#define INCLUDE_PRINTER
-#define INCLUDE_SERIAL
-
 /* ----- Common definitions for all AVR hardware variants ------ */
+
+//#define INCLUDE_PRINTER
+//#define INCLUDE_SERIAL
+
+#define MAX_OPEN_FILES  8
+#define BUFSIZE         255
+
+
 
 
 #if CONFIG_HARDWARE_VARIANT == 1
@@ -215,10 +207,11 @@ static inline void pwr_irq_disable(void) {
 
 // This needs to be moved somewhere else...
 #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
-#define VERSION "0.9.0.0"
+#define VERSION "0.9.1.0"
 #define CONFIG_RTC_DSRTC
-#define NEED_RTCMUX
-#define HAVE_I2C
+//#define CONFIG_RTC_SOFTWARE
+//#define NEED_RTCMUX  // REALLY should enable this, for maximum compatibility.
+
 #define CONFIG_SD_AUTO_RETRIES 10
 
 #  define HEX_HSK_DDR         DDRD
@@ -265,7 +258,7 @@ static inline uint8_t sdcard_detect(void) {
 #ifdef ARDUINO_AVR_UNO
   return !(PINB & _BV(PIN1));
 #else
-  return 0;
+  return 1;
 #endif
 }
 
@@ -280,6 +273,8 @@ static inline uint8_t sdcard_wp(void) {
 static inline void board_init(void) {
 }
 
+
+#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 
 static inline void wakeup_pin_init(void) {
   DDRD &= ~_BV(PIN2);
@@ -376,7 +371,7 @@ static inline void timer_config(void) {
   /* Set up a 100Hz interrupt using timer 0 */
   TCCR0A = _BV(WGM01);
   TCCR0B = _BV(CS02) | _BV(CS00);
-  OCR0A  = F_CPU / 1024 / 100 - 1;
+  OCR0A  = F_CPU / 1024 / (100 - 1);
   TCNT0  = 0;
   TIMSK0 |= _BV(OCIE0A);
 }

@@ -27,6 +27,7 @@
 #include "hexops.h"
 #include "timer.h"
 
+#ifdef INCLUDE_PRINTER
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -245,3 +246,5 @@ void prn_init( void ) {
 #endif
   return;
 }
+
+#endif

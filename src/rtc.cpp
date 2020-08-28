@@ -69,6 +69,10 @@ uint8_t int2bcd(uint8_t value) {
   return (value % 10) + 16*(value/10);
 }
 
+rtcstate_t rtc_get_state(void) {
+  return rtc_state;
+}
+
 #ifdef NEED_RTCMUX
 /* RTC "multiplexer" to select the best available RTC at runtime */
 
@@ -96,6 +100,7 @@ void rtc_init(void) {
 
 #ifdef CONFIG_RTC_SOFTWARE
   softrtc_init();
+  current_rtc = RTC_SOFTWARE;
   /* This is the fallback RTC that will always work */
   return;
 #endif
@@ -115,13 +120,13 @@ void rtc_get(struct tm *time) {
 
 #ifdef CONFIG_RTC_PCF8583
   case RTC_PCF8583:
-    pcf8583_read(time);
+    pcf8583_get(time);
     break;
 #endif
 
 #ifdef CONFIG_RTC_SOFTWARE
   case RTC_SOFTWARE:
-    softrtc_read(time);
+    softrtc_get(time);
     break;
 #endif
 

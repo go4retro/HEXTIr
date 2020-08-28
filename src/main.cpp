@@ -184,6 +184,49 @@ void setup_registry(void)
 }
 
 
+/*
+   setup() - In Arduino, this will be run once automatically.
+   Building non-Arduino, we'll call it once at the beginning
+   of the main() function.
+*/
+
+void setup(void) {
+  board_init();
+  debug_init();
+  disk_init();
+  hex_init();
+  leds_init();
+  timer_init();
+  drv_init();
+  ser_init();
+  prn_init();
+  cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
+#ifdef ARDUINO
+#  if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
+  uart_init();
+  swuart_init();
+#  endif
+#endif
+
+  config = ee_get_config();
+
+  sei();
+
+  clock_init();
+
+#ifdef ARDUINO
+#  if defined INCLUDE_PRINTER || defined ARDUINO_UART_DEBUG
+  Serial.begin(115200);
+  // Ensure serial initialized before proceeding.
+  while (!Serial) {
+    ;
+  }
+#  endif
+#endif
+  wakeup_pin_init();
+}
+
+
 #ifndef ARDUINO
 // Non-Arduino makefile entry point
 int main(void) __attribute__((OS_main));
@@ -201,30 +244,8 @@ void loop(void) { // Arduino main loop routine.
   BYTE res;
 
 #ifndef ARDUINO
-  board_init();
-  debug_init();
-  // setup stuff for main
-  hex_init();
-  disk_init();
-  leds_init();
-  timer_init();
-  drv_init();
-  ser_init();
-  prn_init();
-  cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
-#if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
-  uart_init();
-  swuart_init();
+  setup();
 #endif
-
-  config = ee_get_config();
-
-  sei();
-
-  clock_init();
-
-#endif // No ARDUINO
-
   setup_registry();
 
   pabdata.pab.cmd = 0;
@@ -241,7 +262,7 @@ void loop(void) { // Arduino main loop routine.
 
   while (TRUE) {
 
-    set_busy_led( FALSE );  // TODO do we need to set busy LED here?
+    set_busy_led( FALSE );
 
     while (hex_is_bav()) {
       sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.(if power management enabled, if not this is nop)
@@ -320,8 +341,7 @@ void loop(void) { // Arduino main loop routine.
       }
     }
 
-    debug_putc(13);
-    debug_putc(10);
+    debug_putcrlf();
     i = 0;
     ignore_cmd = FALSE;
   }

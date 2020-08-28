@@ -1,33 +1,37 @@
-/* sd2iec - SD/MMC to Commodore serial bus interface/controller
-   Copyright (C) 2007-2017  Ingo Korb <ingo@akana.de>
+/*
+    HEXTIr-SD - Texas Instruments HEX-BUS SD Mass Storage Device
+    Copyright Jim Brain and RETRO Innovations, 2017
 
-   Inspired by MMC2IEC by Lars Pontoppidan et al.
+    This code is a modification of the file from the following project:
 
-   FAT filesystem access based on code from ChaN and Jim Brain, see ff.c|h.
+    sd2iec - SD/MMC to Commodore serial bus interface/controller
+    Copyright (C) 2007-2017  Ingo Korb <ingo@akana.de>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; version 2 of the License only.
+    Inspired by MMC2IEC by Lars Pontoppidan et al.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+    FAT filesystem access based on code from ChaN and Jim Brain, see ff.c|h.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; version 2 of the License only.
 
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-   softrtc.c: software RTC emulation
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-   The exported functions in this file are weak-aliased to their corresponding
-   versions defined in rtc.h so when this file is the only RTC implementation
-   compiled in they will be automatically used by the linker.
+    softrtc.c: software RTC emulation
+
+    The exported functions in this file are weak-aliased to their corresponding
+    versions defined in rtc.h so when this file is the only RTC implementation
+    compiled in they will be automatically used by the linker.
 
 */
 
-#ifndef ARDUINO
 #include <inttypes.h>
 #include <avr/interrupt.h>
 #include <util/atomic.h>
@@ -39,6 +43,7 @@
 
 #include "softrtc.h"
 
+#ifdef CONFIG_RTC_SOFTWARE
 static volatile uint8_t ms;
 static softtime_t rtc = 1217647125; // Sat Aug  2 03:18:45 2008 UTC
 static const PROGMEM uint8_t month_days[12] = {
@@ -127,7 +132,7 @@ void softrtc_tick(void) {
 }
 
 /* Read the current time from the RTC */
-void softrtc_read(struct tm *time) {
+void softrtc_get(struct tm *time) {
   softtime_t t;
 
   ATOMIC_BLOCK( ATOMIC_FORCEON ) {
@@ -135,7 +140,7 @@ void softrtc_read(struct tm *time) {
   }
   gmtime(&t,time);
 }
-void read_rtc(struct tm *time) __attribute__ ((weak, alias("softrtc_read")));
+void rtc_get(struct tm *time) __attribute__ ((weak, alias("softrtc_get")));
 
 /* Set the time in the RTC */
 void softrtc_set(struct tm *time) {
@@ -145,11 +150,10 @@ void softrtc_set(struct tm *time) {
     rtc = t;
   }
 }
-void set_rtc(struct tm *time) __attribute__ ((weak, alias("softrtc_set")));
+void rtc_set(struct tm *time) __attribute__ ((weak, alias("softrtc_set")));
 
 void softrtc_init(void) {
   rtc_state = RTC_OK;
 }
 void rtc_init(void) __attribute__ ((weak, alias("softrtc_init")));
-
 #endif

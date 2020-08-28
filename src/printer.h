@@ -25,8 +25,13 @@
 #include "hexops.h"
 #include "registry.h"
 
+#ifdef INCLUDE_PRINTER
 void prn_reset(void);
 void prn_register(registry_t *registry);
 void prn_init(void);
-
+#else
+#define prn_reset()     do {} while(0)
+#define prn_register(x) do {} while(0)
+#define prn_init()      do {} while(0)
+#endif
 #endif /* PRINTER_H */
