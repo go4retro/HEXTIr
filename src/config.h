@@ -63,18 +63,15 @@
 
 /* ----- Common definitions for all AVR hardware variants ------ */
 
-//#define INCLUDE_PRINTER
-//#define INCLUDE_SERIAL
-
 #define MAX_OPEN_FILES  8
 #define BUFSIZE         255
 
-
-
-
 #if CONFIG_HARDWARE_VARIANT == 1
-
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
+
+//#define INCLUDE_PRINTER
+//#define INCLUDE_SERIAL
+
 #  define HEX_HSK_DDR         DDRC
 #  define HEX_HSK_OUT         PORTC
 #  define HEX_HSK_IN          PINC
@@ -102,6 +99,7 @@
 #  define SPI_DIVISOR_SLOW 64
 #  define SPI_DIVISOR_FAST 8
 
+
 static inline void sdcard_interface_init(void) {
   DDRB  &= ~_BV(PB0);  // wp
   PORTB |=  _BV(PB0);
@@ -113,17 +111,21 @@ static inline void sdcard_interface_init(void) {
   //EIMSK |=  _BV(INT6);
 }
 
+
 static inline uint8_t sdcard_detect(void) {
   return !(PINB & _BV(PIN1));
 }
+
 
 static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
 }
 
+
 static inline void wakeup_pin_init(void) {
   ;
 }
+
 
 static inline void board_init(void) {
   // turn on power LED
@@ -131,9 +133,13 @@ static inline void board_init(void) {
   PORTD |= _BV(PIN3);
 }
 
-#elif CONFIG_HARDWARE_VARIANT == 2
 
+#elif CONFIG_HARDWARE_VARIANT == 2
 /* ---------- Hardware configuration: HEXTIr Arduino ---------- */
+
+#define INCLUDE_PRINTER
+#define INCLUDE_SERIAL
+
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
 #  define HEX_HSK_IN          PIND
@@ -161,6 +167,7 @@ static inline void board_init(void) {
 #  define SPI_DIVISOR_SLOW 64
 #  define SPI_DIVISOR_FAST 8
 
+
 static inline void sdcard_interface_init(void) {
   DDRB  &= ~_BV(PB0);  // wp
   PORTB |=  _BV(PB0);
@@ -172,9 +179,11 @@ static inline void sdcard_interface_init(void) {
   //EIMSK |=  _BV(INT6);
 }
 
+
 static inline uint8_t sdcard_detect(void) {
   return !(PINB & _BV(PIN1));
 }
+
 
 static inline uint8_t sdcard_wp(void) {
   return PINB & _BV(PIN0);
@@ -198,20 +207,23 @@ static inline void pwr_irq_enable(void) {
   EIMSK |= _BV(INT0);   // turn on IRQ
 }
 
+
 static inline void pwr_irq_disable(void) {
   EIMSK &= ~_BV(INT0);   // turn off IRQ
 }
 
+
 #elif CONFIG_HARDWARE_VARIANT == 3
 /* ---------- Hardware configuration: Arduino with low power sleep---------- */
+
+//#define INCLUDE_PRINTER
+//#define INCLUDE_SERIAL
 
 // This needs to be moved somewhere else...
 #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
 #define VERSION "0.9.1.0"
 #define CONFIG_RTC_DSRTC
 //#define CONFIG_RTC_SOFTWARE
-//#define NEED_RTCMUX  // REALLY should enable this, for maximum compatibility.
-
 #define CONFIG_SD_AUTO_RETRIES 10
 
 #  define HEX_HSK_DDR         DDRD
@@ -293,8 +305,11 @@ static inline void pwr_irq_disable(void) {
 
 
 #elif CONFIG_HARDWARE_VARIANT == 4
-
 /* ---------- Hardware configuration: Old HEXTIr Arduino ---------- */
+
+//#define INCLUDE_PRINTER
+//#define INCLUDE_SERIAL
+
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
 #  define HEX_HSK_IN          PIND

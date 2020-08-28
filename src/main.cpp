@@ -201,7 +201,7 @@ void setup(void) {
   ser_init();
   prn_init();
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
-#ifdef ARDUINO
+#ifndef ARDUINO
 #  if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
   uart_init();
   swuart_init();

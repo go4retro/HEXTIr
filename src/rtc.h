@@ -48,6 +48,8 @@ extern rtcstate_t rtc_state;
 /* detect and initialize RTC */
 void rtc_init(void);
 
+rtcstate_t rtc_get_state(void);
+
 /* Return current time in struct tm */
 void rtc_get(struct tm *time);
 
@@ -59,11 +61,12 @@ uint8_t int2bcd(uint8_t value);
 
 #else
 
-#define rtc_init()  do {} while(0)
-#define rtc_get(x)  do {} while(0)
-#define rtc_set(x)  do {} while(0)
-#define bcd2int(x)  do {} while(0)
-#define int2bcd(x)  do {} while(0)
+#define rtc_init()      do {} while(0)
+#define rtc_get_state() do {} while(0)
+#define rtc_get(x)      do {} while(0)
+#define rtc_set(x)      do {} while(0)
+#define bcd2int(x)      do {} while(0)
+#define int2bcd(x)      do {} while(0)
 
 #endif
 #endif
