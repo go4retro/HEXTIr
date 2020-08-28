@@ -206,15 +206,7 @@ void setup(void) {
   uart_init();
   swuart_init();
 #  endif
-#endif
-
-  config = ee_get_config();
-
-  sei();
-
-  clock_init();
-
-#ifdef ARDUINO
+#else
 #  if defined INCLUDE_PRINTER || defined ARDUINO_UART_DEBUG
   Serial.begin(115200);
   // Ensure serial initialized before proceeding.
@@ -223,6 +215,13 @@ void setup(void) {
   }
 #  endif
 #endif
+
+  config = ee_get_config();
+
+  sei();
+
+  clock_init();
+
   wakeup_pin_init();
 }
 
