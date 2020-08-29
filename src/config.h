@@ -32,13 +32,21 @@
 #ifndef ARDUINO
  #include "autoconf.h"
 #else
- //#define ARDUINO_UART_DEBUG
+
+// Debug to serial
+//#define CONFIG_UART_DEBUG
+//#define CONFIG_UART_DEBUG_SW
+#define CONFIG_UART_DEBUG_RATE    115200
+#define CONFIG_UART_DEBUG_FLUSH
+#define CONFIG_UART_BUF_SHIFT     8
+
 #endif
 
 /* ----- Common definitions for all AVR hardware variants ------ */
 
-#define MAX_OPEN_FILES  8
-#define BUFSIZE         255
+#define MAX_OPEN_FILES    8
+#define BUFSIZE           255
+#define UART_DOUBLE_SPEED
 
 #if CONFIG_HARDWARE_VARIANT == 1
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
@@ -432,33 +440,27 @@ static inline void leds_sleep(void) {
 #  define INCLUDE_CLOCK
 #endif
 
+#if defined INCLUDE_SERIAL || defined CONFIG_UART_DEBUG
+#  define UART0_ENABLE
+#endif
+
 #ifdef CONFIG_UART_DEBUG
- #define UART0_ENABLE
- #define UART0_BAUDRATE CONFIG_UART_DEBUG_RATE
+#  define UART0_BAUDRATE CONFIG_UART_DEBUG_RATE
+#elif defined CONFIG_UART_BAUDRATE
+#  define UART0_BAUDRATE CONFIG_UART_BAUDRATE
+#else
+#  define UART0_BAUDRATE 57600
 #endif
 
 #ifdef CONFIG_UART_DEBUG_SW
- #ifndef CONFIG_UART_DEBUG_SW_PORT
-  #define CONFIG_UART_DEBUG_SW_PORT 1
- #endif
+#  ifndef CONFIG_UART_DEBUG_SW_PORT
+#    define CONFIG_UART_DEBUG_SW_PORT 1
+#  endif
 #endif
 
-#ifndef UART0_ENABLE
- #define UART0_ENABLE
- #define DYNAMIC_UART
-
- #ifdef CONFIG_UART_BUF_SHIFT
-  #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
- #endif
-
- #ifdef CONFIG_UART_BAUDRATE
-  #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
- #else
-  #define UART0_BAUDRATE 57600
- #endif
+#ifdef CONFIG_UART_BUF_SHIFT
+ #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
 #endif
-
-
 
 #include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?
 

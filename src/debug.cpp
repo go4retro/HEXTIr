@@ -26,11 +26,6 @@
 #include "swuart.h"
 #include "uart.h"
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#include <HardwareSerial.h>
-#endif
-
 #include "debug.h"
 
 #if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW || defined ARDUINO_UART_DEBUG
@@ -47,13 +42,6 @@ void debug_putc(uint8_t data) {
   uart_putc(data);
 #ifdef CONFIG_UART_DEBUG_FLUSH
   uart_flush();
-#endif
-#endif
-
-#ifdef ARDUINO_UART_DEBUG
-  Serial.write(data);
-#ifdef CONFIG_UART_DEBUG_FLUSH
-  Serial.flush();
 #endif
 #endif
 }

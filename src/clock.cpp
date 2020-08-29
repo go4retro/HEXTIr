@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include "config.h"
+#include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "rtc.h"
@@ -164,6 +165,8 @@ static uint8_t hex_rtc_read(pab_t pab) {
     strcat((char *)buffer, buf );
     len = strlen( (char *)buffer );
 #endif
+    debug_putcrlf();
+    debug_trace(buffer, 0, len);
   } else if ( rtc_open ) { // not open for INPUT?
     rc = HEXSTAT_ATTR_ERR;
   } else {
