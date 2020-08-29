@@ -30,6 +30,9 @@
 
 #ifndef CRC_H
 #define CRC_H
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 #include <util/crc16.h>
 
@@ -46,6 +49,7 @@ static inline uint16_t crc_xmodem_block(uint16_t crc, const uint8_t *data, unsig
   return crc;
 }
 
-
+#ifdef __cplusplus
+} // extern "C"
 #endif
-
+#endif

@@ -30,7 +30,9 @@
 
 #ifndef TIMER_H
 #define TIMER_H
-
+#ifdef __cplusplus
+extern "C"{
+#endif
 #include <util/delay.h>
 #include <util/atomic.h>
 
@@ -105,8 +107,10 @@ static inline tick_t getticks(void) {
          ((stick_t)(b) - (stick_t)(a) < 0)
 #define time_before(a,b)        time_after(b,a)
 
-
 /* Timer initialisation - defined in timer.c */
 void timer_init(void);
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif

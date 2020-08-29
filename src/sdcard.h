@@ -30,6 +30,9 @@
 
 #ifndef SDCARD_H
 #define SDCARD_H
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 #include "diskio.h"
 
@@ -41,4 +44,7 @@ DRESULT sd_read(BYTE drv, BYTE *buffer, DWORD sector, BYTE count);
 DRESULT sd_write(BYTE drv, const BYTE *buffer, DWORD sector, BYTE count);
 DRESULT sd_getinfo(BYTE drv, BYTE page, void *buffer);
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif

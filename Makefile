@@ -1,13 +1,14 @@
 # Hey Emacs, this is a -*- makefile -*-
 
 # Define version number
-MAJOR = 1
-MINOR = 0
-PATCHLEVEL = 0
+MAJOR = 0
+MINOR = 9
+PATCHLEVEL = 1
 FIX =
 
 # Forces bootloader version to 0, comment out or leave empty for release
-PRERELEASE = atentdead0
+#PRERELEASE = atentdead0
+PRERELEASE = .0
 
 #----------------------------------------------------------------------------
 # WinAVR Makefile Template written by Eric B. Weddington, Joerg Wunsch, et al.
@@ -66,10 +67,20 @@ TARGET = $(OBJDIR)/HEXTIr
 SRC  = main.c
 SRC += ff.c
 SRC += diskio.c
+SRC += drive.c
 SRC += timer.c
 SRC += spi.c
 SRC += hexbus.c
+SRC += hexops.c
 SRC += led.c
+SRC += serial.c
+SRC += printer.c
+SRC += powermgmt.c
+SRC += eeprom.c
+SRC += configure.c
+SRC += swuart.c
+SRC += debug.c
+SRC += uart.c
 SRC += catalog.c
 
 ifneq ($(CONFIG_NO_SD),y)
@@ -78,6 +89,31 @@ endif
 
 ifeq ($(CONFIG_UART_DEBUG),y)
   SRC += uart.c
+endif
+
+ifeq ($(CONFIG_UART_DEBUG_SW),y)
+  SRC += swuart.c
+endif
+
+ifeq ($(CONFIG_RTC_SOFTWARE),y)
+  SRC += ds1307-3231.c
+  SRC += rtc.c
+  SRC += clock.c
+  SRC += softi2c.c
+endif
+
+ifeq ($(CONFIG_RTC_DSRTC),y)
+  SRC += ds1307-3231.c
+  SRC += rtc.c
+  SRC += clock.c
+  SRC += softi2c.c
+endif
+
+ifeq ($(CONFIG_RTC_PCF8583),y)
+  SRC += pcf8583.c
+  SRC += rtc.c
+  SRC += clock.c
+  SRC += softi2c.c
 endif
 
 # Additional hardware support enabled in the config file
@@ -244,7 +280,7 @@ CSRC := $(patsubst %,src/%,$(sort $(SRC)))
 ASMSRC_DIR := $(patsubst %,src/%,$(ASMSRC))
 
 # Define all object files.
-OBJ := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.o) $(ASMSRC_DIR:.S=.o))
+OBJ := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.o) $(ASMSRC_DIR:.S=.o) $(CSRC_DIR:.cpp=.o))
 
 # Define all listing files.
 LST := $(patsubst %,$(OBJDIR)/%,$(CSRC:.c=.lst) $(ASMSRC_DIR:.S=.lst))
@@ -331,7 +367,6 @@ $(OBJDIR)/%.bin: $(OBJDIR)/%.elf
 	$(Q)$(OBJCOPY) -O binary -R .eeprom $< $@
 endif
 
-
 $(OBJDIR)/%.hex: $(OBJDIR)/%.elf
 	$(E) "  HEX    $@"
 	$(Q)$(OBJCOPY) -O $(HEXFORMAT) -R .eeprom $< $@
@@ -365,11 +400,18 @@ $(OBJDIR)/%.o : %.c $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(E) "  CC     $<"
 	$(Q)$(CC) -c $(ALL_CFLAGS) $< -o $@
 
+# Compile: create object files from C++ source files.
+$(OBJDIR)/%.o : %.cpp $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
+	$(E) "  CPP    $<"
+	$(Q)$(CPP) -c $(ALL_CFLAGS) $< -o $@
 
 # Compile: create assembler files from C source files.
 $(OBJDIR)/%.s : %.c $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
 	$(CC) -S $(ALL_CFLAGS) $< -o $@
 
+# Compile: create assembler files from C++ source files.
+$(OBJDIR)/%.s : %.cpp $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h
+	$(CPP) -S $(ALL_CFLAGS) $< -o $@
 
 # Assemble: create object files from assembler source files.
 $(OBJDIR)/%.o : %.S $(OBJDIR)/asmconfig.h $(CONFFILES) | $(OBJDIR)/src $(OBJDIR)/autoconf.h

@@ -24,6 +24,11 @@
 
 #ifndef UART_H
 #define UART_H
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+#if defined UART0_ENABLE || defined UART1_ENABLE
 
 #ifdef UART_DOUBLE_SPEED
 #define CALC_BPS(x) (int)((double)F_CPU/(8.0*x)-1)
@@ -37,14 +42,14 @@
 #define B2400   CALC_BPS(2400)
 #define B4800   CALC_BPS(4800)
 #define B9600   CALC_BPS(9600)
-#define B19200	CALC_BPS(19200)
-#define B38400	CALC_BPS(38400)
+#define B19200  CALC_BPS(19200)
+#define B38400  CALC_BPS(38400)
 #define B57600  CALC_BPS(57600)
-#define B76800	CALC_BPS(76800)
-#define B115200	CALC_BPS(115200)
-#define B230400	CALC_BPS(230400)
-#define B460800	CALC_BPS(460800)
-#define B921600	CALC_BPS(921600)
+#define B76800  CALC_BPS(76800)
+#define B115200 CALC_BPS(115200)
+#define B230400 CALC_BPS(230400)
+#define B460800 CALC_BPS(460800)
+#define B921600 CALC_BPS(921600)
 
 #if defined __AVR_ATmega162__ || defined __AVR_ATmega644__ || defined __AVR_ATmega644P__ || defined __AVR_ATmega1281__ || defined __AVR_ATmega2561__ || defined __AVR_ATmega128__
 
@@ -247,64 +252,6 @@
                                 } while(0)
 #  define UART0_MODE_SETUP()  do { UCSRAC = _BV(UCSZA1) | _BV(UCSZA0); } while(0)
 #  define UART1_MODE_SETUP()  do { UCSRBC = _BV(UCSZB1) | _BV(UCSZB0); } while(0)
-#endif
-
-#if defined UART0_ENABLE || defined UART1_ENABLE
-#include <avr/pgmspace.h>
-void uart_init(void);
-uint8_t uart_getc(void);
-void uart_putc(uint8_t c);
-void uart_puthex(uint8_t hex);
-void uart_trace(void *ptr, uint16_t start, uint16_t len);
-void uart_flush(void);
-//void uart_puts_P(prog_char *text);
-void uart_puts_P(const char *text);
-uint8_t uart_data_available(void);
-void uart_putcrlf(void);
-
-#else
-#  define uart_init()           do {} while(0)
-#define uart_getc()             0
-#define uart_putc(x)            do {} while(0)
-#define uart_puthex(x)          do {} while(0)
-#define uart_trace(x,y,z)       do {} while(0)
-#define uart_flush()            do {} while(0)
-#define uart_puts_P(x)          do {} while(0)
-#define uart_putcrlf()          do {} while(0)
-
-#endif
-
-#if defined UART0_ENABLE
-uint8_t uart0_getc(void);
-void uart0_putc(uint8_t data);
-void uart_puthex(uint8_t hex);
-void uart_trace(void *ptr, uint16_t start, uint16_t len);
-void uart0_flush(void);
-//void uart0_puts_P(prog_char *text);
-void uart0_puts_P(const char *text);
-uint8_t uart0_data_available(void);
-void uart0_putcrlf(void);
-#  include <stdio.h>
-#  define dprintf(str,...) printf_P(PSTR(str), ##__VA_ARGS__)
-#else
-#  define uart0_getc()           0
-#  define uart0_putc(x)          do {} while(0)
-#  define uart0_puthex(x)        do {} while(0)
-#  define uart_trace(x,y,z)      do {} while(0)
-#  define uart0_puts_P(x)        do {} while(0)
-#  define uart0_data_available() do {} while(0)
-#  define uart0_putcrlf()        do {} while(0)
-#endif
-
-#ifdef UART1_ENABLE
-uint8_t uart1_getc(void);
-void uart1_putc(char c);
-void uart1_puts(char* str);
-#else
-#  define uart1_getc()    0
-#  define uart1_putc(x)   do {} while(0)
-#  define uart1_puts(x)   do {} while(0)
-#endif
 
 #define UART_LENGTH_MASK   (_BV(UCSZA1) | _BV(UCSZA0))
 #define UART_LENGTH_5      0
@@ -336,16 +283,83 @@ typedef enum {PARITY_NONE = UART_PARITY_NONE,
               PARITY_ODD = UART_PARITY_ODD
              } uartpar_t;
 
-#if defined UART0_ENABLE && defined DYNAMIC_UART
+#if defined UART0_ENABLE || defined UART1_ENABLE
+#  ifdef DYNAMIC_UART
 void uart_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t stopbits);
-#else
+#  else
 #define uart_config(bps, length, parity, stopbits) do {} while(0)
+#  endif
+#endif
+
+#if defined UART0_ENABLE && defined DYNAMIC_UART
+void uart0_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t stopbits);
+#else
+#define uart0_config(a, b, c, d) do {} while(0)
 #endif
 
 #if defined UART1_ENABLE && defined DYNAMIC_UART
 void uart1_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t stopbits);
 #else
-#define uart1_config(bps, length, parity, stopbits) do {} while(0)
+#define uart1_config(a, b, c, d) do {} while(0)
 #endif
 
+#endif
+
+#include <avr/pgmspace.h>
+void uart_init(void);
+uint8_t uart_getc(void);
+void uart_putc(uint8_t c);
+void uart_puthex(uint8_t hex);
+void uart_trace(void *ptr, uint16_t start, uint16_t len);
+void uart_flush(void);
+//void uart_puts_P(prog_char *text);
+void uart_puts_P(const char *text);
+uint8_t uart_data_available(void);
+void uart_putcrlf(void);
+
+#else
+#define uart_init()             do {} while(0)
+#define uart_getc()             0
+#define uart_putc(x)            do {} while(0)
+#define uart_puthex(x)          do {} while(0)
+#define uart_trace(x,y,z)       do {} while(0)
+#define uart_flush()            do {} while(0)
+#define uart_puts_P(x)          do {} while(0)
+#define uart_putcrlf()          do {} while(0)
+#endif
+
+#if defined UART0_ENABLE
+uint8_t uart0_getc(void);
+void uart0_putc(uint8_t data);
+void uart0_puthex(uint8_t hex);
+void uart0_trace(void *ptr, uint16_t start, uint16_t len);
+void uart0_flush(void);
+void uart0_puts_P(const char *text);
+uint8_t uart0_data_available(void);
+void uart0_putcrlf(void);
+#  include <stdio.h>
+#  define dprintf(str,...) printf_P(PSTR(str), ##__VA_ARGS__)
+#else
+#  define uart0_getc()           0
+#  define uart0_putc(x)          do {} while(0)
+#  define uart0_puthex(x)        do {} while(0)
+#  define uart0_trace(x,y,z)      do {} while(0)
+#  define uart0_puts_P(x)        do {} while(0)
+#  define uart0_data_available() 0
+#  define uart0_putcrlf()        do {} while(0)
+#endif
+
+#ifdef UART1_ENABLE
+uint8_t uart1_getc(void);
+void uart1_putc(char c);
+void uart1_puts(char* str);
+#else
+#  define uart1_getc()    0
+#  define uart1_putc(x)   do {} while(0)
+#  define uart1_puts(x)   do {} while(0)
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif

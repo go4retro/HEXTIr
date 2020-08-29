@@ -29,31 +29,42 @@
 */
 
 #include "config.h"
+#include "integer.h"
 #include "led.h"
+#include "softrtc.h"
+
 #include "timer.h"
 
 volatile tick_t ticks;
 
+#ifdef INCLUDE_POWERMGMT
+extern volatile uint8_t led_pwr_enable;  // this volatile transitions to 0 before we sleep, and ffh when not sleeping.
+#else
+#define led_pwr_enable  0xff             // w no power management, just always do busy led when active.
+#endif
+
 /* The main timer interrupt */
 SYSTEM_TICK_HANDLER {
+  uint8_t state;
+
   ticks++;
 
-  if (led_state & LED_ERROR) {
+  state = get_led_state();
+  if (state & LED_ERROR) {
     if ((ticks & 15) == 0)
       toggle_led();
   } else {
-    set_led(led_state & LED_BUSY);
+    //set_led((state & LED_BUSY) & led_pwr_enable );
   }
+
+#ifdef CONFIG_RTC_SOFTWARE
+  /* send tick to the software RTC emulation */
+  softrtc_tick();
+#endif
 }
 
-void timer_init(void) {
-  /* Count F_CPU/8 in timer 0 */
-  TCCR0B = _BV(CS01);
 
-  /* Set up a 100Hz interrupt using timer 1 */
-  OCR1A  = F_CPU / 64 / 100 - 1;
-  TCNT1  = 0;
-  TCCR1A = 0;
-  TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS11);
-  TIMSK1 |= _BV(OCIE1A);
+void timer_init(void) {
+  timer_config();
+  //set_error_led(TRUE);  //Just to test LED...
 }

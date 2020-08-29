@@ -20,6 +20,11 @@
 
 #ifndef SRC_HEXBUS_H_
 #define SRC_HEXBUS_H_
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+#include "integer.h"
 
 typedef enum _hexcmdtype_t {
                HEXCMD_OPEN = 0,
@@ -103,19 +108,48 @@ typedef enum _hexerror_t {
             } hexerror_t;
 
 typedef enum _openmode_t {
-              OPENMODE_READ =     0x40,
-              OPENMODE_WRITE =    0x80,
-              OPENMODE_RELATIVE = 0x20,
-              OPENMODE_FIXED =    0x10,
-              OPENMODE_INTERNAL = 0x08
+              OPENMODE_UPDATE =   0xC0, // update mode is read AND write
+              OPENMODE_READ =     0x40, // input only
+              OPENMODE_WRITE =    0x80, // output only
+              OPENMODE_APPEND =   0x00, // append mode is specified by read and write both = 0.
+              OPENMODE_RELATIVE = 0x20, // relative is used for records, often associated with fixed
+              OPENMODE_FIXED =    0x10, // fixed says each file has fixed length 'records'
+              OPENMODE_INTERNAL = 0x08, // internal type files store data in native form rather than ASCII (ie. numbers are stored in internal format.
             } openmode_t ;
 
+#define OPENMODE_MASK 0xC0
+
+
+#define    FILE_EOF_REACHED        0x80
+#define    FILE_SUPPORTS_RELATIVE  0x40
+#define    FILE_IS_PROTECTED       0x20
+#define    FILE_DEV_IS_OPEN        0x10
+#define    FILE_DEV_TYPE_MASK      0x0C
+#define    FILE_DEV_TYPE_DATACOM   0x08
+#define    FILE_DEV_TYPE_INTERNAL  0x04
+#define    FILE_DEV_TYPE_DISPLAY   0x00
+#define    FILE_IO_MODE_MASK       0x03
+#define    FILE_IO_MODE_READWRITE  0x03
+#define    FILE_IO_MODE_WRITEONLY  0x02
+#define    FILE_IO_MODE_READONLY   0x01
+#define    FILE_REQ_STATUS_NONE    0x00
+
+
+
 uint8_t hex_is_bav(void);
-void hex_release_bus_send(void);
-void hex_release_bus_recv(void);
-void hex_puti(uint16_t data, uint8_t hold);
-void hex_putc(uint8_t data, uint8_t hold);
-int16_t hex_getc(uint8_t hold);
+//void hex_release_data( void );
+void hex_release_bus(void);
+uint8_t hex_capture_hsk( void );
+uint8_t receive_byte( uint8_t *inout);
+uint8_t transmit_byte( uint8_t xmit );
+uint8_t transmit_word( uint16_t value );
+void hex_finish( void );
+void hex_send_size_response( uint16_t len );
+void hex_send_final_response( uint8_t rc );
 void hex_init(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* SRC_HEXBUS_H_ */
