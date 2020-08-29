@@ -25,9 +25,13 @@
 #include "hexops.h"
 #include "registry.h"
 
-
+#ifdef INCLUDE_SERIAL
 void ser_reset(void);
 void ser_register(registry_t *registry);
 void ser_init(void);
-
+#else
+#define ser_reset()     do {} while(0)
+#define ser_register(x) do {} while(0)
+#define ser_init()      do {} while(0)
+#endif
 #endif /* SERIAL_H */

@@ -29,11 +29,11 @@
 
 #ifdef INCLUDE_PRINTER
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
+//#ifdef ARDUINO
+//#include <Arduino.h>
+//#else
 #include "swuart.h"
-#endif
+//#endif
 
 #include "printer.h"
 
@@ -74,9 +74,9 @@ static uint8_t hex_prn_open(pab_t pab) {
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXSTAT_SUCCESS )
     {
-#ifndef ARDUINO
+//#ifndef ARDUINO
       swuart_setrate(0, SB115200);
-#endif
+//#endif
       prn_open = 1;  // our printer is NOW officially open.
       len = len ? len : sizeof(buffer);
       hex_send_size_response( len );
@@ -137,19 +137,19 @@ static uint8_t hex_prn_write(pab_t pab) {
         that HexBus operations are not compromised.
     */
     if ( rc == HEXSTAT_SUCCESS && prn_open ) {
-#ifdef ARDUINO
-      Serial.write(buffer, i);
-      delayMicroseconds( i*72 );
-      /* use 72 us per character sent delay.
-         digital logic analyzer confirms that @ 115200 baud, the data is
-         flushed over the wire BEFORE we continue HexBus operations.
-      */
-#else
+//#ifdef ARDUINO
+//      Serial.write(buffer, i);
+//      delayMicroseconds( i*72 );
+//      /* use 72 us per character sent delay.
+//         digital logic analyzer confirms that @ 115200 baud, the data is
+//         flushed over the wire BEFORE we continue HexBus operations.
+//      */
+//#else
       for(uint8_t j = 0; j < i; j++) {
         swuart_putc(0, buffer[j]);
       }
       swuart_flush();
-#endif
+//#endif
       written = 1; // indicate we actually wrote some data
     }
     len -= i;
@@ -159,15 +159,15 @@ static uint8_t hex_prn_write(pab_t pab) {
       a CR/LF.
   */
   if ( written && prn_open ) {
-#ifdef ARDUINO
-    buffer[0] = 13;
-    buffer[1] = 10;
-    Serial.write(buffer, 2);
-    delayMicroseconds(176);
-#else
+//#ifdef ARDUINO
+//    buffer[0] = 13;
+//    buffer[1] = 10;
+//    Serial.write(buffer, 2);
+//    delayMicroseconds(176);
+//#else
     swuart_putcrlf(0);
     swuart_flush();
-#endif
+//#endif
   }
   /*
      if printer is NOT open, report such status back
@@ -240,10 +240,10 @@ void prn_reset( void ) {
 void prn_init( void ) {
 
   prn_open = 0;
-#ifndef ARDUINO
+//#ifndef ARDUINO
   // TODO not sure where BPS rate is set on Arduino...
-  swuart_setrate(0, SB9600);
-#endif
+//  swuart_setrate(0, SB9600);
+//#endif
   return;
 }
 

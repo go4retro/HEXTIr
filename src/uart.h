@@ -24,6 +24,10 @@
 
 #ifndef UART_H
 #define UART_H
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #if defined UART0_ENABLE || defined UART1_ENABLE
 
 #ifdef UART_DOUBLE_SPEED
@@ -279,16 +283,24 @@ typedef enum {PARITY_NONE = UART_PARITY_NONE,
               PARITY_ODD = UART_PARITY_ODD
              } uartpar_t;
 
-#if defined UART0_ENABLE && defined DYNAMIC_UART
+#if defined UART0_ENABLE || defined UART1_ENABLE
+#  ifdef DYNAMIC_UART
 void uart_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t stopbits);
-#else
+#  else
 #define uart_config(bps, length, parity, stopbits) do {} while(0)
+#  endif
+#endif
+
+#if defined UART0_ENABLE && defined DYNAMIC_UART
+void uart0_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t stopbits);
+#else
+#define uart0_config(a, b, c, d) do {} while(0)
 #endif
 
 #if defined UART1_ENABLE && defined DYNAMIC_UART
 void uart1_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t stopbits);
 #else
-#define uart1_config(bps, length, parity, stopbits) do {} while(0)
+#define uart1_config(a, b, c, d) do {} while(0)
 #endif
 
 #endif
@@ -319,10 +331,9 @@ void uart_putcrlf(void);
 #if defined UART0_ENABLE
 uint8_t uart0_getc(void);
 void uart0_putc(uint8_t data);
-void uart_puthex(uint8_t hex);
-void uart_trace(void *ptr, uint16_t start, uint16_t len);
+void uart0_puthex(uint8_t hex);
+void uart0_trace(void *ptr, uint16_t start, uint16_t len);
 void uart0_flush(void);
-//void uart0_puts_P(prog_char *text);
 void uart0_puts_P(const char *text);
 uint8_t uart0_data_available(void);
 void uart0_putcrlf(void);
@@ -332,7 +343,7 @@ void uart0_putcrlf(void);
 #  define uart0_getc()           0
 #  define uart0_putc(x)          do {} while(0)
 #  define uart0_puthex(x)        do {} while(0)
-#  define uart_trace(x,y,z)      do {} while(0)
+#  define uart0_trace(x,y,z)      do {} while(0)
 #  define uart0_puts_P(x)        do {} while(0)
 #  define uart0_data_available() 0
 #  define uart0_putcrlf()        do {} while(0)
@@ -348,5 +359,7 @@ void uart1_puts(char* str);
 #  define uart1_puts(x)   do {} while(0)
 #endif
 
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif

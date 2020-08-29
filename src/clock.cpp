@@ -94,21 +94,45 @@ static uint8_t hex_rtc_close(pab_t pab) {
 }
 
 /*
-   Return time in format YY,MM,DD,HH,MM,SS in 24h form.
+   Return time in format YYYY,MM,DD,HH,MM,SS in 24h form.
    When RTC opened in INPUT or UPDATE mode.
 */
 static uint8_t hex_rtc_read(pab_t pab) {
   uint16_t len = 0;
   uint8_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
-  uint16_t y;
-  char buf[8];
+  //uint16_t y;
+  //char buf[8];
 
   memset( (char *)buffer, 0, sizeof(buffer) );
   if ( rtc_open & OPENMODE_READ )
   {
     struct tm t;
     rtc_get(&t);
+#if 1
+    buffer[0] = (t.tm_year > 99 ? '2' : '1');
+    buffer[1] = (t.tm_year > 199 ? '1' : (t.tm_year > 99 ? '0' : '9'));
+    i = t.tm_year % 100;
+    buffer[2] = '0' + i / 10;
+    buffer[3] = '0' + i % 10;
+    buffer[4] = ',';
+    buffer[5] = '0' + t.tm_mon / 10;
+    buffer[6] = '0' + t.tm_mon % 10;
+    buffer[7] = ',';
+    buffer[8] = '0' + t.tm_mday / 10;
+    buffer[9] = '0' + t.tm_mday % 10;
+    buffer[10] = ',';
+    buffer[11] = '0' + t.tm_hour / 10;
+    buffer[12] = '0' + t.tm_hour % 10;
+    buffer[13] = ',';
+    buffer[14] = '0' + t.tm_min / 10;
+    buffer[15] = '0' + t.tm_min % 10;
+    buffer[16] = ',';
+    buffer[17] = '0' + t.tm_sec / 10;
+    buffer[18] = '0' + t.tm_sec % 10;
+    buffer[19] = 0;
+    len = 19;
+#else
     buf[0] = 0;
     y = t.tm_year + 1900;
     itoa( y, buf, 10 );
@@ -139,6 +163,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
     itoa( i, buf, 10 );
     strcat((char *)buffer, buf );
     len = strlen( (char *)buffer );
+#endif
   } else if ( rtc_open ) { // not open for INPUT?
     rc = HEXSTAT_ATTR_ERR;
   } else {
@@ -199,7 +224,7 @@ static uint8_t hex_rtc_write( pab_t pab ) {
       rc = hex_get_data(buffer, pab.datalen);
       if (rc == HEXSTAT_SUCCESS) {
         // process data in buffer and set clock.
-        // incoming data should be formatted as YY,MM,DD,hh,mm,ss
+        // incoming data should be formatted as YYYY,MM,DD,hh,mm,ss
         token = skip_blanks( (char *)buffer );
         len = strlen( token );
         do
@@ -330,5 +355,4 @@ void clock_init() {
   }
   return;
 }
-
 #endif

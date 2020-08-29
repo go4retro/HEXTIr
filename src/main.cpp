@@ -38,13 +38,7 @@
 #include "registry.h"
 #include "serial.h"
 #include "swuart.h"
-#include "configure.h"
 #include "timer.h"
-
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
-
 #include "uart.h"
 
 config_t *config;
@@ -201,20 +195,10 @@ void setup(void) {
   ser_init();
   prn_init();
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
-#ifndef ARDUINO
 #  if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
   uart_init();
   swuart_init();
 #  endif
-#else
-#  if defined INCLUDE_PRINTER || defined ARDUINO_UART_DEBUG
-  Serial.begin(115200);
-  // Ensure serial initialized before proceeding.
-  while (!Serial) {
-    ;
-  }
-#  endif
-#endif
 
   config = ee_get_config();
 
@@ -226,15 +210,8 @@ void setup(void) {
 }
 
 
-#ifndef ARDUINO
-// Non-Arduino makefile entry point
 int main(void) __attribute__((OS_main));
 int main(void) {
-#else
-// Arduino entry for running system
-void loop(void) { // Arduino main loop routine.
-
-#endif   // arduino
 
   // Variables used common to both Arduino and makefile builds
   uint8_t i = 0;
@@ -242,9 +219,7 @@ void loop(void) { // Arduino main loop routine.
   pab_raw_t pabdata;
   BYTE res;
 
-#ifndef ARDUINO
   setup();
-#endif
   setup_registry();
 
   pabdata.pab.cmd = 0;

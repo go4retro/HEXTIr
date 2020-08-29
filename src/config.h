@@ -31,32 +31,6 @@
 
 #ifndef ARDUINO
  #include "autoconf.h"
-
- #ifdef CONFIG_UART_DEBUG
-  #define UART0_ENABLE
-  #define UART0_BAUDRATE CONFIG_UART_DEBUG_RATE
- #endif
-
- #ifdef CONFIG_UART_DEBUG_SW
-  #ifndef CONFIG_UART_DEBUG_SW_PORT
-   #define CONFIG_UART_DEBUG_SW_PORT 1
-  #endif
- #endif
-
- #ifndef UART0_ENABLE
-  #define UART0_ENABLE
-  #define DYNAMIC_UART
-
-  #ifdef CONFIG_UART_BUF_SHIFT
-   #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
-  #endif
-
-  #ifdef CONFIG_UART_BAUDRATE
-   #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
-  #endif
- #endif
-
-
 #else
  //#define ARDUINO_UART_DEBUG
 #endif
@@ -216,8 +190,8 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 3
 /* ---------- Hardware configuration: Arduino with low power sleep---------- */
 
-//#define INCLUDE_PRINTER
-//#define INCLUDE_SERIAL
+#define INCLUDE_PRINTER
+#define INCLUDE_SERIAL
 
 // This needs to be moved somewhere else...
 #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
@@ -457,6 +431,34 @@ static inline void leds_sleep(void) {
 #if defined HAVE_RTC || CONFIG_HARDWARE_VARIANT == 3
 #  define INCLUDE_CLOCK
 #endif
+
+#ifdef CONFIG_UART_DEBUG
+ #define UART0_ENABLE
+ #define UART0_BAUDRATE CONFIG_UART_DEBUG_RATE
+#endif
+
+#ifdef CONFIG_UART_DEBUG_SW
+ #ifndef CONFIG_UART_DEBUG_SW_PORT
+  #define CONFIG_UART_DEBUG_SW_PORT 1
+ #endif
+#endif
+
+#ifndef UART0_ENABLE
+ #define UART0_ENABLE
+ #define DYNAMIC_UART
+
+ #ifdef CONFIG_UART_BUF_SHIFT
+  #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
+ #endif
+
+ #ifdef CONFIG_UART_BAUDRATE
+  #define UART0_BAUDRATE CONFIG_UART_BAUDRATE
+ #else
+  #define UART0_BAUDRATE 57600
+ #endif
+#endif
+
+
 
 #include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?
 
