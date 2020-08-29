@@ -465,4 +465,3 @@ static inline void leds_sleep(void) {
 #include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?
 
 #endif /*CONFIG_H*/
- 
