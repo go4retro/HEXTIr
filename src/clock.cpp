@@ -117,8 +117,9 @@ static uint8_t hex_rtc_read(pab_t pab) {
     buffer[2] = '0' + i / 10;
     buffer[3] = '0' + i % 10;
     buffer[4] = ',';
-    buffer[5] = '0' + t.tm_mon / 10;
-    buffer[6] = '0' + t.tm_mon % 10;
+    i = t.tm_mon + 1;
+    buffer[5] = '0' + i / 10;
+    buffer[6] = '0' + i % 10;
     buffer[7] = ',';
     buffer[8] = '0' + t.tm_mday / 10;
     buffer[9] = '0' + t.tm_mday % 10;

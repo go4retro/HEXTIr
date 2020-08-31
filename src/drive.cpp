@@ -340,6 +340,24 @@ static uint8_t hex_drv_write(pab_t pab) {
   len = pab.datalen;
   res = (file != NULL ? FR_OK : FR_NO_FILE);
 
+  // if in DISPLAY mode
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
+	uint16_t nBytes;
+	if (pab.lun != 0) {
+	  // add SPACE to data (for PRINT command (as delimiter, just to be sure there is one)
+	  buffer[0] = 32;
+	  nBytes = 1;
+    res = f_write(&(file->fp), buffer, nBytes, &written);
+    if (!res) {
+      debug_putcrlf();
+      debug_trace(buffer, 0, written);
+    }
+    if (written != nBytes) {
+      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    }
+  }
+  }
+  
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
     rc = hex_get_data(buffer, i);
@@ -364,25 +382,20 @@ static uint8_t hex_drv_write(pab_t pab) {
 
   // if in DISPLAY mode
   if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
-	uint16_t nBytes;
-	if (pab.lun == 0) {
-      // add CRLF to data (for LIST command)
-	  buffer[0] = 13;
-	  buffer[1] = 10;
-	  nBytes = 2;
-	}
-	else {
-	  // add SPACE to data (for PRINT command (as delimiter, just to be sure there is one)
-	  buffer[0] = 32;
-	  nBytes = 1;
-	}
-    res = f_write(&(file->fp), buffer, nBytes, &written);
-    if (!res) {
-      debug_putcrlf();
-      debug_trace(buffer, 0, written);
-    }
-    if (written != nBytes) {
-      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    uint16_t nBytes;
+    if (pab.lun == 0) {
+        // add CRLF to data (for LIST command)
+      buffer[0] = 13;
+      buffer[1] = 10;
+      nBytes = 2;
+      res = f_write(&(file->fp), buffer, nBytes, &written);
+      if (!res) {
+        debug_putcrlf();
+        debug_trace(buffer, 0, written);
+      }
+      if (written != nBytes) {
+        rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+      }
     }
   }
 
