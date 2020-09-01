@@ -544,11 +544,15 @@ static uint8_t hex_drv_open(pab_t pab) {
   uint16_t fsize = 0;
   file_t* file = NULL;
   BYTE res = FR_OK;
+  uint8_t i;
 
   debug_puts_P(PSTR("\n\rOpen File\n\r"));
-  len = 0;
 
-  memset(buffer, 0, BUFSIZE);
+  // we need one more byte for the null terminator, so rerun this check.
+  if(pab.datalen > BUFSIZE - 1) { // name too long
+    hex_eat_it( pab.datalen, HEXSTAT_DATA_ERR );
+    return HEXERR_BAV;
+  }
 
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
@@ -557,8 +561,14 @@ static uint8_t hex_drv_open(pab_t pab) {
     hex_release_bus();
     return HEXERR_BAV; // BAV ERR.
   }
-  debug_puthex(att);
 
+  // strip spaces from end of string
+  for(i = pab.datalen - 1; buffer[i] <= 32 && i > 2; i--);
+  buffer[i + 1] = 0; // null terminate string.
+
+  debug_puts_P(PSTR("Filename: "));
+  debug_puts((char *)&buffer[3]);
+  debug_putcrlf();
 
   //*****************************************************
   // special file name "$" -> catalog
@@ -586,18 +596,12 @@ static uint8_t hex_drv_open(pab_t pab) {
   if ( !buffer[ 3 ] ) {
     rc = HEXSTAT_OPTION_ERR; // no name?
   } else {
-    if ( !fs_initialized ) {
-      file = NULL;
-    } else {
+    if ( fs_initialized ) {
       file = reserve_lun(pab.lun);
     }
     if (file != NULL) {
-
       if ( pab.datalen < BUFSIZE - 1 ) {
-
-        if ( pab.datalen < BUFSIZE - 1 ) {
-          res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
-        }
+        res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
         if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
           res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
         }
@@ -667,7 +671,7 @@ static uint8_t hex_drv_open(pab_t pab) {
         // when opening to read-only
         case OPENMODE_READ:
           if (!(att & OPENMODE_INTERNAL)) {
-        	file->attr |= FILEATTR_DISPLAY;
+            file->attr |= FILEATTR_DISPLAY;
           }
           // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
           if (pab.lun != 0 ) {
