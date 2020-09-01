@@ -154,7 +154,7 @@ static uint8_t hex_cfg_open( pab_t pab ) {
         if ( !( att & (OPENMODE_INTERNAL | OPENMODE_FIXED) ) ) { // internal and fixed are illegal.
           cfg_open = att; // we're open for use.
           if ( !len ) {
-            len = sizeof(buffer);
+            len = BUFSIZE;
           }
           rc = HEXSTAT_SUCCESS;
         } else {
@@ -225,7 +225,7 @@ static uint8_t hex_cfg_read( pab_t pab ) {
       if ( pab.record > (MAX_REGISTRY - 1) ) {
         rc = HEXSTAT_EOF;
       } else {
-        memset((char*)buffer, 0, sizeof(buffer));
+        memset((char*)buffer, 0, BUFSIZE);
         if (( (1 << pab.record ) & mask ) != 0 ) {
           buffer[ len++ ] = pgm_read_byte( &config_option[ pab.record ] );
           buffer[ len++ ] = '=';

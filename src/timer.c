@@ -54,7 +54,7 @@ SYSTEM_TICK_HANDLER {
     if ((ticks & 15) == 0)
       toggle_led();
   } else {
-    //set_led((state & LED_BUSY) & led_pwr_enable );
+    set_led((state & LED_BUSY) & led_pwr_enable );
   }
 
 #ifdef CONFIG_RTC_SOFTWARE

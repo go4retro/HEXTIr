@@ -15,8 +15,11 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    rtc.cpp: DS3231 Clock device functions.
+    rtc.cpp: Clock device functions.
 */
+
+// uncoming to use older RTC write functionality
+//#define HEX_WRITE_OLD
 
 #include <string.h>
 #include <stdlib.h>
@@ -59,7 +62,7 @@ static uint8_t hex_rtc_open( pab_t pab ) {
   if ( !hex_is_bav() ) {
     if ( !rtc_open ) {
       if ( att & OPENMODE_MASK ) {
-        len = len ? len : sizeof(buffer);
+        len = len ? len : BUFSIZE;
         rtc_open = att;
         transmit_word( 4 );
         transmit_word( len );
@@ -102,17 +105,13 @@ static uint8_t hex_rtc_read(pab_t pab) {
   uint16_t len = 0;
   uint8_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
-  //uint16_t y;
-  //char buf[8];
 
-  memset( (char *)buffer, 0, sizeof(buffer) );
   if ( rtc_open & OPENMODE_READ )
   {
     struct tm t;
     rtc_get(&t);
-#if 1
-    buffer[0] = (t.tm_year > 99 ? '2' : '1');
-    buffer[1] = (t.tm_year > 199 ? '1' : (t.tm_year > 99 ? '0' : '9'));
+    buffer[0] = '2';
+    buffer[1] = '0';
     i = t.tm_year % 100;
     buffer[2] = '0' + i / 10;
     buffer[3] = '0' + i % 10;
@@ -134,38 +133,6 @@ static uint8_t hex_rtc_read(pab_t pab) {
     buffer[18] = '0' + t.tm_sec % 10;
     buffer[19] = 0;
     len = 19;
-#else
-    buf[0] = 0;
-    y = t.tm_year + 1900;
-    itoa( y, buf, 10 );
-    strcpy((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i =t.tm_mon;
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = t.tm_mday;
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = t.tm_hour;
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = t.tm_min;
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    strcat((char *)buffer, "," );
-    buf[0] = 0;
-    i = t.tm_sec;
-    itoa( i, buf, 10 );
-    strcat((char *)buffer, buf );
-    len = strlen( (char *)buffer );
-#endif
     debug_putcrlf();
     debug_trace(buffer, 0, len);
   } else if ( rtc_open ) { // not open for INPUT?
@@ -192,6 +159,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
 }
 
 
+#ifdef HEX_WRITE_OLD
 /*
  * bracket space delimited input and return pointer to the start of a non-blank string.
  */
@@ -208,6 +176,34 @@ static char *skip_blanks( char *inbuf ) {
   *ebuf = 0;
   return inbuf;
 }
+#else
+uint8_t parse_num(uint16_t* value, uint8_t digits, uint8_t *cur, uint8_t len) {
+  uint8_t digits_found = 0;
+  uint8_t err = 0;
+
+  while(!err && *cur < len) {
+    if(buffer[*cur] == ' ') {
+      (*cur)++;
+      if(digits_found) {
+        break;
+      }
+    } else if(buffer[*cur] >= '0' && buffer[*cur] <= '9') {
+      if(digits_found < digits) {
+        *value = *value  * 10 + (buffer[(*cur)++] - '0');
+        digits_found++;
+      } else // too many digits
+        err = 1;
+    } else if(buffer[*cur] == ',') {
+      (*cur)++;
+      break;
+    }
+    else {
+      err = 1;
+    }
+  }
+  return (!digits_found || err);
+}
+#endif
 
 
 /*
@@ -215,25 +211,36 @@ static char *skip_blanks( char *inbuf ) {
    When RTC opened in OUTPUT or UPDATE mode.
 */
 static uint8_t hex_rtc_write( pab_t pab ) {
+#ifdef HEX_WRITE_OLD
   uint16_t len;
   char     *token;
+  int16_t   t_array[6];
+#else
+  uint8_t len;
+  uint16_t yr = 0;
+  uint16_t mon = 0;
+  uint16_t day = 0;
+  uint16_t hour = 0;
+  uint16_t min = 0;
+  uint16_t sec = 0;
+#endif
   uint8_t  i = 0;
   uint8_t  rc = HEXSTAT_SUCCESS;
-  int8_t   t_array[6];
 
   len = pab.datalen;
   if ( rtc_open & OPENMODE_WRITE ) {
-    rc = (len >= sizeof(buffer) ) ? HEXSTAT_DATA_ERR : HEXSTAT_SUCCESS;
+    rc = (len < BUFSIZE ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR );
     if ( rc == HEXSTAT_SUCCESS ) {
-      rc = hex_get_data(buffer, pab.datalen);
+      rc = hex_get_data(buffer, len);
       if (rc == HEXSTAT_SUCCESS) {
+#ifdef HEX_WRITE_OLD
         // process data in buffer and set clock.
         // incoming data should be formatted as YYYY,MM,DD,hh,mm,ss
         token = skip_blanks( (char *)buffer );
         len = strlen( token );
         do
         {
-          if ( len <= 2 ) {
+          if ( (!i && len <= 4) || len <= 2 ) {
             t_array[ i++ ] = atoi(token);
             token = skip_blanks( &token[ len + 1 ] );
             len = strlen( token );
@@ -244,7 +251,7 @@ static uint8_t hex_rtc_write( pab_t pab ) {
         
         rc = HEXSTAT_DATA_INVALID; // assume data is bad.
         if ( i == 6 ) { // got sufficient data.
-          if ( t_array[0] < 100 ) { // year between 00 and 99
+          if ( t_array[0] < 100 || t_array[0] > 1999 ) { // year between 00 and 255 or 2000+
             if ( t_array[1] > 0 && t_array[1] < 13 ) { // month between 01 and 12
               if ( t_array[2] > 0 && t_array[2] < 32 ) { // day between 1 and 31 (I know, some months are less; room for improvement here.)
                 if ( t_array[3] < 24 ) { // hour between 0 and 23
@@ -252,8 +259,11 @@ static uint8_t hex_rtc_write( pab_t pab ) {
                     if ( t_array[5] < 60 ) { // seconds between 00 and 59
                       rc = HEXSTAT_SUCCESS;
                       struct tm t;
-                      t.tm_year = t_array[ 0 ];
-                      t.tm_mon = t_array[ 1 ];
+                      if(t_array[0] < 100)
+                        t.tm_year = t_array[ 0 ] + 100;
+                      else
+                        t.tm_year = t_array[ 0 ] - 1900;
+                      t.tm_mon = t_array[ 1 ] - 1;
                       t.tm_mday = t_array[ 2 ];
                       t.tm_hour = t_array[ 3 ];
                       t.tm_min = t_array[ 4 ];
@@ -269,17 +279,41 @@ static uint8_t hex_rtc_write( pab_t pab ) {
       }
       len = 0;
     }
+#else
+        // process data in buffer and set clock.
+        // incoming data should be formatted as YYYY,MM,DD,hh,mm,ss
+        rc = HEXSTAT_DATA_INVALID; // assume data is bad.
+        if(!parse_num(&yr, 4, &i, len) && (yr < 100 || yr > 1999))  // year between 00 and 255 or 1900+
+          if(!parse_num(&mon, 2, &i, len) && mon > 0 && mon < 13)   // month between 01 and 12
+            if(!parse_num(&day, 2, &i, len) && day > 0 && day < 32) // day between 1 and 31 (I know, some months are less; room for improvement here.)
+              if(!parse_num(&hour, 2, &i, len) && hour < 24)        // hour between 0 and 23
+                if(!parse_num(&min, 2, &i, len) && min < 60)        // minutes between 00 and 59
+                  if(!parse_num(&sec, 2, &i, len) && sec < 60) {    // seconds between 00 and 59
+                    rc = HEXSTAT_SUCCESS;
+                    struct tm t;
+                    if(yr < 100)
+                      t.tm_year = yr + 100;
+                    else
+                      t.tm_year = yr - 1900;
+                    t.tm_mon = mon - 1;
+                    t.tm_mday = day;
+                    t.tm_hour = hour;
+                    t.tm_min = min;
+                    t.tm_sec = sec;
+                    rtc_set(&t);
+                  }
+      }
+    }
+#endif
   } else if ( rtc_open ) {
     rc = HEXSTAT_OUTPUT_MODE_ERR;
   } else {
     rc = HEXSTAT_NOT_OPEN;
   }
-
-  if ( len ) {
+  if ( rc == HEXSTAT_DATA_ERR ) {
     hex_eat_it( len, rc );
     return HEXERR_BAV;
   }
-
   if ( !hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
     return HEXERR_SUCCESS;
