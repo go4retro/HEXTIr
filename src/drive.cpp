@@ -194,24 +194,32 @@ static uint16_t next_value_size(file_t* file) {
 /**
  * Remove all leading and trailing whitespaces
  */
-char *trimwhitespace(char *str)
-{
-  char *end;
+void trim(uint8_t **buf, uint8_t *blen) {
+  uint8_t i;
 
   // Trim leading space
-  while(isspace((unsigned char)*str)) str++;
+  while(**buf == ' ') {
+    (*buf)++;
+    (*blen)--;
+  }
 
-  if(*str == 0)  // All spaces?
-    return str;
+  if(!(*blen)) {  // All spaces?
+    (*buf)[0] = '\0';
+    return;
+  }
 
   // Trim trailing space
-  end = str + strlen(str) - 1;
-  while(end > str && isspace((unsigned char)*end)) end--;
+  i = *blen - 1;
+  while(i) {
+    if((*buf)[i] != ' ')
+      break;
+    i--;
+    (*blen)--;
+  }
 
   // Write new null terminator character
-  end[1] = '\0';
-
-  return str;
+  (*buf)[*blen] = '\0';
+  return;
 }
 
 /*
@@ -560,7 +568,8 @@ static uint8_t hex_drv_open(pab_t pab) {
   uint16_t fsize = 0;
   file_t* file = NULL;
   BYTE res = FR_OK;
-  uint8_t i;
+  uint8_t *path;
+  uint8_t pathlen;
 
   debug_puts_P(PSTR("\n\rOpen File\n\r"));
 
@@ -578,19 +587,20 @@ static uint8_t hex_drv_open(pab_t pab) {
     return HEXERR_BAV; // BAV ERR.
   }
   
-  buffer[pab.datalen] = 0;
+  path = &(buffer[3]);
+  pathlen = pab.datalen - 3;
   // file path, trimmed whitespaces
-  char* path = trimwhitespace((char*)&buffer[3]);
+  trim(&path, &pathlen);
 
   debug_puts_P(PSTR("Filename: "));
-  debug_puts((char *)&buffer[3]);
+  debug_puts((char *)path);
   debug_putcrlf();
 
   //*****************************************************
   // special file name "$" -> catalog
-  if ((char)path[0]=='$') {
+  if (path[0]=='$') {
     file = reserve_lun(pab.lun);
-    return hex_open_catalog(file, pab.lun, att, path);  // check file!= null in there
+    return hex_open_catalog(file, pab.lun, att, (char*)path);  // check file!= null in there
   }
   //*******************************************************
   // map attributes to FatFS file access mode
