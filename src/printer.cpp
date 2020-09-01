@@ -56,7 +56,7 @@ static uint8_t hex_prn_open(pab_t pab) {
   BYTE     res = HEXSTAT_SUCCESS;
 
   len = 0;
-  memset( buffer, 0, sizeof( buffer ) );
+  memset( buffer, 0, BUFSIZE );
   if ( hex_get_data( buffer, pab.datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
@@ -78,7 +78,7 @@ static uint8_t hex_prn_open(pab_t pab) {
       swuart_setrate(0, SB115200);
 //#endif
       prn_open = 1;  // our printer is NOW officially open.
-      len = len ? len : sizeof(buffer);
+      len = len ? len : BUFSIZE;
       hex_send_size_response( len );
     }
     else
@@ -124,7 +124,7 @@ static uint8_t hex_prn_write(pab_t pab) {
   len = pab.datalen;
 
   while ( len && rc == HEXERR_SUCCESS ) {
-    i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
+    i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
     /*
         printer open? print a buffer of data.  We hold off

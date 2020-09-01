@@ -46,8 +46,6 @@ config_t *config;
 // Our registry of installed devices, built during initialization.
 registry_t  registry;
 
-
-
 /*
    hex_reset_bus() -
    This command is normally used with device code zero, and must actually
@@ -58,9 +56,8 @@ registry_t  registry;
 */
 static uint8_t hex_reset_bus(pab_t pab) {
 
-  debug_putc(13);
-  debug_putc(10);
-  debug_putc('R');
+  debug_puts_P(PSTR("Reset Bus"));
+  debug_putcrlf();
 
   // We ONLY do all devices if the command is directed to device 0.
   if ( pab.dev == 0 ) {
@@ -123,9 +120,13 @@ static void execute_command(pab_t pab)
         // found it!
         j--;  // here's the cmd index
         // fetch the handler for this command for this device group.
-        handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );
-        (handler)( pab );
-        // and exit the command processor
+        if(pab.datalen > BUFSIZE) { // data too long
+          hex_eat_it( pab.datalen, HEXSTAT_DATA_ERR );
+        } else {
+          handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );
+          (handler)( pab );
+          // and exit the command processor
+        }
         return;
       }
       // If we have a supported device but not a supported command...

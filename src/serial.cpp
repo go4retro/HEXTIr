@@ -59,7 +59,7 @@ static uint8_t hex_ser_open(pab_t pab) {
   uint8_t  att;
 
   len = 0;
-  memset( buffer, 0, sizeof(buffer) );
+  memset( buffer, 0, BUFSIZE );
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
   {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
@@ -84,7 +84,7 @@ static uint8_t hex_ser_open(pab_t pab) {
   if ( !hex_is_bav() ) {
     if ( !ser_open ) {
       if ( att != 0 ) {
-        len = len ? len : sizeof( buffer );
+        len = len ? len : BUFSIZE;
         if ( att & OPENMODE_UPDATE ) {
           ser_open = att; // 00 attribute = illegal.
           if ( pab.datalen > 3 ) { // see if we have a B= in the buffer.
@@ -176,7 +176,7 @@ static uint8_t hex_ser_read(pab_t pab) {
         len = bcount;    // remaing amount to read from file
         // while it fit into buffer or not?  Only read as much
         // as we can hold in our buffer.
-        len = ( len > sizeof( buffer ) ) ? sizeof( buffer ) : len;
+        len = ( len > BUFSIZE ) ? BUFSIZE : len;
 
         bcount -= len;
         while ( len-- && rc == HEXSTAT_SUCCESS ) {
@@ -214,7 +214,7 @@ static uint8_t hex_ser_write(pab_t pab) {
   len = pab.datalen;
   if ( ser_open & OPENMODE_WRITE ) {
     while (len && rc == HEXERR_SUCCESS ) {
-      i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
+      i = (len >= BUFSIZE ? BUFSIZE : len);
       rc = hex_get_data(buffer, i);
       if (rc == HEXSTAT_SUCCESS) {
         j  = 0;

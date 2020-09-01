@@ -240,7 +240,7 @@ char *trimwhitespace(char *str)
 static uint8_t hex_drv_verify(pab_t pab) {
   uint16_t len_prog_mem = 0;
   uint16_t len_prog_stored = 0;
-  uint8_t  *data = &buffer[ sizeof(buffer) / 2 ]; // split our buffer in half
+  uint8_t  *data = &buffer[ BUFSIZE / 2 ]; // split our buffer in half
   // so we do not use all of our limited amount of RAM on buffers...
   UINT     read;
   uint16_t len;
@@ -259,7 +259,7 @@ static uint8_t hex_drv_verify(pab_t pab) {
   while (len && res == FR_OK) {
 
     // figure out how much will fit...
-    i = ( len >= ( sizeof(buffer) / 2 ))  ? ( sizeof(buffer) / 2 ) : len;
+    i = ( len >= ( BUFSIZE / 2 ))  ? ( BUFSIZE / 2 ) : len;
 
     if ( hex_get_data(buffer, i) ) { // use front half of buffer for incoming data from the host.
       hex_release_bus();
@@ -378,7 +378,7 @@ static uint8_t hex_drv_write(pab_t pab) {
   }
 
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
-    i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
+    i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
 
     if (file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
@@ -493,10 +493,10 @@ static uint8_t hex_drv_read(pab_t pab) {
       len = fsize;    // remaining amount to read from file
       // while it fit into buffer or not?  Only read as much
       // as we can hold in our buffer.
-      len = ( len > sizeof( buffer ) ) ? sizeof( buffer ) : len;
+      len = ( len > BUFSIZE ) ? BUFSIZE : len;
 
       if ( !(file->attr & FILEATTR_CATALOG )) {
-        memset((char *)buffer, 0, sizeof( buffer ));  // TODO Do we need this?
+        memset((char *)buffer, 0, BUFSIZE);  // TODO Do we need this?
         res = f_read(&(file->fp), buffer, len, &read);
         if (!res) {
           debug_putcrlf();
@@ -560,11 +560,15 @@ static uint8_t hex_drv_open(pab_t pab) {
   uint16_t fsize = 0;
   file_t* file = NULL;
   BYTE res = FR_OK;
+  uint8_t i;
 
   debug_puts_P(PSTR("\n\rOpen File\n\r"));
-  len = 0;
 
-  memset(buffer, 0, sizeof(buffer));
+  // we need one more byte for the null terminator, so rerun this check.
+  if(pab.datalen > BUFSIZE - 1) { // name too long
+    hex_eat_it( pab.datalen, HEXSTAT_DATA_ERR );
+    return HEXERR_BAV;
+  }
 
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
@@ -573,10 +577,14 @@ static uint8_t hex_drv_open(pab_t pab) {
     hex_release_bus();
     return HEXERR_BAV; // BAV ERR.
   }
-  debug_puthex(att);
-
+  
+  buffer[pab.datalen] = 0;
   // file path, trimmed whitespaces
-  char* path=trimwhitespace((char*)&buffer[3]);
+  char* path = trimwhitespace((char*)&buffer[3]);
+
+  debug_puts_P(PSTR("Filename: "));
+  debug_puts((char *)&buffer[3]);
+  debug_putcrlf();
 
   //*****************************************************
   // special file name "$" -> catalog
@@ -604,18 +612,12 @@ static uint8_t hex_drv_open(pab_t pab) {
   if ( !path[ 0 ] ) {
     rc = HEXSTAT_OPTION_ERR; // no name?
   } else {
-    if ( !fs_initialized ) {
-      file = NULL;
-    } else {
+    if ( fs_initialized ) {
       file = reserve_lun(pab.lun);
     }
     if (file != NULL) {
-
       if ( pab.datalen < BUFSIZE - 1 ) {
-
-        if ( pab.datalen < BUFSIZE - 1 ) {
-          res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
-        }
+        res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
         if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
           res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
         }
@@ -674,7 +676,7 @@ static uint8_t hex_drv_open(pab_t pab) {
           }
           // if we don't know how big its going to be... we may need multiple writes.
           if ( len == 0 ) {
-            fsize = sizeof(buffer);
+            fsize = BUFSIZE;
           } else {
             // otherwise, we know. and do NOT allow fileattr display under any circumstance.
             fsize = len;
@@ -685,14 +687,14 @@ static uint8_t hex_drv_open(pab_t pab) {
         // when opening to read-only
         case OPENMODE_READ:
           if (!(att & OPENMODE_INTERNAL)) {
-        	file->attr |= FILEATTR_DISPLAY;
+            file->attr |= FILEATTR_DISPLAY;
           }
           // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
           if (pab.lun != 0 ) {
             if (len) {
               fsize = len; // non zero length requested, use it.
             } else {
-              fsize = sizeof(buffer);  // on zero length request, return buffer size we use.
+              fsize = BUFSIZE;  // on zero length request, return buffer size we use.
             }
           }
           // for len=0 OR lun=0, return fsize.
@@ -812,7 +814,7 @@ static uint8_t hex_drv_delete(pab_t pab) {
 
   debug_puts_P(PSTR("\n\rDelete File\n\r"));
 
-  memset(buffer, 0, sizeof(buffer));
+  memset(buffer, 0, BUFSIZE);
 
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
   } else {

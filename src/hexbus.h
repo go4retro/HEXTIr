@@ -108,32 +108,31 @@ typedef enum _hexerror_t {
             } hexerror_t;
 
 typedef enum _openmode_t {
-              OPENMODE_UPDATE =   0xC0, // update mode is read AND write
-              OPENMODE_READ =     0x40, // input only
-              OPENMODE_WRITE =    0x80, // output only
-              OPENMODE_APPEND =   0x00, // append mode is specified by read and write both = 0.
-              OPENMODE_RELATIVE = 0x20, // relative is used for records, often associated with fixed
-              OPENMODE_FIXED =    0x10, // fixed says each file has fixed length 'records'
-              OPENMODE_INTERNAL = 0x08, // internal type files store data in native form rather than ASCII (ie. numbers are stored in internal format.
+              OPENMODE_UPDATE =     0xC0, // update mode is read AND write
+              OPENMODE_READ =       0x40, // input only
+              OPENMODE_WRITE =      0x80, // output only
+              OPENMODE_APPEND =     0x00, // append mode is specified by read and write both = 0.
+              OPENMODE_RELATIVE =   0x20, // relative is used for records, often associated with fixed
+              OPENMODE_FIXED =      0x10, // fixed says each file has fixed length 'records'
+              OPENMODE_INTERNAL =   0x08, // internal type files store data in native form rather than ASCII (ie. numbers are stored in internal format.
             } openmode_t ;
 
-#define OPENMODE_MASK 0xC0
+#define OPENMODE_MASK               (OPENMODE_READ | OPENMODE_WRITE)
 
 
-#define    FILE_EOF_REACHED        0x80
-#define    FILE_SUPPORTS_RELATIVE  0x40
-#define    FILE_IS_PROTECTED       0x20
-#define    FILE_DEV_IS_OPEN        0x10
-#define    FILE_DEV_TYPE_MASK      0x0C
-#define    FILE_DEV_TYPE_DATACOM   0x08
-#define    FILE_DEV_TYPE_INTERNAL  0x04
-#define    FILE_DEV_TYPE_DISPLAY   0x00
-#define    FILE_IO_MODE_MASK       0x03
-#define    FILE_IO_MODE_READWRITE  0x03
-#define    FILE_IO_MODE_WRITEONLY  0x02
-#define    FILE_IO_MODE_READONLY   0x01
-#define    FILE_REQ_STATUS_NONE    0x00
-
+#define    FILE_EOF_REACHED         0x80
+#define    FILE_SUPPORTS_RELATIVE   0x40
+#define    FILE_IS_PROTECTED        0x20
+#define    FILE_DEV_IS_OPEN         0x10
+#define    FILE_DEV_TYPE_MASK       0x0C
+#define    FILE_DEV_TYPE_DATACOM    0x08
+#define    FILE_DEV_TYPE_INTERNAL   0x04
+#define    FILE_DEV_TYPE_DISPLAY    0x00
+#define    FILE_IO_MODE_MASK        0x03
+#define    FILE_IO_MODE_READWRITE   0x03
+#define    FILE_IO_MODE_WRITEONLY   0x02
+#define    FILE_IO_MODE_READONLY    0x01
+#define    FILE_REQ_STATUS_NONE     0x00
 
 
 uint8_t hex_is_bav(void);
