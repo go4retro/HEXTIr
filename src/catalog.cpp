@@ -336,7 +336,7 @@ uint8_t hex_read_catalog_txt(file_t * file) {
   return HEXERR_SUCCESS;
 }
 
-uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
+uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
   uint8_t rc = HEXERR_SUCCESS;
   uint16_t fsize = 0;
   BYTE res = FR_OK;
@@ -349,11 +349,11 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att) {
     if(file != NULL) {
       file->attr |= FILEATTR_CATALOG;
       // remove the leading $
-      char* string = (char*)&buffer[3];
+      char* string = path;
       if (strlen(string) < 2 || string[1] != '/') { // if just $ or $ABC..
         string[0] = '/'; // $ -> /, $ABC/ -> /ABC/
       } else {
-        string = (char*)&buffer[4]; // $/ABC/... -> /ABC/...
+        string = (char*)&path[1]; // $/ABC/... -> /ABC/...
       }
       // separate into directory path and pattern
       char* dirpath = string;

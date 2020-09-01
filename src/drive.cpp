@@ -191,6 +191,29 @@ static uint16_t next_value_size(file_t* file) {
 	}
 }
 
+/**
+ * Remove all leading and trailing whitespaces
+ */
+char *trimwhitespace(char *str)
+{
+  char *end;
+
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace((unsigned char)*end)) end--;
+
+  // Write new null terminator character
+  end[1] = '\0';
+
+  return str;
+}
+
 /*
    https://github.com/m5dk2n comments:
 
@@ -340,24 +363,20 @@ static uint8_t hex_drv_write(pab_t pab) {
   len = pab.datalen;
   res = (file != NULL ? FR_OK : FR_NO_FILE);
 
-  // if in DISPLAY mode
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
-	uint16_t nBytes;
-	if (pab.lun != 0) {
-	  // add SPACE to data (for PRINT command (as delimiter, just to be sure there is one)
-	  buffer[0] = 32;
-	  nBytes = 1;
-    res = f_write(&(file->fp), buffer, nBytes, &written);
+  // if in DISPLAY mode and not a program
+  if (res == FR_OK && (file->attr & FILEATTR_DISPLAY) && pab.lun != 0) {
+	// add SPACE to data (for PRINT command (as delimiter, just to be sure there is one)
+	buffer[0] = 32;
+	res = f_write(&(file->fp), buffer, 1, &written);
     if (!res) {
       debug_putcrlf();
       debug_trace(buffer, 0, written);
     }
-    if (written != nBytes) {
+	if (written != 1) {
       rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
-    }
+	}
   }
-  }
-  
+
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= sizeof(buffer) ? sizeof(buffer) : len);
     rc = hex_get_data(buffer, i);
@@ -381,22 +400,19 @@ static uint8_t hex_drv_write(pab_t pab) {
   }
 
   // if in DISPLAY mode
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
-    uint16_t nBytes;
-    if (pab.lun == 0) {
-        // add CRLF to data (for LIST command)
-      buffer[0] = 13;
-      buffer[1] = 10;
-      nBytes = 2;
-      res = f_write(&(file->fp), buffer, nBytes, &written);
-      if (!res) {
-        debug_putcrlf();
-        debug_trace(buffer, 0, written);
-      }
-      if (written != nBytes) {
-        rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
-      }
-    }
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && pab.lun == 0) {
+	// add CRLF to data (for LIST command)
+	buffer[0] = 13;
+	buffer[1] = 10;
+
+	res = f_write(&(file->fp), buffer, 2, &written);
+	if (!res) {
+	  debug_putcrlf();
+	  debug_trace(buffer, 0, written);
+	}
+	if (written != 2) {
+	  rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+	}
   }
 
   if (rc == HEXSTAT_SUCCESS) {
@@ -559,12 +575,14 @@ static uint8_t hex_drv_open(pab_t pab) {
   }
   debug_puthex(att);
 
+  // file path, trimmed whitespaces
+  char* path=trimwhitespace((char*)&buffer[3]);
 
   //*****************************************************
   // special file name "$" -> catalog
-  if ((char)buffer[3]=='$') {
+  if ((char)path[0]=='$') {
     file = reserve_lun(pab.lun);
-    return hex_open_catalog(file, pab.lun, att);  // check file!= null in there
+    return hex_open_catalog(file, pab.lun, att, path);  // check file!= null in there
   }
   //*******************************************************
   // map attributes to FatFS file access mode
@@ -583,7 +601,7 @@ static uint8_t hex_drv_open(pab_t pab) {
       break;
   }
 
-  if ( !buffer[ 3 ] ) {
+  if ( !path[ 0 ] ) {
     rc = HEXSTAT_OPTION_ERR; // no name?
   } else {
     if ( !fs_initialized ) {
@@ -596,7 +614,7 @@ static uint8_t hex_drv_open(pab_t pab) {
       if ( pab.datalen < BUFSIZE - 1 ) {
 
         if ( pab.datalen < BUFSIZE - 1 ) {
-          res = f_open(&fs, &(file->fp), (UCHAR *)&buffer[3], mode);
+          res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
         }
         if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
           res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
