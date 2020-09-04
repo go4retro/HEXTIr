@@ -203,6 +203,7 @@ void uart0_trace(void *ptr, uint16_t start, uint16_t len) {
 void uart_trace(void *ptr, uint16_t start, uint16_t len) __attribute__ ((weak, alias("uart0_trace")));
 
 
+  #ifdef UART_USE_PRINTF
 static int ioputc(char c, FILE *stream) {
   (void) stream;
   if (c == '\n')
@@ -211,22 +212,23 @@ static int ioputc(char c, FILE *stream) {
   return 0;
 }
 
-#ifdef __cplusplus
-#undef FDEV_SETUP_STREAM
-#define FDEV_SETUP_STREAM(p, g, f) \
-    { \
-        NULL, \
-        '\0', \
-        f, \
-        0, \
-        0, \
-        p, \
-        g, \
-        NULL \
-    }
-#endif
+    #ifdef __cplusplus
+    #undef FDEV_SETUP_STREAM
+    #define FDEV_SETUP_STREAM(p, g, f) \
+        { \
+            NULL, \
+            '\0', \
+            f, \
+            0, \
+            0, \
+            p, \
+            g, \
+            NULL \
+        }
+    #endif
 
 static FILE mystdout = FDEV_SETUP_STREAM(ioputc, NULL, _FDEV_SETUP_WRITE);
+  #endif
 #endif
 
 
@@ -303,38 +305,40 @@ void uart1_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t 
 /* Initialize UART */
 void uart_init(void) {
   /* Set the baud rate */
-#  if defined UART0_ENABLE
+  #if defined UART0_ENABLE
   UART0_MODE_SETUP();
 
   UBRRAH = CALC_BPS(UART0_BAUDRATE) >> 8;
   UBRRAL = CALC_BPS(UART0_BAUDRATE) & 0xff;
 
-#    ifdef UART_DOUBLE_SPEED
+    #ifdef UART_DOUBLE_SPEED
   /* double the speed of the serial port. */
   UCSRAA = (1<<U2X0);
-#    endif
+    #endif
 
   /* Enable UART receiver and transmitter */
   UCSRAB = (0
-#    if defined UART0_RX_BUFFER_SHIFT && UART0_RX_BUFFER_SHIFT > 0
+    #if defined UART0_RX_BUFFER_SHIFT && UART0_RX_BUFFER_SHIFT > 0
             | _BV(RXCIEA)
-#    endif
+    #endif
             | _BV(RXENA)
             | _BV(TXENA)
            );
 
   /* Flush buffers */
-#    if defined UART0_TX_BUFFER_SHIFT && UART0_TX_BUFFER_SHIFT > 0
+    #if defined UART0_TX_BUFFER_SHIFT && UART0_TX_BUFFER_SHIFT > 0
   tx0_tail = 0;
   tx0_head = 0;
-#    endif
-#    if defined UART0_RX_BUFFER_SHIFT && UART0_RX_BUFFER_SHIFT > 0
+    #endif
+    #if defined UART0_RX_BUFFER_SHIFT && UART0_RX_BUFFER_SHIFT > 0
   rx0_tail = 0;
   rx0_head = 0;
-#    endif
+    #endif
 
+    #ifdef UART_USE_PRINTF
   stdout = &mystdout;
-#  endif
+    #endif
+  #endif
 
 #  ifdef UART1_ENABLE
   UART1_MODE_SETUP();

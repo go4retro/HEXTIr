@@ -59,19 +59,19 @@
 #  define HEX_HSK_IN          PINC
 #  define HEX_HSK_PIN         _BV(PIN4)
 
-#  define HEX_BAV_DDR         DDRC
-#  define HEX_BAV_OUT         PORTC
-#  define HEX_BAV_IN          PINC
-#  define HEX_BAV_PIN         _BV(PIN5)
+#  define HEX_BAV_DDR         DDRD
+#  define HEX_BAV_OUT         PORTD
+#  define HEX_BAV_IN          PIND
+#  define HEX_BAV_PIN         _BV(PIN2)
 
 #  define HEX_DATA_DDR        DDRC
 #  define HEX_DATA_OUT        PORTC
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
-#  define LED_BUSY_DDR        DDRD
-#  define LED_BUSY_OUT        PORTD
-#  define LED_BUSY_PIN        _BV(PIN2)
+#  define LED_BUSY_DDR        DDRC
+#  define LED_BUSY_OUT        PORTC
+#  define LED_BUSY_PIN        _BV(PIN5)
 
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
@@ -104,15 +104,29 @@ static inline uint8_t sdcard_wp(void) {
 }
 
 
-static inline void wakeup_pin_init(void) {
-  ;
-}
-
-
 static inline void board_init(void) {
   // turn on power LED
   DDRD  |= _BV(PIN3);
   PORTD |= _BV(PIN3);
+}
+
+
+static inline void wakeup_pin_init(void) {
+  DDRD &= ~_BV(PIN2);
+}
+
+
+#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+#  define POWER_MGMT_HANDLER  INT0_vect
+
+static inline void pwr_irq_enable(void) {
+  EICRA |= _BV(ISC01);  // trigger power enable on falling IRQ.
+  EIMSK |= _BV(INT0);   // turn on IRQ
+}
+
+
+static inline void pwr_irq_disable(void) {
+  EIMSK &= ~_BV(INT0);   // turn off IRQ
 }
 
 

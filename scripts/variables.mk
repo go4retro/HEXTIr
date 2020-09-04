@@ -51,17 +51,19 @@ else ifeq ($(MCU),atmega1284p)
   HFUSE = 0xd2
   LFUSE = 0xe7
 else ifeq ($(MCU),atmega168)
-  BINARY_LENGTH = 0x4000
+  BINARY_LENGTH = 0x3800
   EFUSE = 0xf9
   HFUSE = 0xdf
   LFUSE = 0xff
 else ifeq ($(MCU),atmega328)
-  BINARY_LENGTH = 0x8000
+#  BINARY_LENGTH = 0x7800
+  BINARY_LENGTH = 0x7600
   EFUSE = 0xf9
   HFUSE = 0xdf
   LFUSE = 0xff
 else ifeq ($(MCU),atmega328p)
-  BINARY_LENGTH = 0x8000
+#  BINARY_LENGTH = 0x7800
+  BINARY_LENGTH = 0x7600
   EFUSE = 0xf9
   HFUSE = 0xdf
   LFUSE = 0xff

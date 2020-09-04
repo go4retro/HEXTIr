@@ -573,9 +573,9 @@ static uint8_t hex_drv_open(pab_t pab) {
 
   debug_puts_P(PSTR("\n\rOpen File\n\r"));
 
-  // we need one more byte for the null terminator, so rerun this check.
+  // we need one more byte for the null terminator, so check.
   if(pab.datalen > BUFSIZE - 1) { // name too long
-    hex_eat_it( pab.datalen, HEXSTAT_DATA_ERR );
+    hex_eat_it( pab.datalen, HEXSTAT_FILE_NAME_INVALID );
     return HEXERR_BAV;
   }
 
@@ -626,21 +626,14 @@ static uint8_t hex_drv_open(pab_t pab) {
       file = reserve_lun(pab.lun);
     }
     if (file != NULL) {
-      if ( pab.datalen < BUFSIZE - 1 ) {
-        res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
-        if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
-          res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
-        }
-
-        // common.
-      } else {
-        res = FR_INVALID_NAME; // if the incoming buffer is full, we can't stuff the null.
+      res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
+      if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
+        res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
       }
 
       switch (res) {
         case FR_OK:
           rc = HEXSTAT_SUCCESS;
-          fsize = 0;
           fsize = file->fp.fsize;
           break;
 

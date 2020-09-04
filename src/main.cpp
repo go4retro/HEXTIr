@@ -120,13 +120,9 @@ static void execute_command(pab_t pab)
         // found it!
         j--;  // here's the cmd index
         // fetch the handler for this command for this device group.
-        if(pab.datalen > BUFSIZE) { // data too long
-          hex_eat_it( pab.datalen, HEXSTAT_DATA_ERR );
-        } else {
-          handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );
-          (handler)( pab );
-          // and exit the command processor
-        }
+        handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );
+        (handler)( pab );
+        // and exit the command processor
         return;
       }
       // If we have a supported device but not a supported command...
