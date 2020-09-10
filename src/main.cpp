@@ -208,6 +208,7 @@ void setup(void) {
 
 
 int main(void) __attribute__((OS_main));
+int  __attribute__ ((noreturn)) main(void);
 int main(void) {
 
   // Variables used common to both Arduino and makefile builds
@@ -247,6 +248,25 @@ int main(void) {
       while ( i < 9 ) {
         pabdata.raw[ i ] = i;
         res = receive_byte( &pabdata.raw[ i ] );
+#ifdef HAVE_HOTPLUG
+        /* This seems to be a nice point to handle card changes */
+        switch(disk_state) {
+        case DISK_CHANGED:
+        case DISK_REMOVED:
+          /* If the disk was changed the buffer contents are useless */
+          // we need to clean out all disk buffers
+          //free_multiple_buffers(FMB_ALL);
+          //change_init();
+          //fatops_init(0);
+          drv_init();
+          debug_putc('D');
+          break;
+        case DISK_ERROR:
+        default:
+          break;
+        }
+#endif
+
 
         if ( res == HEXERR_SUCCESS ) {
           i++;

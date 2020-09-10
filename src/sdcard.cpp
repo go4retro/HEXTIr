@@ -166,8 +166,7 @@ static uint32_t getbits(void *buffer, uint16_t start, int8_t bits) {
 
 /* Detect changes of SD card 0 */
 #ifdef SD_CHANGE_HANDLER
-//SD_CHANGE_HANDLER {
-void sd_change_handler_isr(void) {
+SD_CHANGE_HANDLER {
   if (sdcard_detect())
     disk_state = DISK_CHANGED;
   else

@@ -89,7 +89,7 @@ static inline void sdcard_interface_init(void) {
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
-  PCMSK0 |= _BV(PCINT0);
+  PCMSK0 |= _BV(PCINT1);
   //EIMSK |=  _BV(INT6);
 }
 
@@ -171,7 +171,7 @@ static inline void sdcard_interface_init(void) {
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
-  PCMSK0 |= _BV(PCINT0);
+  PCMSK0 |= _BV(PCINT1);
   //EIMSK |=  _BV(INT6);
 }
 
