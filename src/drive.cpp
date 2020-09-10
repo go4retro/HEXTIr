@@ -105,6 +105,23 @@ static void free_lun(uint8_t lun) {
   }
 }
 
+
+void debug_pab(uint8_t cmd, pab_t pab) {
+  debug_putcrlf();
+  debug_putc(cmd);
+  debug_puthex(pab.lun);
+  debug_putc(':');
+  debug_puthex(pab.record >> 8);
+  debug_puthex(pab.record & 255);
+  debug_putc(':');
+  debug_puthex(pab.buflen >> 8);
+  debug_puthex(pab.buflen & 255);
+  debug_putc(':');
+  debug_puthex(pab.datalen >> 8);
+  debug_puthex(pab.datalen & 255);
+  debug_putcrlf();
+}
+
 /**
  * Get the size of the next value stored in INTERNAL format.
  */
@@ -146,7 +163,7 @@ static uint16_t next_value_size_display(file_t* file) {
   if (token == '\"') instr = !instr;
   res = f_read(&(file->fp), &token, 1, &read);
   }
-  f_lseek(&(file->fp), val_ptr); // re-position the file pointer
+  res = f_lseek(&(file->fp), val_ptr); // re-position the file pointer
   return (res == FR_OK ? val_len : 0);
 }
 
@@ -335,13 +352,20 @@ static uint8_t hex_drv_write(pab_t pab) {
   file_t* file = NULL;
   BYTE res = FR_OK;
 
-  debug_puts_P(PSTR("\n\rWrite File\n\r"));
+  debug_pab('W',pab);
 
   file = find_lun(pab.lun);
   len = pab.datalen;
   res = (file != NULL ? FR_OK : FR_NO_FILE);
-  if (res == FR_OK && (file->attr & FILEATTR_RELATIVE))
-    f_lseek(&(file->fp), pab.buflen * pab.record);
+  if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
+    if (file->fp.fsize < pab.buflen * pab.record){
+      res = f_lseek( &(file->fp), file->fp.fsize );
+      buffer[0] = 0;
+      for (i = file->fp.fsize; i < pab.buflen * pab.record; i++)
+        res = f_write(&(file->fp), buffer, 1, &written);
+    }  
+    res = f_lseek(&(file->fp), pab.buflen * pab.record);
+  }
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
@@ -421,7 +445,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   BYTE res = FR_OK;
   file_t* file;
 
-  debug_puts_P(PSTR("\n\rRead File\n\r"));
+  debug_pab('R',pab);
 
   file = find_lun(pab.lun);
 
@@ -542,7 +566,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   uint8_t *path;
   uint8_t pathlen;
 
-  debug_puts_P(PSTR("\n\rOpen File\n\r"));
+  debug_pab('O',pab);
 
   // we need one more byte for the null terminator, so check.
   if(pab.datalen > BUFSIZE - 1) { // name too long
@@ -557,6 +581,13 @@ static uint8_t hex_drv_open(pab_t pab) {
     hex_release_bus();
     return HEXERR_BAV; // BAV ERR.
   }
+
+  debug_putc('L');
+  debug_puthex(buffer[1]);
+  debug_puthex(buffer[0]);
+  debug_putc(':');
+  debug_puthex(att);
+  debug_putcrlf();
   
   path = &(buffer[3]);
   pathlen = pab.datalen - 3;
@@ -577,13 +608,13 @@ static uint8_t hex_drv_open(pab_t pab) {
   // map attributes to FatFS file access mode
   switch (att & OPENMODE_MASK) {
     case OPENMODE_APPEND:  // append mode
-      mode = FA_WRITE | FA_CREATE_ALWAYS;
+      mode = FA_WRITE | FA_OPEN_ALWAYS;
       break;
     case OPENMODE_WRITE: // write, truncate if present. Maybe...
       mode = FA_WRITE | FA_CREATE_ALWAYS;
       break;
     case OPENMODE_UPDATE:
-      mode = FA_WRITE | FA_READ;
+      mode = FA_WRITE | FA_READ | FA_OPEN_ALWAYS;
       break;
     default: //OPENMODE_READ
       mode = FA_READ;
@@ -709,7 +740,7 @@ static uint8_t hex_drv_close(pab_t pab) {
   file_t* file = NULL;
   BYTE res = 0;
 
-  debug_puts_P(PSTR("\n\rClose File\n\r"));
+  debug_pab('C',pab);
 
   file = find_lun(pab.lun);
   if (file != NULL) {
@@ -752,7 +783,8 @@ static uint8_t hex_drv_restore( pab_t pab ) {
   file_t*  file = NULL;
   BYTE     res = 0;
 
-  debug_puts_P(PSTR("\n\rDrive Restore\n\r"));
+  debug_pab('X',pab);
+
   if ( open_files ) {
     file = find_lun(pab.lun);
     if ( file == NULL ) {
@@ -789,7 +821,7 @@ static uint8_t hex_drv_delete(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
 
-  debug_puts_P(PSTR("\n\rDelete File\n\r"));
+  debug_pab('D',pab);
 
   memset(buffer, 0, BUFSIZE);
 
@@ -840,7 +872,8 @@ static uint8_t hex_drv_status( pab_t pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
-  debug_puts_P(PSTR("\n\rDrive Status\n\r"));
+  debug_pab('S',pab);
+
   if ( pab.lun == 0 ) {
     st = open_files ? FILE_DEV_IS_OPEN : FILE_REQ_STATUS_NONE;
     st |= FILE_IO_MODE_READWRITE;  // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.

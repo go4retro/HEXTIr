@@ -1,0 +1,8 @@
+  100 PRINT "did you 'LIST ""100.testlist.txt"" before?"
+  110 INPUT "(Y/N)";A$
+  120 IF A$<>"Y" AND A$<>"y" THEN END
+  130 OPEN #1,"100.testlist.txt",INPUT
+  140 IF EOF(1) THEN CLOSE #1:STOP
+  150 LINPUT #1,A$
+  160 PRINT A$:PAUSE
+  170 GOTO 140
