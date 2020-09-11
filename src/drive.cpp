@@ -105,23 +105,6 @@ static void free_lun(uint8_t lun) {
   }
 }
 
-
-void debug_pab(uint8_t cmd, pab_t pab) {
-  debug_putcrlf();
-  debug_putc(cmd);
-  debug_puthex(pab.lun);
-  debug_putc(':');
-  debug_puthex(pab.record >> 8);
-  debug_puthex(pab.record & 255);
-  debug_putc(':');
-  debug_puthex(pab.buflen >> 8);
-  debug_puthex(pab.buflen & 255);
-  debug_putc(':');
-  debug_puthex(pab.datalen >> 8);
-  debug_puthex(pab.datalen & 255);
-  debug_putcrlf();
-}
-
 /**
  * Get the size of the next value stored in INTERNAL format.
  */
@@ -150,13 +133,12 @@ static uint16_t next_value_size_display(file_t* file) {
   UINT read;
   char token;
   uint8_t instr = FALSE;
-  char delimit[] = "\n";    // delimiter char to separate records when in DISPLAY mode (a LF)
   int val_len = 0;
   uint32_t val_ptr;
   val_ptr = file->fp.fptr; // save the current position for to restore
   res = f_read(&(file->fp), &token, 1, &read);
   while (res == FR_OK && read == 1) {
-	if ((strchr(delimit, token) != NULL) && !instr){ // stop on first trailing delimiter
+	if ((token == '\n') && !instr){ // stop on first trailing delimiter
 	  break;
 	}
   if ((token != '\r') || instr) val_len++;
@@ -352,7 +334,7 @@ static uint8_t hex_drv_write(pab_t pab) {
   file_t* file = NULL;
   BYTE res = FR_OK;
 
-  debug_pab('W',pab);
+  debug_puts_P(PSTR("\n\rWrite File\n\r"));
 
   file = find_lun(pab.lun);
   len = pab.datalen;
@@ -394,7 +376,7 @@ static uint8_t hex_drv_write(pab_t pab) {
 
   // if in DISPLAY mode
   if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
-	// add CRLF to data (for LIST command)
+	// add CRLF to data (for DISPLAY mode)
 	buffer[0] = 13;
 	buffer[1] = 10;
 
@@ -445,7 +427,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   BYTE res = FR_OK;
   file_t* file;
 
-  debug_pab('R',pab);
+  debug_puts_P(PSTR("\n\rRead File\n\r"));
 
   file = find_lun(pab.lun);
 
@@ -566,7 +548,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   uint8_t *path;
   uint8_t pathlen;
 
-  debug_pab('O',pab);
+  debug_puts_P(PSTR("\n\rOpen File\n\r"));
 
   // we need one more byte for the null terminator, so check.
   if(pab.datalen > BUFSIZE - 1) { // name too long
@@ -581,13 +563,6 @@ static uint8_t hex_drv_open(pab_t pab) {
     hex_release_bus();
     return HEXERR_BAV; // BAV ERR.
   }
-
-  debug_putc('L');
-  debug_puthex(buffer[1]);
-  debug_puthex(buffer[0]);
-  debug_putc(':');
-  debug_puthex(att);
-  debug_putcrlf();
   
   path = &(buffer[3]);
   pathlen = pab.datalen - 3;
@@ -681,10 +656,7 @@ static uint8_t hex_drv_open(pab_t pab) {
           }
           // if we don't know how big its going to be... we may need multiple writes.
           if ( len == 0 ) {
-            if (file->attr & FILEATTR_DISPLAY)
-              fsize = BUFSIZE;
-            else
-              fsize = 9;
+            fsize = BUFSIZE;
           } else {
             // otherwise, we know. and do NOT allow fileattr display under any circumstance.
             fsize = len;
@@ -740,7 +712,7 @@ static uint8_t hex_drv_close(pab_t pab) {
   file_t* file = NULL;
   BYTE res = 0;
 
-  debug_pab('C',pab);
+  debug_puts_P(PSTR("\n\rClose File\n\r"));
 
   file = find_lun(pab.lun);
   if (file != NULL) {
@@ -783,8 +755,7 @@ static uint8_t hex_drv_restore( pab_t pab ) {
   file_t*  file = NULL;
   BYTE     res = 0;
 
-  debug_pab('X',pab);
-
+  debug_puts_P(PSTR("\n\rDrive Restore\n\r"));
   if ( open_files ) {
     file = find_lun(pab.lun);
     if ( file == NULL ) {
@@ -821,7 +792,7 @@ static uint8_t hex_drv_delete(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
 
-  debug_pab('D',pab);
+  debug_puts_P(PSTR("\n\rDelete File\n\r"));
 
   memset(buffer, 0, BUFSIZE);
 
@@ -872,8 +843,7 @@ static uint8_t hex_drv_status( pab_t pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
-  debug_pab('S',pab);
-
+  debug_puts_P(PSTR("\n\rDrive Status\n\r"));
   if ( pab.lun == 0 ) {
     st = open_files ? FILE_DEV_IS_OPEN : FILE_REQ_STATUS_NONE;
     st |= FILE_IO_MODE_READWRITE;  // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
