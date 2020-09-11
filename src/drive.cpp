@@ -606,13 +606,13 @@ static uint8_t hex_drv_open(pab_t pab) {
   // map attributes to FatFS file access mode
   switch (att & OPENMODE_MASK) {
     case OPENMODE_APPEND:  // append mode
-      mode = FA_WRITE | FA_CREATE_ALWAYS;
+      mode = FA_WRITE | FA_OPEN_ALWAYS;
       break;
     case OPENMODE_WRITE: // write, truncate if present. Maybe...
       mode = FA_WRITE | FA_CREATE_ALWAYS;
       break;
     case OPENMODE_UPDATE:
-      mode = FA_WRITE | FA_READ | FA_CREATE_ALWAYS;
+      mode = FA_WRITE | FA_READ | FA_OPEN_ALWAYS;
       break;
     default: //OPENMODE_READ
       mode = FA_READ;
@@ -627,6 +627,7 @@ static uint8_t hex_drv_open(pab_t pab) {
     }
     if (file != NULL) {
       res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
+      // TODO we can remove if we add FA_OPEN_APPEND to FatFS
       if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
         res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
       }
