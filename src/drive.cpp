@@ -122,8 +122,6 @@ static uint16_t next_value_size_internal(file_t* file) {
   return (res == FR_OK ? val_len + 1 : 0);
 }
 
-
-
 /**
  * Get the size of the next record in DISPLAY format.
  * Search for the trailing LF (\n) and ignore a CR (\r) before the LF.
@@ -135,15 +133,16 @@ static uint16_t next_value_size_display(file_t* file) {
   uint8_t instr = FALSE;
   int val_len = 0;
   uint32_t val_ptr;
+
   val_ptr = file->fp.fptr; // save the current position for to restore
   res = f_read(&(file->fp), &token, 1, &read);
   while (res == FR_OK && read == 1) {
-	if ((token == '\n') && !instr){ // stop on first trailing delimiter
-	  break;
-	}
-  if ((token != '\r') || instr) val_len++;
-  if (token == '\"') instr = !instr;
-  res = f_read(&(file->fp), &token, 1, &read);
+    if ((token == '\n') && !instr){ // stop on first trailing delimiter
+      break;
+    }
+    if ((token != '\r') || instr) val_len++;
+    if (token == '\"') instr = !instr;
+    res = f_read(&(file->fp), &token, 1, &read);
   }
   res = f_lseek(&(file->fp), val_ptr); // re-position the file pointer
   return (res == FR_OK ? val_len : 0);
@@ -416,11 +415,26 @@ static uint8_t hex_drv_write(pab_t pab) {
    hex_drv_read() -
    read data from currently open file associated with the LUN
    in the PAB.
+   structured data files:
+     in INTERNAL mode the amount of bytes to be send is determined
+     by the first byte to be read next and the corresponding amount
+     of bytes is send
+     
+     in DISPLAY mode the amount of bytes to be send is determined
+     by the first occurrence of (CR)LF outside a double-quoted string.
+     After sending, the (CR)LF is skipped to position the file at the
+     beginning of the next record or EOF
+  raw data files
+    OLD/RUN reads a program file, the amount of bytes to be send is
+    determined by the file length. These commands use LUN 0 as special LUN
+    Other raw data files (e.g. RAM/ROM images) must use LUN 255 as a
+    special LUN. The amount of bytes to be send is determined by the
+    file length    
 */
 static uint8_t hex_drv_read(pab_t pab) {
   uint8_t rc;
   uint8_t i;
-  uint16_t len = 0;
+  uint16_t len;
   uint16_t fsize;
   char token;
   UINT read;
@@ -430,8 +444,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   debug_puts_P(PSTR("\n\rRead File\n\r"));
 
   file = find_lun(pab.lun);
-
-  if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
+  if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab.lun == 0 ) {
       debug_putc('P');
         return hex_read_catalog(file);
@@ -445,9 +458,10 @@ static uint8_t hex_drv_read(pab_t pab) {
     f_lseek(&(file->fp), pab.buflen * pab.record);
   if (file != NULL) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab.lun != 0) { // for 'normal' files (lun != 0) send data value by value
+    if (fsize != 0 && pab.lun != 0 && pab.lun != 255) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
       // amount of data for next value to be sent
-      if (file->attr & FILEATTR_RELATIVE) fsize = pab.buflen;
+      if (file->attr & FILEATTR_RELATIVE) 
+        fsize = pab.buflen;
       else  
         fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
@@ -457,8 +471,6 @@ static uint8_t hex_drv_read(pab_t pab) {
         res = FR_EOF;
       } else {
         // size of buffer provided by host (amount to send)
-        len = pab.buflen;
-
         if ( fsize > pab.buflen ) {
           fsize = pab.buflen;
         }
@@ -476,7 +488,7 @@ static uint8_t hex_drv_read(pab_t pab) {
       len = ( len > BUFSIZE ) ? BUFSIZE : len;
 
       if ( !(file->attr & FILEATTR_CATALOG )) {
-        memset((char *)buffer, 0, BUFSIZE);  // TODO Do we need this?
+        // memset((char *)buffer, 0, BUFSIZE);  // TODO Do we need this? No!
         res = f_read(&(file->fp), buffer, len, &read);
         if (!res) {
           debug_putcrlf();
