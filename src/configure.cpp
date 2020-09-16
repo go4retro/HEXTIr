@@ -30,10 +30,6 @@
 #include "hexops.h"
 #include "timer.h"
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
-
 // Global references
 extern uint8_t buffer[BUFSIZE];
 //

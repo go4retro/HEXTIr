@@ -604,6 +604,7 @@ static uint8_t hex_drv_open(pab_t pab) {
     }
     if (file != NULL) {
       res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
+      // TODO we can remove if we add FA_OPEN_APPEND to FatFS
       if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
         res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
       }
