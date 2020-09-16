@@ -1,0 +1,17 @@
+  100 OPEN #1,"100.testrel.int",OUTPUT,INTERNAL,RELATIVE,VARIABLE 4*9
+  110 !4 variables with a maximum of 9 Byte (8 for data and 1 for length)
+  120 RESTORE #1,REC 0
+  130 MAX=50
+  140 FOR I=1 TO MAX
+  150 PRINT I
+  160 PRINT #1,I;I^2;SQR(I);SIN(I)
+  170 NEXT I
+  180 CLOSE #1
+  190 OPEN #1,"100.testrel.int",INPUT,INTERNAL,RELATIVE,VARIABLE 4*9
+  200 MAX=50
+  210 I=INT(RND*MAX)
+  220 RESTORE #1,REC I
+  230 INPUT #1,X,X1,X2,X3
+  240 IMAGE ## ## ###### ##.#### ##.####
+  250 PRINT USING 240,I;X;X1;X2;X3
+  260 GOTO 210
