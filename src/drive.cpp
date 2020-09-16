@@ -122,61 +122,29 @@ static uint16_t next_value_size_internal(file_t* file) {
   return (res == FR_OK ? val_len + 1 : 0);
 }
 
-
-
 /**
- * Get the size of the next value stored in DISPLAY format.
- * Values stored in DISPLAY format are found to be separated by one or more spaces (0x20), that is
- * spaces are the delimiters between two values. The end of a value is reached, when a space char
- * has been found. But a value can start with one or more spaces. These heading spaces are counted
- * and contribute for the value size; they are not treated as delimiters.
- * When the first non-space char is detected the data part of the value starts. The first space
- * found after the data part is the delimiter. Spaces can too be part of the data part of a string
- * value. For not to be treated as delimiters the string value has to be put in quotes to form a 'block'.
+ * Get the size of the next record in DISPLAY format.
+ * Search for the trailing LF (\n) and ignore a CR (\r) before the LF.
  */
 static uint16_t next_value_size_display(file_t* file) {
   BYTE res;
   UINT read;
   char token;
-  char delimit[] = " ";    // delimiter chars to separate values when in DISPLAY mode ( a space char)
-  char openblock[] = "\""; // characters that start a block
-  char closeblock[] = "\"";// characters that terminate a block
-  char *block = NULL;
-  int iBlock = 0;
-  int iBlockIndex = 0;
+  uint8_t instr = FALSE;
   int val_len = 0;
-  int iData = 0;
   uint32_t val_ptr;
+
   val_ptr = file->fp.fptr; // save the current position for to restore
   res = f_read(&(file->fp), &token, 1, &read);
   while (res == FR_OK && read == 1) {
-	val_len++;
-	if (!iData && strchr(delimit, token) != NULL) { // eat up heading spaces
-	  res = f_read(&(file->fp), &token, 1, &read);
-	  continue;
-	}
-	else {
-	  iData = 1; // data start found ( first non-delimiter char)
-	}
-	if (iBlock) { // if token is in block
-	  if (closeblock[iBlockIndex] == token) { // block ends
-		iBlock = 0;
-	  }
-	  res = f_read(&(file->fp), &token, 1, &read);
-	  continue;
-	}
-	if ((block = strchr(openblock, token)) != NULL) { // block starts
-	  iBlock = 1;
-	  iBlockIndex = block - openblock;
-	  res = f_read(&(file->fp), &token, 1, &read);
-	  continue;
-	}
-	if (strchr(delimit, token) != NULL) { // stop on first trailing delimiter
-	  break;
-	}
-	res = f_read(&(file->fp), &token, 1, &read);
+    if ((token == '\n') && !instr){ // stop on first trailing delimiter
+      break;
+    }
+    if ((token != '\r') || instr) val_len++;
+    if (token == '\"') instr = !instr;
+    res = f_read(&(file->fp), &token, 1, &read);
   }
-  f_lseek(&(file->fp), val_ptr); // re-position the file pointer
+  res = f_lseek(&(file->fp), val_ptr); // re-position the file pointer
   return (res == FR_OK ? val_len : 0);
 }
 
@@ -370,21 +338,15 @@ static uint8_t hex_drv_write(pab_t pab) {
   file = find_lun(pab.lun);
   len = pab.datalen;
   res = (file != NULL ? FR_OK : FR_NO_FILE);
-
-  // if in DISPLAY mode and not a program
-  if (res == FR_OK && (file->attr & FILEATTR_DISPLAY) && pab.lun != 0) {
-	// add SPACE to data (for PRINT command (as delimiter, just to be sure there is one)
-	buffer[0] = 32;
-	res = f_write(&(file->fp), buffer, 1, &written);
-    if (!res) {
-      debug_putcrlf();
-      debug_trace(buffer, 0, written);
-    }
-	if (written != 1) {
-      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
-	}
+  if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
+    if (file->fp.fsize < pab.buflen * pab.record){
+      res = f_lseek( &(file->fp), file->fp.fsize );
+      buffer[0] = 0;
+      for (i = file->fp.fsize; i < pab.buflen * pab.record; i++)
+        res = f_write(&(file->fp), buffer, 1, &written);
+    }  
+    res = f_lseek(&(file->fp), pab.buflen * pab.record);
   }
-
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
@@ -398,7 +360,11 @@ static uint8_t hex_drv_write(pab_t pab) {
     }
     len -= i;
   }
-
+  if (file != NULL && (file->attr & FILEATTR_RELATIVE)){
+    buffer[0] = 0;
+    for (i=pab.datalen + 1; i <= pab.buflen; i++)
+      res = f_write(&(file->fp), buffer, 1, &written);
+  }
   if ( len ) {
     if ( !fs_initialized ) {
       res = HEXSTAT_DEVICE_ERR;
@@ -408,8 +374,8 @@ static uint8_t hex_drv_write(pab_t pab) {
   }
 
   // if in DISPLAY mode
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && pab.lun == 0) {
-	// add CRLF to data (for LIST command)
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
+	// add CRLF to data (for DISPLAY mode)
 	buffer[0] = 13;
 	buffer[1] = 10;
 
@@ -449,12 +415,28 @@ static uint8_t hex_drv_write(pab_t pab) {
    hex_drv_read() -
    read data from currently open file associated with the LUN
    in the PAB.
+   structured data files:
+     in INTERNAL mode the amount of bytes to be send is determined
+     by the first byte to be read next and the corresponding amount
+     of bytes is send
+     
+     in DISPLAY mode the amount of bytes to be send is determined
+     by the first occurrence of (CR)LF outside a double-quoted string.
+     After sending, the (CR)LF is skipped to position the file at the
+     beginning of the next record or EOF
+  raw data files
+    OLD/RUN reads a program file, the amount of bytes to be send is
+    determined by the file length. These commands use LUN 0 as special LUN
+    Other raw data files (e.g. RAM/ROM images) must use LUN 255 as a
+    special LUN. The amount of bytes to be send is determined by the
+    file length    
 */
 static uint8_t hex_drv_read(pab_t pab) {
   uint8_t rc;
   uint8_t i;
-  uint16_t len = 0;
+  uint16_t len;
   uint16_t fsize;
+  char token;
   UINT read;
   BYTE res = FR_OK;
   file_t* file;
@@ -462,8 +444,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   debug_puts_P(PSTR("\n\rRead File\n\r"));
 
   file = find_lun(pab.lun);
-
-  if(file != NULL && (file->attr & FILEATTR_CATALOG)) {
+  if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab.lun == 0 ) {
       debug_putc('P');
         return hex_read_catalog(file);
@@ -473,11 +454,16 @@ static uint8_t hex_drv_read(pab_t pab) {
         return hex_read_catalog_txt(file);
     }
   }
+  if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
+    f_lseek(&(file->fp), pab.buflen * pab.record);
   if (file != NULL) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab.lun != 0) { // for 'normal' files (lun != 0) send data value by value
+    if (fsize != 0 && pab.lun != 0 && pab.lun != 255) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
       // amount of data for next value to be sent
-      fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
+      if (file->attr & FILEATTR_RELATIVE) 
+        fsize = pab.buflen;
+      else  
+        fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
 
     if (res == FR_OK) {
@@ -485,8 +471,6 @@ static uint8_t hex_drv_read(pab_t pab) {
         res = FR_EOF;
       } else {
         // size of buffer provided by host (amount to send)
-        len = pab.buflen;
-
         if ( fsize > pab.buflen ) {
           fsize = pab.buflen;
         }
@@ -504,7 +488,7 @@ static uint8_t hex_drv_read(pab_t pab) {
       len = ( len > BUFSIZE ) ? BUFSIZE : len;
 
       if ( !(file->attr & FILEATTR_CATALOG )) {
-        memset((char *)buffer, 0, BUFSIZE);  // TODO Do we need this?
+        // memset((char *)buffer, 0, BUFSIZE);  // TODO Do we need this? No!
         res = f_read(&(file->fp), buffer, len, &read);
         if (!res) {
           debug_putcrlf();
@@ -531,6 +515,11 @@ static uint8_t hex_drv_read(pab_t pab) {
 
     switch (res) {
       case FR_OK:
+        if (file->attr & FILEATTR_DISPLAY) {
+          res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
+          if (token == '\r')
+            res = f_read(&(file->fp), &token, 1, &read);
+        } 
         rc = HEXSTAT_SUCCESS;
         break;
       case FR_EOF:
@@ -627,7 +616,6 @@ static uint8_t hex_drv_open(pab_t pab) {
     }
     if (file != NULL) {
       res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
-      // TODO we can remove if we add FA_OPEN_APPEND to FatFS
       if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
         res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
       }
@@ -668,7 +656,7 @@ static uint8_t hex_drv_open(pab_t pab) {
       }
     }
   }
-
+  if (att & OPENMODE_RELATIVE) file->attr |= FILEATTR_RELATIVE;
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXERR_SUCCESS ) {
       switch (att & OPENMODE_MASK) {
@@ -684,7 +672,7 @@ static uint8_t hex_drv_open(pab_t pab) {
           } else {
             // otherwise, we know. and do NOT allow fileattr display under any circumstance.
             fsize = len;
-            file->attr &= ~FILEATTR_DISPLAY;
+            //file->attr &= ~FILEATTR_DISPLAY;
           }
           break;
 

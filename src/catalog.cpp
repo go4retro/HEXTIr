@@ -38,7 +38,7 @@ static const uint8_t PGM_HEADER_LEN = 4;  // number of bytes in pgm_header + 2 b
 static const uint8_t PGM_TRAILER_LEN = 7; // number of bytes in the pgm_trailer
 static const uint8_t PGM_RECORD_LEN = 33; // length record (constant here), includes len. of line number
 static const uint8_t PGM_LINE_LEN = 31;   // length of line, just the recordlen without len of line number (2 bytes)
-static const uint8_t PGM_STR_LEN = 27;    // length of string without terminating zero
+static const uint8_t PGM_STR_LEN = 26;    // length of string without terminating zero
 
 // called once at the beginning
 void cat_open_pgm(uint16_t num_entries) {
@@ -66,9 +66,9 @@ void cat_write_record_pgm(uint16_t lineno, uint32_t fsize, const char* filename,
 
     transmit_word(lineno);                // line number, 2 bytes
     transmit_byte(PGM_LINE_LEN);          // length of next "code" line (without len. of line number), 1 byte
+    transmit_byte(0xa0);                  // 0xa0 : token for exclamation mark, next data is comment, 1 byte
     transmit_byte(0xca);                  // 0xca : token for unquoted string, next data is string, 1 byte
     transmit_byte(PGM_STR_LEN);           // length of the string without terminating zero, 1 byte
-    transmit_byte('!');                   // separator char line number / string 1 byte
     for (i = 0; i < width; i++) {         // file size in bytes or kiB, 5 bytes
       transmit_byte(file_size[i]);        //
     }                                     //
