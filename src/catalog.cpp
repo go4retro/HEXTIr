@@ -350,11 +350,14 @@ uint8_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
       file->attr |= FILEATTR_CATALOG;
       // remove the leading $
       char* string = path;
+      /* this will force the root directory to be read
       if (strlen(string) < 2 || string[1] != '/') { // if just $ or $ABC..
         string[0] = '/'; // $ -> /, $ABC/ -> /ABC/
       } else {
         string = (char*)&path[1]; // $/ABC/... -> /ABC/...
       }
+      */
+      string = (char*)&path[1]; // $subdir... -> subdir...
       // separate into directory path and pattern
       char* dirpath = string;
       char* pattern = (char*)NULL;

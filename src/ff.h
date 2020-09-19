@@ -68,7 +68,7 @@
 /* When _USE_NTFLAG is set to 1, upper/lower case of the file name is preserved.
 /  Note that the files are always accessed in case insensitive. */
 
-#define _USE_CHDIR 0
+#define _USE_CHDIR 1
 
 #define _USE_CURR_DIR 1
 

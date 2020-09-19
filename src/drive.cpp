@@ -300,30 +300,6 @@ static uint8_t hex_drv_verify(pab_t pab) {
    writes data to the open file associated with the LUN number
    in the PAB.
 
-   TODO: for files opened in RELATIVE (not VARIABLE) mode, the
-   file should be in READ/WRITE mode.  RELATIVE mode is considered
-   to be like a 'database' file with FIXED length records of 'x'
-   bytes per record.  The record number field of the PAB informs
-   the file-write operation of which record is to be written.  If
-   the file needs to be increased in size to reach that record,
-   then zero-filled records should be written to reach the desired
-   position (i.e. you can get the current size of the file, divide
-   by the record size to determine the current number of records.
-   if the record being written exists beyond the end of the file,
-   write empty records until the desired size is reached, then
-   write the new record to the file.  If the record number in the
-   PAB points to a location within the file, seek to that offset
-   from the beginning of the file and overwrite the data that
-   currently exists in that location.  This all assumes that the
-   underlying file system supports this behavior and feature.
-
-   If it does not, then the hex_open operation, when it detects
-   a RELATIVE file open, should always report an error of
-   HEXSTAT_FILE_TYPE_ERR. (And, currently, the Arduino SD file
-   library does NOT handle opening files for both read AND write
-   of a selective nature such as required for this feature; from
-   what I can tell of the implementation.
-
 */
 static uint8_t hex_drv_write(pab_t pab) {
   uint8_t rc = HEXSTAT_SUCCESS;
@@ -338,6 +314,8 @@ static uint8_t hex_drv_write(pab_t pab) {
   file = find_lun(pab.lun);
   len = pab.datalen;
   res = (file != NULL ? FR_OK : FR_NO_FILE);
+  if (res == FR_OK && (file->attr & FILEATTR_DIROP))
+    res = FR_NO_FILE;
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
     if (file->fp.fsize < pab.buflen * pab.record){
       res = f_lseek( &(file->fp), file->fp.fsize );
@@ -456,7 +434,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   }
   if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
     f_lseek(&(file->fp), pab.buflen * pab.record);
-  if (file != NULL) {
+  if (file != NULL && !(file->attr & FILEATTR_DIROP)) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
     if (fsize != 0 && pab.lun != 0 && pab.lun != 255) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
       // amount of data for next value to be sent
@@ -590,6 +568,44 @@ static uint8_t hex_drv_open(pab_t pab) {
   if (path[0]=='$') {
     file = reserve_lun(pab.lun);
     return hex_open_catalog(file, pab.lun, att, (char*)path);  // check file!= null in there
+  }
+  //*******************************************************
+  // special file name "xd path" -> chdir/mkdir
+  if (pathlen > 3 && (path[1]=='d' || path[1]=='D') && path[2]==' ')  {
+    file = reserve_lun(pab.lun);
+    if (file != NULL){
+      file->attr |= FILEATTR_DIROP;
+      buffer[0] = path[0];
+      path = &(path[3]);
+      trim(&path, &pathlen);
+      if (buffer[0] == 'c' || buffer[0] == 'C')
+        res = f_chdir(&fs,(UCHAR*)path); 
+      else if (buffer[0] == 'm' || buffer[0] == 'M')
+        res = f_mkdir(&fs,(UCHAR*)path); 
+      else 
+        res = FR_RW_ERROR;
+      if (res == FR_OK)
+        rc = HEXSTAT_SUCCESS;
+      else {
+        rc = HEXSTAT_DEVICE_ERR; 
+        free_lun(pab.lun); // free up buffer
+      }
+    }
+    else
+        rc = HEXSTAT_MAX_LUNS;      
+    if(!hex_is_bav()) { // we can send response
+      if(rc == HEXSTAT_SUCCESS) {
+        transmit_word(2); 
+        transmit_word(255);
+        transmit_byte(HEXSTAT_SUCCESS);    // status code
+        hex_finish();
+        return HEXERR_SUCCESS;
+      } else
+        hex_send_final_response( rc );
+    }
+    hex_finish();
+    debug_putc('E');
+    return HEXERR_BAV;
   }
   //*******************************************************
   // map attributes to FatFS file access mode
@@ -728,7 +744,7 @@ static uint8_t hex_drv_close(pab_t pab) {
 
   file = find_lun(pab.lun);
   if (file != NULL) {
-    if(!(file->attr & FILEATTR_CATALOG)) {
+    if(!(file->attr & FILEATTR_CATALOG) && !(file->attr & FILEATTR_DIROP)) {
       res = f_close(&(file->fp));
     }
     free_lun(pab.lun);
