@@ -308,65 +308,99 @@ static uint8_t hex_drv_write(pab_t pab) {
   UINT written;
   file_t* file = NULL;
   BYTE res = FR_OK;
-
+  uint8_t *path;
+  uint8_t pathlen;
+  
   debug_puts_P(PSTR("\n\rWrite File\n\r"));
 
   file = find_lun(pab.lun);
   len = pab.datalen;
   res = (file != NULL ? FR_OK : FR_NO_FILE);
-  if (res == FR_OK && (file->attr & FILEATTR_DIROP))
-    res = FR_NO_FILE;
-  if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
-    if (file->fp.fsize < pab.buflen * pab.record){
-      res = f_lseek( &(file->fp), file->fp.fsize );
-      buffer[0] = 0;
-      for (i = file->fp.fsize; i < pab.buflen * pab.record; i++)
-        res = f_write(&(file->fp), buffer, 1, &written);
-    }  
-    res = f_lseek(&(file->fp), pab.buflen * pab.record);
+  if (res == FR_OK && (file->attr & FILEATTR_COMMAND)){
+    if (len < BUFSIZE){
+      rc = hex_get_data(buffer, len);
+      if (rc == HEXSTAT_SUCCESS) {
+        path = &(buffer[0]);
+        pathlen = len;
+        // path, trimmed whitespaces
+        trim(&path, &pathlen);
+        // ToDo: We need a simple parser here to allow multiple commands in one print statement
+        // That requires more knowledge of C/C++ then I have
+        // and some string operations. This is a very simple implementation for only one instruction:
+        if (pathlen > 3 && (path[1]=='d' || path[1]=='D') && path[2]==' ')  {
+          path = &(path[3]);
+          trim(&path, &pathlen);
+          if (buffer[0] == 'c' || buffer[0] == 'C')
+            res = f_chdir(&fs,(UCHAR*)path); 
+          else if (buffer[0] == 'm' || buffer[0] == 'M')
+            res = f_mkdir(&fs,(UCHAR*)path); 
+          else 
+            res = FR_RW_ERROR;
+          }
+        else
+          res = FR_RW_ERROR;           
+        }
+      else
+        res = FR_RW_ERROR;          
+    }
+    else {
+      res = FR_INVALID_OBJECT;
+      hex_eat_it( len, res ); // reports status back.
+      return HEXERR_BAV;
+    }
   }
-  while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
-    i = (len >= BUFSIZE ? BUFSIZE : len);
-    rc = hex_get_data(buffer, i);
+  else {
+    if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
+      if (file->fp.fsize < pab.buflen * pab.record){
+        res = f_lseek( &(file->fp), file->fp.fsize );
+        buffer[0] = 0;
+        for (i = file->fp.fsize; i < pab.buflen * pab.record; i++)
+          res = f_write(&(file->fp), buffer, 1, &written);
+      }  
+      res = f_lseek(&(file->fp), pab.buflen * pab.record);
+    }
+    while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
+      i = (len >= BUFSIZE ? BUFSIZE : len);
+      rc = hex_get_data(buffer, i);
 
-    if (file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
+      if (file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
 
-      res = f_write(&(file->fp), buffer, i, &written);
-      if ( written != i ) {
-        res = FR_DENIED;
+        res = f_write(&(file->fp), buffer, i, &written);
+        if ( written != i ) {
+          res = FR_DENIED;
+        }
       }
+      len -= i;
     }
-    len -= i;
-  }
-  if (file != NULL && (file->attr & FILEATTR_RELATIVE)){
-    buffer[0] = 0;
-    for (i=pab.datalen + 1; i <= pab.buflen; i++)
-      res = f_write(&(file->fp), buffer, 1, &written);
-  }
-  if ( len ) {
-    if ( !fs_initialized ) {
-      res = HEXSTAT_DEVICE_ERR;
+    if (file != NULL && (file->attr & FILEATTR_RELATIVE)){
+      buffer[0] = 0;
+      for (i=pab.datalen + 1; i <= pab.buflen; i++)
+        res = f_write(&(file->fp), buffer, 1, &written);
     }
-    hex_eat_it( len, res );
-    return HEXERR_BAV;
+    if ( len ) {
+      if ( !fs_initialized ) {
+        res = HEXSTAT_DEVICE_ERR;
+      }
+      hex_eat_it( len, res );
+      return HEXERR_BAV;
+    }
+
+    // if in DISPLAY mode
+    if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
+    // add CRLF to data (for DISPLAY mode)
+    buffer[0] = 13;
+    buffer[1] = 10;
+
+    res = f_write(&(file->fp), buffer, 2, &written);
+    if (!res) {
+      debug_putcrlf();
+      debug_trace(buffer, 0, written);
+    }
+    if (written != 2) {
+      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    }
+    }
   }
-
-  // if in DISPLAY mode
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
-	// add CRLF to data (for DISPLAY mode)
-	buffer[0] = 13;
-	buffer[1] = 10;
-
-	res = f_write(&(file->fp), buffer, 2, &written);
-	if (!res) {
-	  debug_putcrlf();
-	  debug_trace(buffer, 0, written);
-	}
-	if (written != 2) {
-	  rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
-	}
-  }
-
   if (rc == HEXSTAT_SUCCESS) {
     switch (res) {
       case FR_OK:
@@ -434,7 +468,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   }
   if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
     f_lseek(&(file->fp), pab.buflen * pab.record);
-  if (file != NULL && !(file->attr & FILEATTR_DIROP)) {
+  if (file != NULL && !(file->attr & FILEATTR_COMMAND)) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
     if (fsize != 0 && pab.lun != 0 && pab.lun != 255) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
       // amount of data for next value to be sent
@@ -570,29 +604,15 @@ static uint8_t hex_drv_open(pab_t pab) {
     return hex_open_catalog(file, pab.lun, att, (char*)path);  // check file!= null in there
   }
   //*******************************************************
-  // special file name "xd path" -> chdir/mkdir
-  if (pathlen > 3 && (path[1]=='d' || path[1]=='D') && path[2]==' ')  {
+  // special file name "" -> command_mode
+  if (path[0] == 0)  {
     file = reserve_lun(pab.lun);
     if (file != NULL){
-      file->attr |= FILEATTR_DIROP;
-      buffer[0] = path[0];
-      path = &(path[3]);
-      trim(&path, &pathlen);
-      if (buffer[0] == 'c' || buffer[0] == 'C')
-        res = f_chdir(&fs,(UCHAR*)path); 
-      else if (buffer[0] == 'm' || buffer[0] == 'M')
-        res = f_mkdir(&fs,(UCHAR*)path); 
-      else 
-        res = FR_RW_ERROR;
-      if (res == FR_OK)
-        rc = HEXSTAT_SUCCESS;
-      else {
-        rc = HEXSTAT_DEVICE_ERR; 
-        free_lun(pab.lun); // free up buffer
-      }
+      file->attr |= FILEATTR_COMMAND;
+      rc = HEXSTAT_SUCCESS;
     }
     else
-        rc = HEXSTAT_MAX_LUNS;      
+      rc = HEXSTAT_MAX_LUNS;      
     if(!hex_is_bav()) { // we can send response
       if(rc == HEXSTAT_SUCCESS) {
         transmit_word(2); 
@@ -744,7 +764,7 @@ static uint8_t hex_drv_close(pab_t pab) {
 
   file = find_lun(pab.lun);
   if (file != NULL) {
-    if(!(file->attr & FILEATTR_CATALOG) && !(file->attr & FILEATTR_DIROP)) {
+    if(!(file->attr & FILEATTR_CATALOG) && !(file->attr & FILEATTR_COMMAND)) {
       res = f_close(&(file->fp));
     }
     free_lun(pab.lun);
