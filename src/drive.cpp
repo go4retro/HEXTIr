@@ -308,8 +308,11 @@ static uint8_t hex_drv_write(pab_t pab) {
   UINT written;
   file_t* file = NULL;
   BYTE res = FR_OK;
-  uint8_t *path;
-  uint8_t pathlen;
+  uint8_t *s;
+  uint8_t *oldname;
+  uint8_t *name;
+  uint8_t namelen;
+  uint8_t cmd;
   
   debug_puts_P(PSTR("\n\rWrite File\n\r"));
 
@@ -320,20 +323,37 @@ static uint8_t hex_drv_write(pab_t pab) {
     if (len < BUFSIZE){
       rc = hex_get_data(buffer, len);
       if (rc == HEXSTAT_SUCCESS) {
-        path = &(buffer[0]);
-        pathlen = len;
+        name = &(buffer[0]);
+        namelen = len;
         // path, trimmed whitespaces
-        trim(&path, &pathlen);
+        trim(&name, &namelen);
         // ToDo: We need a simple parser here to allow multiple commands in one print statement
         // That requires more knowledge of C/C++ then I have
         // and some string operations. This is a very simple implementation for only one instruction:
-        if (pathlen > 3 && (path[1]=='d' || path[1]=='D') && path[2]==' ')  {
-          path = &(path[3]);
-          trim(&path, &pathlen);
-          if (buffer[0] == 'c' || buffer[0] == 'C')
-            res = f_chdir(&fs,(UCHAR*)path); 
-          else if (buffer[0] == 'm' || buffer[0] == 'M')
-            res = f_mkdir(&fs,(UCHAR*)path); 
+        if (namelen > 3 && (name[1]=='d' || name[1]=='D') && name[2]==' ')  {
+          cmd = name[0];
+          name = &(name[3]);
+          trim(&name, &namelen);
+          if (cmd == 'c' || cmd == 'C')
+            res = f_chdir(&fs,(UCHAR*)name); 
+          else if (cmd == 'm' || cmd == 'M')
+            res = f_mkdir(&fs,(UCHAR*)name); 
+          else 
+            res = FR_RW_ERROR;
+          }
+        else if (namelen > 3 && (name[1]=='n' || name[1]=='N') && name[2]==' ')  {
+          cmd = name[0];
+          name = &(name[3]);
+          if (cmd == 'r' || cmd == 'R'){
+            s = strrchr(name, '=');
+            s[0] = 0; // terminating 0 for name
+            oldname = &(s[1]);
+            namelen = strlen(name);
+            trim(&name, &namelen);
+            namelen = strlen(oldname);
+            trim(&oldname, &namelen);
+            res = f_rename(&fs,(UCHAR*)oldname,(UCHAR*)name);
+          }
           else 
             res = FR_RW_ERROR;
           }
