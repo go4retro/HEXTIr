@@ -294,6 +294,97 @@ static uint8_t hex_drv_verify(pab_t pab) {
   return HEXERR_SUCCESS;
 }
 
+static uint8_t hex_drv_write_cmd(pab_t pab) {
+  uint8_t rc = HEXSTAT_SUCCESS;
+  uint16_t len;
+  BYTE res = FR_OK;
+  uint8_t *s;
+  uint8_t *comma;
+  uint8_t *newname;
+  uint8_t *name;
+  uint8_t namelen;
+  uint8_t cmd;
+
+  len = pab.datalen;
+  if (len < BUFSIZE){
+    rc = hex_get_data(buffer, len);
+    if (rc == HEXSTAT_SUCCESS) {
+      name = &(buffer[0]);
+      namelen = len;
+      // path, trimmed whitespaces
+      trim(&name, &namelen);
+      // ToDo: We need a simple parser. That requires more knowledge of C/C++ then I have
+      // and some string operations. This is a very simple implementation:
+      do {
+        comma = (uint8_t *)strchr((char *)name, ',');
+        if (comma != NULL) comma[0] = 0; // terminating next command
+        namelen = strlen((char *)name);
+        trim(&name, &namelen);
+        if (namelen > 3 && (name[1]=='d' || name[1]=='D') && name[2]==' ')  {
+          cmd = name[0];
+          name = &(name[3]);
+          namelen = strlen((char *)name);
+          trim(&name, &namelen);
+          if (cmd == 'c' || cmd == 'C')
+            res = f_chdir(&fs,(UCHAR*)name);
+          else if (cmd == 'm' || cmd == 'M')
+            res = f_mkdir(&fs,(UCHAR*)name);
+          else
+            res = FR_RW_ERROR;
+          }
+        else if (namelen > 3 && (name[1]=='n' || name[1]=='N') && name[2]==' ')  {
+          cmd = name[0];
+          name = &(name[3]);
+          if (cmd == 'r' || cmd == 'R'){
+            s = (uint8_t *)strchr((char *)name, '=');
+            if (s != NULL){
+              s[0] = 0; // terminating 0 for name
+              newname = &(s[1]);
+              namelen = strlen((char *)name);
+              trim(&name, &namelen);
+              namelen = strlen((char *)newname);
+              trim(&newname, &namelen);
+              res = f_rename(&fs,(UCHAR*)name,(UCHAR*)newname);
+            }
+            else
+              res = FR_RW_ERROR;
+          }
+          else
+            res = FR_RW_ERROR;
+          }
+        else
+          res = FR_RW_ERROR;
+        if (comma != NULL) name = &(comma[1]);
+      } while (res == FR_OK && comma != NULL);
+      }
+    else
+      res = FR_RW_ERROR;
+  }
+  else {
+    res = FR_INVALID_OBJECT;
+    hex_eat_it( len, res ); // reports status back.
+    return HEXERR_BAV;
+  }
+  if (rc == HEXSTAT_SUCCESS) {
+    switch (res) {
+      case FR_OK:
+        rc = HEXSTAT_SUCCESS;
+        break;
+      default:
+        rc = HEXSTAT_DEVICE_ERR;
+        break;
+    }
+  }
+  debug_putc(']');
+
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_final_response( rc );
+  } else {
+    hex_finish();
+  }
+  return HEXERR_SUCCESS;
+}
+
 
 /*
    hex_drv_write() -
@@ -332,25 +423,31 @@ static uint8_t hex_drv_write(pab_t pab) {
   UINT written;
   file_t* file = NULL;
   BYTE res = FR_OK;
-
+  
   debug_puts_P(PSTR("\n\rWrite File\n\r"));
 
-  file = find_lun(pab.lun);
   len = pab.datalen;
+  file = find_lun(pab.lun);
+  if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
+    // handle command channel
+    return hex_drv_write_cmd(pab);
+  }
   res = (file != NULL ? FR_OK : FR_NO_FILE);
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
+    // if we're not at the right record position, reposition
     if (file->fp.fsize < pab.buflen * pab.record){
       res = f_lseek( &(file->fp), file->fp.fsize );
       buffer[0] = 0;
       for (i = file->fp.fsize; i < pab.buflen * pab.record; i++)
         res = f_write(&(file->fp), buffer, 1, &written);
     }  
+    // TODO I don't think we need this additional seek...
     res = f_lseek(&(file->fp), pab.buflen * pab.record);
   }
+  // OK, read the data we need to send to the file
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
-
     if (file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
 
       res = f_write(&(file->fp), buffer, i, &written);
@@ -376,19 +473,18 @@ static uint8_t hex_drv_write(pab_t pab) {
   // if in DISPLAY mode
   if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
 	// add CRLF to data (for DISPLAY mode)
-	buffer[0] = 13;
-	buffer[1] = 10;
+    buffer[0] = 13;
+    buffer[1] = 10;
 
-	res = f_write(&(file->fp), buffer, 2, &written);
-	if (!res) {
-	  debug_putcrlf();
-	  debug_trace(buffer, 0, written);
-	}
-	if (written != 2) {
-	  rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
-	}
+    res = f_write(&(file->fp), buffer, 2, &written);
+    if (!res) {
+      debug_putcrlf();
+      debug_trace(buffer, 0, written);
+    }
+    if (written != 2) {
+      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    }
   }
-
   if (rc == HEXSTAT_SUCCESS) {
     switch (res) {
       case FR_OK:
@@ -407,6 +503,19 @@ static uint8_t hex_drv_write(pab_t pab) {
   } else {
     hex_finish();
   }
+  return HEXERR_SUCCESS;
+}
+
+static uint8_t hex_drv_read_cmd(pab_t pab) {
+  uint8_t rc;
+  // This really should always succeed
+  transmit_word(0);      // null file
+  rc = HEXSTAT_NOT_FOUND;
+  if ( !fs_initialized ) {
+    rc = HEXSTAT_DEVICE_ERR;
+  }
+  transmit_byte( rc ); // status byte transmit
+  hex_finish();
   return HEXERR_SUCCESS;
 }
 
@@ -444,6 +553,11 @@ static uint8_t hex_drv_read(pab_t pab) {
   debug_puts_P(PSTR("\n\rRead File\n\r"));
 
   file = find_lun(pab.lun);
+  if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
+    // handle command channel read
+    return hex_drv_read_cmd(pab);
+  }
+
   if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab.lun == 0 ) {
       debug_putc('P');
@@ -592,6 +706,30 @@ static uint8_t hex_drv_open(pab_t pab) {
     return hex_open_catalog(file, pab.lun, att, (char*)path);  // check file!= null in there
   }
   //*******************************************************
+  // special file name "" -> command_mode
+  if (path[0] == 0)  {
+    file = reserve_lun(pab.lun);
+    if (file != NULL){
+      file->attr |= FILEATTR_COMMAND;
+      rc = HEXSTAT_SUCCESS;
+    }
+    else
+      rc = HEXSTAT_MAX_LUNS;      
+    if(!hex_is_bav()) { // we can send response
+      if(rc == HEXSTAT_SUCCESS) {
+        transmit_word(2); 
+        transmit_word(255);
+        transmit_byte(HEXSTAT_SUCCESS);    // status code
+        hex_finish();
+        return HEXERR_SUCCESS;
+      } else
+        hex_send_final_response( rc );
+    }
+    hex_finish();
+    debug_putc('E');
+    return HEXERR_BAV;
+  }
+  //*******************************************************
   // map attributes to FatFS file access mode
   switch (att & OPENMODE_MASK) {
     case OPENMODE_APPEND:  // append mode
@@ -618,6 +756,7 @@ static uint8_t hex_drv_open(pab_t pab) {
       res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
       // TODO we can remove if we add FA_OPEN_APPEND to FatFS
       if(res == FR_OK && (att & OPENMODE_MASK) == OPENMODE_APPEND ) {
+        // TODO we can remove if we add FA_OPEN_APPEND to FatFS
         res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
       }
 
@@ -729,7 +868,8 @@ static uint8_t hex_drv_close(pab_t pab) {
 
   file = find_lun(pab.lun);
   if (file != NULL) {
-    if(!(file->attr & FILEATTR_CATALOG)) {
+    // Don't need to close the command channel.
+    if(!(file->attr & FILEATTR_CATALOG) && !(file->attr & FILEATTR_COMMAND)) {
       res = f_close(&(file->fp));
     }
     free_lun(pab.lun);
@@ -766,7 +906,7 @@ static uint8_t hex_drv_close(pab_t pab) {
 static uint8_t hex_drv_restore( pab_t pab ) {
   uint8_t  rc = HEXSTAT_SUCCESS;
   file_t*  file = NULL;
-  BYTE     res = 0;
+  //BYTE     res = 0;
 
   debug_puts_P(PSTR("\n\rDrive Restore\n\r"));
   if ( open_files ) {

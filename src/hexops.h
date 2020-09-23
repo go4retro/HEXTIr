@@ -40,12 +40,13 @@ typedef struct _pab_raw_t {
   };
 } pab_raw_t;
 
-#define FILEATTR_READ     1
-#define FILEATTR_WRITE    2
-#define FILEATTR_PROTECT  4
-#define FILEATTR_DISPLAY  8
+#define FILEATTR_READ      1
+#define FILEATTR_WRITE     2
+#define FILEATTR_PROTECT   4
+#define FILEATTR_DISPLAY   8
 #define FILEATTR_CATALOG  16
 #define FILEATTR_RELATIVE 32
+#define FILEATTR_COMMAND  64
 
 uint8_t hex_get_data(uint8_t buf[256], uint16_t len);
 void hex_eat_it(uint16_t length, uint8_t status );

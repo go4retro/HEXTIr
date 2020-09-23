@@ -1,0 +1,17 @@
+Example for managing directories:
+
+md path: mkdir
+cd path: changedir (set current working dir)
+rn oldname=newname: rename file or directory
+
+example:
+open #1,"100"
+print #1,"md /test"
+print #1,"cd /test"
+print #1,"md a"
+print #1,"rn a=b"
+close #1
+
+You may use multiple commands in one print statement, eg.
+
+print #1,"md /test,cd /test,md a,rn a=b"
