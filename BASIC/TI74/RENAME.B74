@@ -1,0 +1,5 @@
+  100 INPUT "old name: ";ON$
+  110 INPUT "new name: ";NN$
+  120 OPEN #1,"100"
+  130 PRINT #1,"rn "&ON$&"="&NN$
+  140 CLOSE #1
