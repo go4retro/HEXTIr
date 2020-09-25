@@ -86,7 +86,7 @@ static uint8_t hex_rtc_open( pab_t pab ) {
 /*
    Close access to RTC module. Shuts down Wire.
 */
-static uint8_t hex_rtc_close(pab_t pab) {
+static uint8_t hex_rtc_close(pab_t pab __attribute__((unused))) {
   uint8_t rc = HEXSTAT_SUCCESS;
   if ( rtc_open ) {
     clock_reset();

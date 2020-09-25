@@ -248,13 +248,13 @@ static uint8_t hex_ser_write(pab_t pab) {
 }
 
 
-static uint8_t hex_ser_rtn_sta(pab_t pab) {
+static uint8_t hex_ser_rtn_sta(pab_t pab __attribute__((unused))) {
   // TBD
   return HEXERR_SUCCESS;
 }
 
 
-static uint8_t hex_ser_set_opts(pab_t pab) {
+static uint8_t hex_ser_set_opts(pab_t pab __attribute__((unused))) {
   // TBD
   return HEXERR_SUCCESS;
 }

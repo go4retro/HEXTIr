@@ -506,7 +506,7 @@ static uint8_t hex_drv_write(pab_t pab) {
   return HEXERR_SUCCESS;
 }
 
-static uint8_t hex_drv_read_cmd(pab_t pab) {
+static uint8_t hex_drv_read_cmd(pab_t pab __attribute__((unused))) {
   uint8_t rc;
   // This really should always succeed
   transmit_word(0);      // null file

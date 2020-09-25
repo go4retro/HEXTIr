@@ -184,7 +184,7 @@ static uint8_t hex_cfg_open( pab_t pab ) {
  * hex_cfg_close() - 
  * Close an open configuration port
  */
-static uint8_t hex_cfg_close( pab_t pab ) {
+static uint8_t hex_cfg_close( pab_t pab __attribute__((unused))) {
   uint8_t rc = HEXSTAT_SUCCESS;
 
   if ( cfg_open ) {
@@ -262,7 +262,7 @@ static uint8_t hex_cfg_read( pab_t pab ) {
  * hex_cfg_restore() -
  * minimal "restore" support.
  */
-static uint8_t hex_cfg_restore( pab_t pab ) {
+static uint8_t hex_cfg_restore( pab_t pab __attribute__((unused))) {
   uint8_t rc;
 
   if ( !hex_is_bav() ) {
