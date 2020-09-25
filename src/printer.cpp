@@ -26,17 +26,10 @@
 #include "hexbus.h"
 #include "hexops.h"
 #include "timer.h"
-
-#ifdef INCLUDE_PRINTER
-
-//#ifdef ARDUINO
-//#include <Arduino.h>
-//#else
 #include "swuart.h"
-//#endif
-
 #include "printer.h"
 
+#ifdef INCLUDE_PRINTER
 
 // Global references
 extern uint8_t buffer[BUFSIZE];
@@ -246,5 +239,4 @@ void prn_init( void ) {
 //#endif
   return;
 }
-
 #endif

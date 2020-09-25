@@ -33,6 +33,8 @@
 #include "config.h"
 #include "i2c.h"
 
+#ifdef HAVE_I2C
+
 #define SOFTI2C_SDA _BV(SOFTI2C_BIT_SDA)
 #define SOFTI2C_SCL _BV(SOFTI2C_BIT_SCL)
 
@@ -208,3 +210,4 @@ void i2c_init(void) {
   set_sda(1);
   set_scl(1);
 }
+#endif

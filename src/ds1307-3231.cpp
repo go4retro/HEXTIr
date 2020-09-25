@@ -34,12 +34,15 @@
 #include <stdint.h>
 #include <string.h>
 #include <avr/pgmspace.h>
+
 #include "config.h"
 #include "debug.h"
 #include "i2c.h"
 #include "time.h"
-#include "ds1307-3231.h"
 #include "rtc.h"
+#include "ds1307-3231.h"
+
+#ifdef CONFIG_RTC_DSRTC     // hide file from Arduino if not enabled
 
 #define RTC_ADDR 0xd0
 
@@ -170,3 +173,4 @@ fail:
   debug_putcrlf();
 }
 void rtc_init(void) __attribute__ ((weak, alias("dsrtc_init")));
+#endif

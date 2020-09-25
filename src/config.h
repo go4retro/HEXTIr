@@ -38,7 +38,7 @@
 //#define CONFIG_UART_DEBUG_SW
 #define CONFIG_UART_DEBUG_RATE    115200
 #define CONFIG_UART_DEBUG_FLUSH
-#define CONFIG_UART_BUF_SHIFT     8
+//#define CONFIG_UART_BUF_SHIFT     8
 
 #endif
 
@@ -53,6 +53,7 @@
 
 //#define INCLUDE_PRINTER
 //#define INCLUDE_SERIAL
+//#define INCLUDE_CLOCK
 
 #  define HEX_HSK_DDR         DDRC
 #  define HEX_HSK_OUT         PORTC
@@ -135,6 +136,7 @@ static inline void pwr_irq_disable(void) {
 
 #define INCLUDE_PRINTER
 #define INCLUDE_SERIAL
+#define INCLUDE_CLOCK
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -214,13 +216,16 @@ static inline void pwr_irq_disable(void) {
 
 #define INCLUDE_PRINTER
 #define INCLUDE_SERIAL
+#define INCLUDE_CLOCK
 
 // This needs to be moved somewhere else...
+//--------------------------
 #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
 #define VERSION "0.9.1.3"
 #define CONFIG_RTC_DSRTC
 //#define CONFIG_RTC_SOFTWARE
 #define CONFIG_SD_AUTO_RETRIES 10
+//--------------------------
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -305,6 +310,7 @@ static inline void pwr_irq_disable(void) {
 
 //#define INCLUDE_PRINTER
 //#define INCLUDE_SERIAL
+//#define INCLUDE_CLOCK
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -436,26 +442,36 @@ static inline void leds_sleep(void) {
 #define TOSTRING(x) STRINGIFY(x)
 
 /* ----- Translate CONFIG_RTC_* symbols to HAVE_RTC symbol ----- */
-#if defined(CONFIG_RTC_SOFTWARE) || \
-    defined(CONFIG_RTC_PCF8583)  || \
-    defined(CONFIG_RTC_DSRTC)
-#  define HAVE_RTC
-#  define HAVE_I2C
+#if defined(INCLUDE_CLOCK)
+  #if defined(CONFIG_RTC_DSRTC) || \
+      defined(CONFIG_RTC_PCF8583)
+    #define HAVE_I2C
+  #endif
+
+  #if defined(CONFIG_RTC_SOFTWARE) || \
+      defined(CONFIG_RTC_PCF8583)  || \
+      defined(CONFIG_RTC_DSRTC)
+    #define HAVE_RTC
 
 /* calculate the number of enabled RTCs */
-#  if defined(CONFIG_RTC_SOFTWARE) + \
-      defined(CONFIG_RTC_PCF8583)  + \
-      defined(CONFIG_RTC_DSRTC)  > 1
-#    define NEED_RTCMUX
-#  endif
-#endif
-
-#if defined HAVE_RTC || CONFIG_HARDWARE_VARIANT == 3
-#  define INCLUDE_CLOCK
+    #if defined(CONFIG_RTC_SOFTWARE) + \
+        defined(CONFIG_RTC_PCF8583)  + \
+        defined(CONFIG_RTC_DSRTC)  > 1
+      #define NEED_RTCMUX
+    #endif
+  #endif
+#else
+  #undef CONFIG_RTC_SOFTWARE
+  #undef CONFIG_RTC_PCF8583
+  #undef CONFIG_RTC_DSRTC
 #endif
 
 #if defined INCLUDE_SERIAL || defined CONFIG_UART_DEBUG
 #  define UART0_ENABLE
+#endif
+
+#if defined (INCLUDE_PARALLEL) || defined (CONFIG_UART_DEBUG_SW)
+  #define SWUART_ENABLE
 #endif
 
 #ifdef CONFIG_UART_DEBUG

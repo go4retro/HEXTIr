@@ -40,8 +40,10 @@
 #include "debug.h"
 #include "i2c.h"
 #include "time.h"
-#include "pcf8583.h"
 #include "rtc.h"
+#include "pcf8583.h"
+
+#ifdef CONFIG_RTC_PCF8583   // hide file from Arduino if not enabled
 
 #if defined(I2C_EEPROM_ADDRESS) && I2C_EEPROM_ADDRESS == 0xa0
 #  define PCF8583_ADDR 0xa2
@@ -157,3 +159,4 @@ void pcf8583_init(void) {
   debug_putcrlf();
 }
 void rtc_init(void) __attribute__ ((weak, alias("pcf8583_init")));
+#endif

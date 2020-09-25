@@ -96,10 +96,9 @@ ifeq ($(CONFIG_UART_DEBUG_SW),y)
 endif
 
 ifeq ($(CONFIG_RTC_SOFTWARE),y)
-  SRC += ds1307-3231.c
+  SRC += softrtc.c
   SRC += rtc.c
   SRC += clock.c
-  SRC += softi2c.c
 endif
 
 ifeq ($(CONFIG_RTC_DSRTC),y)
@@ -205,6 +204,8 @@ CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT) 
 CFLAGS += -fno-strict-aliasing
 CFLAGS += -Wall 
+CFLAGS += -Wsign-compare
+CFLAGS += -Wunused-parameter
 CFLAGS += -Wstrict-prototypes 
 # Add this if you want all warnings output as errors.
 #CFLAGS += -Werror

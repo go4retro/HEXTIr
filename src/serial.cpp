@@ -26,15 +26,7 @@
 #include "hexbus.h"
 #include "hexops.h"
 #include "timer.h"
-
-//#ifdef ARDUINO
-// WORK IN PROGRESS - some of the routines will flag an unused parameter 'pab' warning.
-//#include <SoftwareSerial.h>
-//#include <Arduino.h>
-//#else
 #include "uart.h"
-//#endif
-
 #include "serial.h"
 
 #ifdef INCLUDE_SERIAL
@@ -326,5 +318,4 @@ void ser_reset(void) {
 void ser_init(void) {
   ser_open = FALSE;
 }
-
 #endif
