@@ -323,7 +323,7 @@ static uint8_t hex_rtc_write( pab_t pab ) {
 }
 
 
-static uint8_t hex_rtc_reset( pab_t pab ) {
+static uint8_t hex_rtc_reset( pab_t pab __attribute__((unused))) {
   clock_reset();
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
