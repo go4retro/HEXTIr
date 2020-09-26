@@ -87,4 +87,3 @@ hexstatus_t hex_null( __attribute__((unused)) pab_t pab ) {
     ;
   return HEXSTAT_SUCCESS;
 }
-

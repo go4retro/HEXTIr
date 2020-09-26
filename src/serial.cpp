@@ -270,6 +270,17 @@ static hexstatus_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
 }
 
 
+void ser_reset(void) {
+  if ( ser_open ) {
+//#ifdef ARDUINO
+//    serial_peripheral.end();
+//#endif
+    ser_open = FALSE;
+  }
+  return;
+}
+
+
 /*
    Command handling registry for device
 */
@@ -309,24 +320,34 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+void ser_register(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, ops);
+#else
+  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, op_table, fn_table);
+#endif
+#else
+  uint8_t i = registry.num_devices;
 
-void ser_reset(void) {
-  if ( ser_open ) {
-//#ifdef ARDUINO
-//    serial_peripheral.end();
-//#endif
-    ser_open = FALSE;
-  }
-  return;
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_SER_START;
+  registry.entry[ i ].dev_cur = DEV_SER_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_SER_END; // support 20, 21, 22, 23 as device codes
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ i ].oplist = (cmd_op_t *)ops;
+#else
+  registry.entry[ i ].operation = (cmd_proc *)fn_table;
+  registry.entry[ i ].command = (uint8_t *)op_table;
+#endif
+#endif
 }
 
 
 void ser_init(void) {
   ser_open = FALSE;
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, (const cmd_op_t**)&ops);
-#else
-  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#ifdef INIT_COMBO
+  ser_register();
 #endif
 }
 #endif
