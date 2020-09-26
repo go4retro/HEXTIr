@@ -138,7 +138,7 @@ void hex_finish( void )
  * wait while HSK is high for a low edge. 
  * If we lose BAV, return err.
  */
-static uint8_t hex_wait_for_hsk_lo( void ) {
+static hexerror_t hex_wait_for_hsk_lo( void ) {
   do
   {
     if (hex_is_bav()) {
@@ -162,7 +162,7 @@ static uint8_t hex_wait_for_hsk_lo( void ) {
  * and hold the incoming HSK signal for us.  Without that logic,
  * we cannot use LOW POWER mode; STANDBY is the best we can do.
  */
-uint8_t hex_capture_hsk( void ) {
+hexerror_t hex_capture_hsk( void ) {
   if ( !hex_wait_for_hsk_lo() ) {
     hex_hsk_lo();
   }
@@ -177,7 +177,7 @@ uint8_t hex_capture_hsk( void ) {
    return value is status (HEX_BAVERR or HEXERR_SUCCESS)
 */
 
-uint8_t receive_byte( uint8_t *inout)
+hexerror_t receive_byte( uint8_t *inout)
 {
   uint8_t lsn, msn;
   
@@ -236,7 +236,7 @@ lowhsk:  // Host has driven HSK low. Peripheral side must now hold it low.
 
 */
 
-uint8_t transmit_byte( uint8_t xmit )
+hexerror_t transmit_byte( uint8_t xmit )
 {
   uint8_t nibble = xmit;
 
@@ -277,9 +277,9 @@ uint8_t transmit_byte( uint8_t xmit )
    transmit_word() -
    use transmit_byte() to send LSB/MSB of a word over the bus.
 */
-uint8_t transmit_word( uint16_t value )
+hexerror_t transmit_word( uint16_t value )
 {
-  uint8_t rc;
+  hexerror_t rc;
 
   // Send LSB of word over bus
   rc = transmit_byte( value & 0xff );
@@ -312,7 +312,7 @@ void hex_send_size_response( uint16_t len )
    byte of error code response, then release and finish
    up the bus cycle.
 */
-void hex_send_final_response( uint8_t rc )
+void hex_send_final_response( hexstatus_t rc )
 {
   transmit_word( 0 );
   transmit_byte( rc );

@@ -33,9 +33,6 @@
 
 #ifdef INCLUDE_PRINTER
 
-// Global references
-extern uint8_t buffer[BUFSIZE];
-
 // Global defines
 volatile uint8_t  prn_open = 0;
 
@@ -44,24 +41,21 @@ volatile uint8_t  prn_open = 0;
    hex_prn_open() -
    "opens" the Serial.object for use as a printer at device code 12 (default PC-324 printer).
 */
-static uint8_t hex_prn_open(pab_t pab) {
+static hexstatus_t hex_prn_open(pab_t pab) {
   uint16_t len = 0;
-  uint8_t  rc = HEXSTAT_SUCCESS;
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
   uint8_t  att = 0;
-  BYTE     res = HEXSTAT_SUCCESS;
 
-  len = 0;
-  memset( buffer, 0, BUFSIZE );
+  debug_puts_P(PSTR("Open Printer\n"));
+
+
   if ( hex_get_data( buffer, pab.datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
   }
   if ( !prn_open ) {
-    if ( (res == HEXSTAT_SUCCESS) && ( att != OPENMODE_WRITE ) ) {
+    if ( att != OPENMODE_WRITE ) {
       rc = HEXSTAT_OPTION_ERR;
-    }
-    if ( res != HEXSTAT_SUCCESS ) {
-      rc = res;
     }
   } else {
     rc = HEXSTAT_ALREADY_OPEN;
@@ -80,10 +74,10 @@ static uint8_t hex_prn_open(pab_t pab) {
     {
       hex_send_final_response( rc );
     }
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 
@@ -91,8 +85,8 @@ static uint8_t hex_prn_open(pab_t pab) {
    hex_prn_close() -
    closes printer at device 12 for use from host.
 */
-static uint8_t hex_prn_close(__attribute__((unused)) pab_t pab) {
-  uint8_t rc = HEXSTAT_SUCCESS;
+static hexstatus_t hex_prn_close(__attribute__((unused)) pab_t pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
 
   if ( !prn_open ) {
     rc = HEXSTAT_NOT_OPEN;
@@ -102,7 +96,7 @@ static uint8_t hex_prn_close(__attribute__((unused)) pab_t pab) {
     // send 0000 response with appropriate status code.
     hex_send_final_response( rc );
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
@@ -110,15 +104,17 @@ static uint8_t hex_prn_close(__attribute__((unused)) pab_t pab) {
     hex_prn_write() -
     write data to serial port when printer is open.
 */
-static uint8_t hex_prn_write(pab_t pab) {
+static hexstatus_t hex_prn_write(pab_t pab) {
   uint16_t len;
   uint16_t i;
-  UINT     written = 0;
-  uint8_t  rc = HEXERR_SUCCESS;
+  uint8_t  written = 0;
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P(PSTR("Write Printer\n"));
 
   len = pab.datalen;
 
-  while ( len && rc == HEXERR_SUCCESS ) {
+  while ( len && rc == HEXSTAT_SUCCESS ) {
     i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
     /*
@@ -179,11 +175,11 @@ static uint8_t hex_prn_write(pab_t pab) {
   } else {
     hex_finish();
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
-static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
+static hexstatus_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
   
   prn_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -192,7 +188,7 @@ static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 

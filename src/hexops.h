@@ -21,6 +21,22 @@
 #ifndef HEXOPS_H
 #define HEXOPS_H
 
+#define LUN_CMD       255
+
+// add 1 to buffer size to handle null termination if used as a string
+extern uint8_t buffer[BUFSIZE + 1];
+
+
+#define upper(x) ((x >= 'a') && (x <= 'z') ? x - ('a' - 'A') : x)
+#define lower(x) ((x >= 'A') && (x <= 'Z') ? x + ('a' - 'A') : x)
+
+typedef struct _action_t {
+  uint8_t action;
+  char text[8];
+} action_t;
+
+
+
 /*
     PAB (Peripheral Access Block) data structure
 */
@@ -48,9 +64,10 @@ typedef struct _pab_raw_t {
 #define FILEATTR_RELATIVE 32
 #define FILEATTR_COMMAND  64
 
-uint8_t hex_get_data(uint8_t buf[256], uint16_t len);
-void hex_eat_it(uint16_t length, uint8_t status );
-uint8_t hex_unsupported(pab_t pab);
-uint8_t hex_null( __attribute__((unused)) pab_t pab );
+hexstatus_t hex_get_data(uint8_t buf[256], uint16_t len);
+void hex_eat_it(uint16_t length, hexstatus_t rc);
+hexstatus_t hex_unsupported(pab_t pab);
+hexstatus_t hex_null( __attribute__((unused)) pab_t pab );
+//void trim(uint8_t **buf, uint8_t *blen);
 
 #endif  // hexops_h

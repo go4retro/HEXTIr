@@ -6,6 +6,8 @@
 #ifndef REGISTRY_H
 #define REGISTRY_H
 
+#include "hexbus.h"
+
 //#define MAX_REGISTRY      8
 #define MAX_REGISTRY   (1 + 1 + PRN_ADD + SER_ADD + RTC_ADD) // drive + null device
 #ifdef INCLUDE_PRINTER
@@ -24,7 +26,7 @@
 #define RTC_ADD       0
 #endif
 
-typedef uint8_t (*cmd_proc)(pab_t pab);
+typedef hexstatus_t (*cmd_proc)(pab_t pab);
 
 #ifdef USE_NEW_OPTABLE
 // This is used as a marker in our registry to indicate end of operations table.
@@ -33,7 +35,7 @@ typedef uint8_t (*cmd_proc)(pab_t pab);
 
 typedef struct _cmd_op_t {
   hexcmdtype_t command;
-  uint8_t (*operation)(pab_t);
+  hexstatus_t (*operation)(pab_t);
 } cmd_op_t;
 
 #else

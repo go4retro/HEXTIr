@@ -19,7 +19,6 @@
 */
 
 
-#include <stddef.h>
 #include "config.h"
 #include "debug.h"
 #include "hexbus.h"
@@ -29,27 +28,28 @@
 
 #include "hexops.h"
 
-uint8_t buffer[BUFSIZE];
+// add 1 to buffer size to handle null termination if used as a string
+uint8_t buffer[BUFSIZE + 1];
 
-uint8_t hex_get_data(uint8_t *buf, uint16_t len) {
-  uint8_t rc = HEXERR_SUCCESS;
+hexstatus_t hex_get_data(uint8_t *buf, uint16_t len) {
   uint16_t i = 0;
 
   while (i < len) {
     buf[ i ] = 1;
-    if((rc = receive_byte( &buf[ i++ ] )) != HEXERR_SUCCESS) {
-      return HEXERR_BAV;
+    if(receive_byte( &buf[ i++ ] ) != HEXERR_SUCCESS) {
+      // TODO probably should define what errors could happen
+      return HEXSTAT_DATA_ERR;
     }
   }
   if (len > 0) {
     debug_putcrlf();
     debug_trace(buf, 0, len);
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
-void hex_eat_it(uint16_t length, uint8_t status )
+void hex_eat_it(uint16_t length, hexstatus_t status )
 {
   uint16_t i = 0;
   uint8_t  data;
@@ -75,15 +75,16 @@ void hex_eat_it(uint16_t length, uint8_t status )
  * hex_unsupported() should be used for any command on any device
  * where we provide no support for that command.
  */
-uint8_t hex_unsupported(pab_t pab) {
+hexstatus_t hex_unsupported(pab_t pab) {
   hex_eat_it(pab.datalen, HEXSTAT_UNSUPP_CMD );
-  return HEXERR_BAV;
+  return HEXSTAT_UNSUPP_CMD;
 }
 
 
-uint8_t hex_null( __attribute__((unused)) pab_t pab ) {
+hexstatus_t hex_null( __attribute__((unused)) pab_t pab ) {
   hex_release_bus();
   while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
     ;
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
+

@@ -41,16 +41,17 @@ volatile uint8_t  ser_open = 0;
 //SoftwareSerial    serial_peripheral( 8, 9 );  // either can support interrupts, and are otherwise available.
 //#endif
 
-extern uint8_t buffer[BUFSIZE];
-
 /*
    her_ser_open()
 */
-static uint8_t hex_ser_open(pab_t pab) {
+static hexstatus_t hex_ser_open(pab_t pab) {
   char     *attrib;
-  long     baud = 9600;
+  __attribute__((unused))long     baud = 9600;
   uint16_t len;
   uint8_t  att;
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P(PSTR("Open Serial\n"));
 
   len = 0;
   memset( buffer, 0, BUFSIZE );
@@ -60,7 +61,7 @@ static uint8_t hex_ser_open(pab_t pab) {
     att = buffer[ 2 ];  // tells us open for read, write or both.
   } else {
     hex_release_bus();
-    return HEXERR_BAV; // BAV ERR.
+    return HEXSTAT_BUS_ERR;
   }
   // Now, we need to parse the input buffer and decide on parameters.
   // realistically, all we can actually support is B=xxx.  Some other
@@ -103,29 +104,29 @@ static uint8_t hex_ser_open(pab_t pab) {
           transmit_word( 0 );
           transmit_byte( HEXSTAT_SUCCESS );
           hex_finish();
-          return HEXERR_SUCCESS;
+          return HEXSTAT_SUCCESS;
         } else {
-          att = HEXSTAT_APPEND_MODE_ERR;
+          rc = HEXSTAT_APPEND_MODE_ERR;
         }
       } else {
-        att = HEXSTAT_ATTR_ERR;
+        rc = HEXSTAT_ATTR_ERR;
       }
     } else {
-      att = HEXSTAT_ALREADY_OPEN;
+      rc = HEXSTAT_ALREADY_OPEN;
     }
-    hex_send_final_response( att );
-    return HEXERR_SUCCESS;
+    hex_send_final_response( rc );
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 
 /*
    hex_ser_close()
 */
-static uint8_t hex_ser_close(__attribute__((unused)) pab_t pab) {
-  uint8_t rc = HEXSTAT_SUCCESS;
+static hexstatus_t hex_ser_close(__attribute__((unused)) pab_t pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
 
   if ( ser_open ) {
     ser_reset();
@@ -134,17 +135,19 @@ static uint8_t hex_ser_close(__attribute__((unused)) pab_t pab) {
   }
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 
-static uint8_t hex_ser_read(pab_t pab) {
+static hexstatus_t hex_ser_read(pab_t pab) {
   uint16_t len = pab.buflen;
   uint16_t bcount = 0;
-  int8_t  rc = HEXSTAT_SUCCESS;
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P(PSTR("Read Serial\n"));
 
   if ( ser_open ) {
     // protect access via ser_open since serial_peripheral is not present
@@ -162,10 +165,10 @@ static uint8_t hex_ser_read(pab_t pab) {
   if ( !hex_is_bav() ) {
     if ( ser_open & OPENMODE_READ ) {
       // send how much we are going to send
-      rc = transmit_word( bcount );
+      rc = (transmit_word( bcount ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 
       // while we have data remaining to send.
-      while ( bcount && rc == HEXERR_SUCCESS ) {
+      while ( bcount && rc == HEXSTAT_SUCCESS ) {
 
         len = bcount;    // remaing amount to read from file
         // while it fit into buffer or not?  Only read as much
@@ -177,11 +180,11 @@ static uint8_t hex_ser_read(pab_t pab) {
 //#ifdef ARDUINO
 //          rc = transmit_byte( serial_peripheral.read() );
 //#else
-          rc = transmit_byte( uart_getc() );
+          rc = (transmit_byte( uart_getc() ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 //#endif
         }
       }
-      if ( rc != HEXERR_BAV ) {
+      if ( rc == HEXSTAT_SUCCESS ) {
         transmit_byte( rc );
       }
       hex_finish();
@@ -192,22 +195,22 @@ static uint8_t hex_ser_read(pab_t pab) {
       // not open at all?
       hex_send_final_response( HEXSTAT_NOT_OPEN );
     }
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 
-static uint8_t hex_ser_write(pab_t pab) {
+static hexstatus_t hex_ser_write(pab_t pab) {
   uint16_t len;
   uint16_t i;
   uint16_t j;
-  uint8_t  rc = HEXERR_SUCCESS;
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
 
   len = pab.datalen;
   if ( ser_open & OPENMODE_WRITE ) {
-    while (len && rc == HEXERR_SUCCESS ) {
+    while (len && rc == HEXSTAT_SUCCESS ) {
       i = (len >= BUFSIZE ? BUFSIZE : len);
       rc = hex_get_data(buffer, i);
       if (rc == HEXSTAT_SUCCESS) {
@@ -230,31 +233,31 @@ static uint8_t hex_ser_write(pab_t pab) {
 
   if ( len ) {
     hex_eat_it( len, rc );
-    return HEXERR_BAV;
+    return HEXSTAT_BUS_ERR;
   }
 
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 
-static uint8_t hex_ser_rtn_sta(pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_ser_rtn_sta(pab_t pab __attribute__((unused))) {
   // TBD
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
-static uint8_t hex_ser_set_opts(pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_ser_set_opts(pab_t pab __attribute__((unused))) {
   // TBD
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
-static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
+static hexstatus_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
 
   ser_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -263,7 +266,7 @@ static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 

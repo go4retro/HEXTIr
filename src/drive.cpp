@@ -38,14 +38,42 @@
 FATFS fs;
 #include "diskio.h"
 
-// Global references
-extern uint8_t buffer[BUFSIZE];
-
 // Global defines
 uint8_t open_files = 0;
 luntbl_t files[MAX_OPEN_FILES]; // file number to file mapping
 uint8_t fs_initialized = FALSE;
 
+
+/**
+ * Remove all leading and trailing whitespaces
+ */
+static void trim(uint8_t **buf, uint8_t *blen) {
+  uint8_t i;
+
+  // Trim leading space
+  while(**buf == ' ') {
+    (*buf)++;
+    (*blen)--;
+  }
+
+  if(!(*blen)) {  // All spaces?
+    (*buf)[0] = '\0';
+    return;
+  }
+
+  // Trim trailing space
+  i = *blen - 1;
+  while(i) {
+    if((*buf)[i] != ' ')
+      break;
+    i--;
+    (*blen)--;
+  }
+
+  // Write new null terminator character
+  (*buf)[*blen] = '\0';
+  return;
+}
 
 static file_t* find_file_in_use(uint8_t *lun) {
   uint8_t i;
@@ -96,7 +124,7 @@ static void free_lun(uint8_t lun) {
     if (files[i].used && files[i].lun == lun) {
       files[i].used = FALSE;
       if (files[i].file.pattern != (char*) NULL)
-    	  free(files[i].file.pattern);
+        free(files[i].file.pattern);
       open_files--;
       set_busy_led(open_files);
       if ( !open_files ) {
@@ -152,42 +180,11 @@ static uint16_t next_value_size_display(file_t* file) {
  * Get the size of the next stored value.
  */
 static uint16_t next_value_size(file_t* file) {
-	if (file->attr & FILEATTR_DISPLAY) {
-	  return next_value_size_display(file);
-	} else {
-	  return next_value_size_internal(file);
-	}
-}
-
-/**
- * Remove all leading and trailing whitespaces
- */
-void trim(uint8_t **buf, uint8_t *blen) {
-  uint8_t i;
-
-  // Trim leading space
-  while(**buf == ' ') {
-    (*buf)++;
-    (*blen)--;
+  if (file->attr & FILEATTR_DISPLAY) {
+    return next_value_size_display(file);
+  } else {
+    return next_value_size_internal(file);
   }
-
-  if(!(*blen)) {  // All spaces?
-    (*buf)[0] = '\0';
-    return;
-  }
-
-  // Trim trailing space
-  i = *blen - 1;
-  while(i) {
-    if((*buf)[i] != ' ')
-      break;
-    i--;
-    (*blen)--;
-  }
-
-  // Write new null terminator character
-  (*buf)[*blen] = '\0';
-  return;
 }
 
 /*
@@ -213,7 +210,7 @@ void trim(uint8_t **buf, uint8_t *blen) {
    transmitted in the verify command until sending stops.
 */
 
-static uint8_t hex_drv_verify(pab_t pab) {
+static hexstatus_t hex_drv_verify(pab_t pab) {
   uint16_t len_prog_mem = 0;
   uint16_t len_prog_stored = 0;
   uint8_t  *data = &buffer[ BUFSIZE / 2 ]; // split our buffer in half
@@ -223,9 +220,10 @@ static uint8_t hex_drv_verify(pab_t pab) {
   uint16_t i;
   file_t*  file;
   BYTE     res = FR_OK;
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t  first_buffer = 1;
 
-  debug_putc('>');
+  debug_puts_P(PSTR("Verify File\n"));
 
   file = find_lun(pab.lun);
   len = pab.datalen;   // this is the size of the object to verify
@@ -239,7 +237,7 @@ static uint8_t hex_drv_verify(pab_t pab) {
 
     if ( hex_get_data(buffer, i) ) { // use front half of buffer for incoming data from the host.
       hex_release_bus();
-      return HEXERR_BAV;
+      return HEXSTAT_BUS_ERR;
     }
 
     if (res == FR_OK) {
@@ -251,10 +249,9 @@ static uint8_t hex_drv_verify(pab_t pab) {
       res = f_read(&(file->fp), data, i, &read);
 
       if (res == FR_OK) {
-        debug_putcrlf();
         debug_trace(buffer, 0, read);
       }
-
+      // TODO should convert res to rc value
       // length of program on storage device
       if (first_buffer) {
         len_prog_stored = data[2] | ( data[3] << 8);
@@ -262,11 +259,11 @@ static uint8_t hex_drv_verify(pab_t pab) {
 
       if (len_prog_stored != len_prog_mem) {
         // program on disk not same length as one in memory
-        res = HEXSTAT_BUF_SIZE_ERR;
+        rc = HEXSTAT_BUF_SIZE_ERR;
       }
       else {
         if ( memcmp(data, buffer, read) != 0 ) {
-          res = HEXSTAT_VERIFY_ERR;
+          rc = HEXSTAT_VERIFY_ERR;
         }
       }
     }
@@ -277,25 +274,23 @@ static uint8_t hex_drv_verify(pab_t pab) {
   // If we haven't read the entire incoming message yet, flush it.
   if ( len ) {
     if ( !fs_initialized ) {
-      res = HEXSTAT_DEVICE_ERR;
+      rc = HEXSTAT_DEVICE_ERR;
     }
-    hex_eat_it( len, res ); // reports status back.
-    return HEXERR_BAV;
+    hex_eat_it( len, rc ); // reports status back.
+    return HEXSTAT_BUS_ERR;
   } else {
 
-    debug_putc('>');
-
     if (!hex_is_bav()) { // we can send response
-      hex_send_final_response( res );
+      hex_send_final_response( rc );
     } else {
       hex_finish();
     }
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
-static uint8_t hex_drv_write_cmd(pab_t pab) {
-  uint8_t rc = HEXSTAT_SUCCESS;
+static hexstatus_t hex_drv_write_cmd(pab_t pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   BYTE res = FR_OK;
   uint8_t *s;
@@ -362,8 +357,9 @@ static uint8_t hex_drv_write_cmd(pab_t pab) {
   }
   else {
     res = FR_INVALID_OBJECT;
-    hex_eat_it( len, res ); // reports status back.
-    return HEXERR_BAV;
+    // TODO what error should this be?
+    hex_eat_it( len, HEXSTAT_BUS_ERR ); // reports status back.
+    return HEXSTAT_BUS_ERR;
   }
   if (rc == HEXSTAT_SUCCESS) {
     switch (res) {
@@ -375,14 +371,13 @@ static uint8_t hex_drv_write_cmd(pab_t pab) {
         break;
     }
   }
-  debug_putc(']');
 
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
   } else {
     hex_finish();
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
@@ -416,15 +411,15 @@ static uint8_t hex_drv_write_cmd(pab_t pab) {
    what I can tell of the implementation.
 
 */
-static uint8_t hex_drv_write(pab_t pab) {
-  uint8_t rc = HEXSTAT_SUCCESS;
+static hexstatus_t hex_drv_write(pab_t pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint16_t i;
   UINT written;
   file_t* file = NULL;
   BYTE res = FR_OK;
   
-  debug_puts_P(PSTR("\n\rWrite File\n\r"));
+  debug_puts_P(PSTR("Write File\n"));
 
   len = pab.datalen;
   file = find_lun(pab.lun);
@@ -435,14 +430,15 @@ static uint8_t hex_drv_write(pab_t pab) {
   res = (file != NULL ? FR_OK : FR_NO_FILE);
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
     // if we're not at the right record position, reposition
-    if (file->fp.fsize < pab.buflen * pab.record){
+    if (file->fp.fsize < pab.buflen * pab.record) {
+      // file is too small.  Enlarge.
+      // TODO make this more efficient by handling in 256 byte chunks...
       res = f_lseek( &(file->fp), file->fp.fsize );
       buffer[0] = 0;
       for (i = file->fp.fsize; i < pab.buflen * pab.record; i++)
         res = f_write(&(file->fp), buffer, 1, &written);
-    }  
-    // TODO I don't think we need this additional seek...
-    res = f_lseek(&(file->fp), pab.buflen * pab.record);
+    }  else // file is big enough, just find the right spot.
+      res = f_lseek(&(file->fp), pab.buflen * pab.record);
   }
   // OK, read the data we need to send to the file
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
@@ -464,10 +460,11 @@ static uint8_t hex_drv_write(pab_t pab) {
   }
   if ( len ) {
     if ( !fs_initialized ) {
-      res = HEXSTAT_DEVICE_ERR;
+      rc = HEXSTAT_DEVICE_ERR;
     }
-    hex_eat_it( len, res );
-    return HEXERR_BAV;
+    // TODO what error should we return to caller?
+    hex_eat_it( len, rc );
+    return HEXSTAT_BUS_ERR;
   }
 
   // if in DISPLAY mode
@@ -478,7 +475,6 @@ static uint8_t hex_drv_write(pab_t pab) {
 
     res = f_write(&(file->fp), buffer, 2, &written);
     if (!res) {
-      debug_putcrlf();
       debug_trace(buffer, 0, written);
     }
     if (written != 2) {
@@ -496,18 +492,16 @@ static uint8_t hex_drv_write(pab_t pab) {
     }
   }
 
-  debug_putc('>');
-
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
   } else {
     hex_finish();
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
-static uint8_t hex_drv_read_cmd(pab_t pab __attribute__((unused))) {
-  uint8_t rc;
+static hexstatus_t hex_drv_read_cmd(pab_t pab __attribute__((unused))) {
+  hexstatus_t rc;
   // This really should always succeed
   transmit_word(0);      // null file
   rc = HEXSTAT_NOT_FOUND;
@@ -516,7 +510,7 @@ static uint8_t hex_drv_read_cmd(pab_t pab __attribute__((unused))) {
   }
   transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
@@ -540,8 +534,8 @@ static uint8_t hex_drv_read_cmd(pab_t pab __attribute__((unused))) {
     special LUN. The amount of bytes to be send is determined by the
     file length    
 */
-static uint8_t hex_drv_read(pab_t pab) {
-  uint8_t rc;
+static hexstatus_t hex_drv_read(pab_t pab) {
+  hexstatus_t rc;
   uint8_t i;
   uint16_t len;
   uint16_t fsize;
@@ -550,7 +544,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   BYTE res = FR_OK;
   file_t* file;
 
-  debug_puts_P(PSTR("\n\rRead File\n\r"));
+  debug_puts_P(PSTR("Read File\n"));
 
   file = find_lun(pab.lun);
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
@@ -591,10 +585,10 @@ static uint8_t hex_drv_read(pab_t pab) {
       }
     }
     // send how much we are going to send
-    rc = transmit_word( fsize );
+    rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 
     // while we have data remaining to send.
-    while ( fsize && rc == HEXERR_SUCCESS ) {
+    while ( fsize && rc == HEXSTAT_SUCCESS ) {
 
       len = fsize;    // remaining amount to read from file
       // while it fit into buffer or not?  Only read as much
@@ -605,7 +599,6 @@ static uint8_t hex_drv_read(pab_t pab) {
         // memset((char *)buffer, 0, BUFSIZE);  // TODO Do we need this? No!
         res = f_read(&(file->fp), buffer, len, &read);
         if (!res) {
-          debug_putcrlf();
           debug_trace(buffer, 0, read);
         }
       } else {
@@ -614,14 +607,13 @@ static uint8_t hex_drv_read(pab_t pab) {
       }
 
       if (FR_OK == res) {
-
         for (i = 0; i < read; i++) {
-          rc = transmit_byte(buffer[i]);
+          rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
         }
       }
       else
       {
-        rc = FR_RW_ERROR;
+        res = FR_RW_ERROR;
       }
 
       fsize -= read;
@@ -644,8 +636,6 @@ static uint8_t hex_drv_read(pab_t pab) {
         break;
     }
 
-    debug_putc('>');
-
   } else {
     transmit_word(0);      // null file
     rc = HEXSTAT_NOT_FOUND;
@@ -655,7 +645,7 @@ static uint8_t hex_drv_read(pab_t pab) {
   }
   transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
@@ -677,10 +667,10 @@ void drv_start(void) {
    hex_drv_open() -
    open a file for read or write on the SD card.
 */
-static uint8_t hex_drv_open(pab_t pab) {
+static hexstatus_t hex_drv_open(pab_t pab) {
   uint16_t len = 0;
   uint8_t att = 0;
-  uint8_t rc;
+  hexstatus_t rc;
   BYTE    mode = 0;
   uint16_t fsize = 0;
   file_t* file = NULL;
@@ -688,7 +678,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   uint8_t *path;
   uint8_t pathlen;
 
-  debug_puts_P(PSTR("\n\rOpen File\n\r"));
+  debug_puts_P(PSTR("Open File\n"));
 
   /*
      If we are attempting to use the SD card, we
@@ -702,7 +692,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   // we need one more byte for the null terminator, so check.
   if(pab.datalen > BUFSIZE - 1) { // name too long
     hex_eat_it( pab.datalen, HEXSTAT_FILE_NAME_INVALID );
-    return HEXERR_BAV;
+    return HEXSTAT_BUS_ERR;
   }
 
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
@@ -710,7 +700,7 @@ static uint8_t hex_drv_open(pab_t pab) {
     att = buffer[ 2 ];
   } else {
     hex_release_bus();
-    return HEXERR_BAV; // BAV ERR.
+    return HEXSTAT_BUS_ERR; // BAV ERR.
   }
   
   path = &(buffer[3]);
@@ -744,13 +734,13 @@ static uint8_t hex_drv_open(pab_t pab) {
         transmit_word(255);
         transmit_byte(HEXSTAT_SUCCESS);    // status code
         hex_finish();
-        return HEXERR_SUCCESS;
+        return HEXSTAT_SUCCESS;
       } else
         hex_send_final_response( rc );
     }
     hex_finish();
     debug_putc('E');
-    return HEXERR_BAV;
+    return HEXSTAT_BUS_ERR;
   }
   //*******************************************************
   // map attributes to FatFS file access mode
@@ -821,7 +811,7 @@ static uint8_t hex_drv_open(pab_t pab) {
   }
   if (att & OPENMODE_RELATIVE) file->attr |= FILEATTR_RELATIVE;
   if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXERR_SUCCESS ) {
+    if ( rc == HEXSTAT_SUCCESS ) {
       switch (att & OPENMODE_MASK) {
 
         // when opening to write, or read/write
@@ -868,10 +858,10 @@ static uint8_t hex_drv_open(pab_t pab) {
     } else {
       hex_send_final_response( rc );
     }
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 
@@ -882,12 +872,12 @@ static uint8_t hex_drv_open(pab_t pab) {
    If the file is not open, appropriate status is returned
 
 */
-static uint8_t hex_drv_close(pab_t pab) {
-  uint8_t rc;
+static hexstatus_t hex_drv_close(pab_t pab) {
+  hexstatus_t rc;
   file_t* file = NULL;
   BYTE res = 0;
 
-  debug_puts_P(PSTR("\n\rClose File\n\r"));
+  debug_puts_P(PSTR("Close File\n"));
 
   file = find_lun(pab.lun);
   if (file != NULL) {
@@ -915,10 +905,10 @@ static uint8_t hex_drv_close(pab_t pab) {
 
   if ( !hex_is_bav() ) {
     hex_send_final_response( rc );
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 /*
@@ -926,12 +916,12 @@ static uint8_t hex_drv_close(pab_t pab) {
    reset file to beginning
    valid for update, input mode open files.
 */
-static uint8_t hex_drv_restore( pab_t pab ) {
-  uint8_t  rc = HEXSTAT_SUCCESS;
+static hexstatus_t hex_drv_restore( pab_t pab ) {
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
   file_t*  file = NULL;
   //BYTE     res = 0;
 
-  debug_puts_P(PSTR("\n\rDrive Restore\n\r"));
+  debug_puts_P(PSTR("Drive Restore\n"));
   if ( open_files ) {
     file = find_lun(pab.lun);
     if ( file == NULL ) {
@@ -957,25 +947,25 @@ static uint8_t hex_drv_restore( pab_t pab ) {
     hex_send_final_response( rc );
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 /*
    hex_drv_delete() -
    delete a file from the SD card.
 */
-static uint8_t hex_drv_delete(pab_t pab) {
-  uint8_t rc = HEXSTAT_SUCCESS;
+static hexstatus_t hex_drv_delete(pab_t pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
 
-  debug_puts_P(PSTR("\n\rDelete File\n\r"));
+  debug_puts_P(PSTR("Delete File\n"));
 
   memset(buffer, 0, BUFSIZE);
 
   if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
-    return HEXERR_BAV; // BAV ERR.
+    return HEXSTAT_BUS_ERR;
   }
   // simplistic removal. doesn't check for much besides
   // existance at this point.  We should be able to know if
@@ -1005,21 +995,21 @@ static uint8_t hex_drv_delete(pab_t pab) {
   }
   if (!hex_is_bav()) { // we can send response
     hex_send_final_response( rc );
-    return HEXERR_SUCCESS;
+    return HEXSTAT_SUCCESS;
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 /*
     hex_drv_status() -
     initial simplistic implementation
 */
-static uint8_t hex_drv_status( pab_t pab ) {
+static hexstatus_t hex_drv_status( pab_t pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
-  debug_puts_P(PSTR("\n\rDrive Status\n\r"));
+  debug_puts_P(PSTR("Drive Status\n"));
   if ( pab.lun == 0 ) {
     st = open_files ? FILE_DEV_IS_OPEN : FILE_REQ_STATUS_NONE;
     st |= FILE_IO_MODE_READWRITE;  // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
@@ -1057,11 +1047,11 @@ static uint8_t hex_drv_status( pab_t pab ) {
     }
   }
   hex_finish();
-  return HEXERR_BAV;
+  return HEXSTAT_BUS_ERR;
 }
 
 
-static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
+static hexstatus_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
 
   drv_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -1070,7 +1060,7 @@ static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXERR_SUCCESS;
+  return HEXSTAT_SUCCESS;
 }
 
 
