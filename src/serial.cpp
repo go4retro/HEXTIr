@@ -53,16 +53,25 @@ static hexstatus_t hex_ser_open(pab_t *pab) {
 
   debug_puts_P(PSTR("Open Serial\n"));
 
-  len = 0;
-  memset( buffer, 0, BUFSIZE );
-  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS )
-  {
+#ifdef USE_OPEN_HELPER
+  rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
+#else
+  if(pab->datalen > BUFSIZE) {
+    hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
+    return HEXSTAT_TOO_LONG;
+  }
+
+  if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
-    att = buffer[ 2 ];  // tells us open for read, write or both.
+    att = buffer[ 2 ];
   } else {
     hex_release_bus();
     return HEXSTAT_BUS_ERR;
   }
+#endif
+  if(rc != HEXSTAT_SUCCESS)
+    return rc;
+
   // Now, we need to parse the input buffer and decide on parameters.
   // realistically, all we can actually support is B=xxx.  Some other
   // parameters we just pretty much ignore D=, P=, C=, N=, S=.

@@ -69,5 +69,9 @@ void hex_eat_it(uint16_t length, hexstatus_t rc);
 hexstatus_t hex_unsupported(pab_t *pab);
 hexstatus_t hex_null(pab_t *pab __attribute__((unused)));
 //void trim(uint8_t **buf, uint8_t *blen);
+#ifdef USE_OPEN_HELPER
+hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att);
+#endif
+
 
 #endif  // hexops_h

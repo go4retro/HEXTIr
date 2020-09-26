@@ -88,11 +88,12 @@ hexstatus_t hex_null(pab_t *pab __attribute__((unused))) {
   return HEXSTAT_SUCCESS;
 }
 
-hexstatus_t hex_open_helper(pab_t *pab, uint16_t *len, uint8_t *att) {
+#ifdef USE_OPEN_HELPER
+hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att) {
 
   if(pab->datalen > BUFSIZE) {
-    hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
-    return HEXSTAT_FILE_NAME_INVALID;
+    hex_eat_it( pab->datalen, err );
+    return err;
   }
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
@@ -100,7 +101,8 @@ hexstatus_t hex_open_helper(pab_t *pab, uint16_t *len, uint8_t *att) {
     *att = buffer[ 2 ];
   } else {
     hex_release_bus();
+    return HEXSTAT_BUS_ERR;
   }
   return HEXSTAT_SUCCESS;
 }
-
+#endif

@@ -691,20 +691,25 @@ static hexstatus_t hex_drv_open(pab_t *pab) {
 
 
 
-  // we need one more byte for the null terminator, so check.
-  if(pab->datalen > BUFSIZE - 1) { // name too long
+#ifdef USE_OPEN_HELPER
+  rc = hex_open_helper(pab, HEXSTAT_FILE_NAME_INVALID, &len, &att);
+#else
+  if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
-    return HEXSTAT_BUS_ERR;
+    return HEXSTAT_FILE_NAME_INVALID;
   }
 
-  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR; // BAV ERR.
+    return HEXSTAT_BUS_ERR;
   }
-  
+#endif
+  if(rc != HEXSTAT_SUCCESS)
+    return rc;
+
   path = &(buffer[3]);
   pathlen = pab->datalen - 3;
   // file path, trimmed whitespaces

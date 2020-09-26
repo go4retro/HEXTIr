@@ -23,6 +23,7 @@
 #define CONFIG_H
 
 #define USE_NEW_OPTABLE
+#define USE_OPEN_HELPER
 
 #include <avr/io.h>
 
