@@ -124,10 +124,8 @@ static void hex_ser_open(pab_t *pab) {
       rc = HEXSTAT_ALREADY_OPEN;
     }
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -145,9 +143,8 @@ static void hex_ser_close(pab_t *pab __attribute__((unused))) {
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
     return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -204,10 +201,8 @@ static void hex_ser_read(pab_t *pab) {
       // not open at all?
       hex_send_final_response( HEXSTAT_NOT_OPEN );
     }
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -247,22 +242,18 @@ static void hex_ser_write(pab_t *pab) {
 
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
 static void hex_ser_rtn_sta(pab_t *pab __attribute__((unused))) {
   // TBD
-  return;
 }
 
 
 static void hex_ser_set_opts(pab_t *pab __attribute__((unused))) {
   // TBD
-  return;
 }
 
 
@@ -275,7 +266,6 @@ static void hex_ser_reset(pab_t *pab __attribute__((unused))) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return;
 }
 
 

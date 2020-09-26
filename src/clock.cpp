@@ -88,10 +88,8 @@ static void hex_rtc_open( pab_t *pab ) {
       rc = HEXSTAT_ALREADY_OPEN;
     }
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 /*
@@ -108,7 +106,6 @@ static void hex_rtc_close(pab_t *pab __attribute__((unused))) {
     rc = HEXSTAT_NOT_OPEN;
   }
   hex_send_final_response(rc);
-  return;
 }
 
 /*
@@ -167,10 +164,8 @@ static void hex_rtc_read(pab_t *pab) {
     } else {
       hex_send_final_response( rc );
     }
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -333,9 +328,8 @@ static void hex_rtc_write( pab_t *pab ) {
   }
   if ( !hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
+  } else
+    hex_finish();
 }
 
 

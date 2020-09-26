@@ -72,7 +72,6 @@ static void hex_reset_bus(pab_t *pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return;
 }
 
 
@@ -154,7 +153,6 @@ static void execute_command(pab_t *pab) {
   // Release the HSK line and simply wait for BAV to go high indicating end of message.
   // This is the best we can do, as someone else may be acting on this message.
   hex_null(pab);
-  return;
 }
 
 

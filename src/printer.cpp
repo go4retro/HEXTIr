@@ -89,10 +89,8 @@ static void hex_prn_open(pab_t *pab) {
     {
       hex_send_final_response( rc );
     }
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -111,7 +109,6 @@ static void hex_prn_close(__attribute__((unused)) pab_t *pab) {
     // send 0000 response with appropriate status code.
     hex_send_final_response( rc );
   }
-  return;
 }
 
 
@@ -190,7 +187,6 @@ static void hex_prn_write(pab_t *pab) {
   } else {
     hex_finish();
   }
-  return;
 }
 
 
@@ -203,7 +199,6 @@ static void hex_prn_reset( __attribute__((unused)) pab_t *pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return;
 }
 
 

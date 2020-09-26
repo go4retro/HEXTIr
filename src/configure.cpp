@@ -183,10 +183,8 @@ static void hex_cfg_open( pab_t *pab ) {
     } else {
       hex_send_final_response( rc );
     }
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -205,10 +203,8 @@ static void hex_cfg_close( pab_t *pab __attribute__((unused))) {
 
   if ( !hex_is_bav() ) {
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -258,14 +254,11 @@ static void hex_cfg_read( pab_t *pab ) {
       }
       transmit_byte( rc );
       hex_finish();
-      return;
     } else {
       hex_send_final_response( rc );
-      return;
     }
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -283,10 +276,8 @@ static void hex_cfg_restore( pab_t *pab __attribute__((unused))) {
       rc = HEXSTAT_NOT_OPEN;
     }
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -384,10 +375,8 @@ static void hex_cfg_write( pab_t *pab ) {
   }
   if ( !hex_is_bav() ) {
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -412,10 +401,8 @@ static void hex_cfg_getmask(pab_t *pab) {
       // regardless of buffer size sent, respond with the mask value as status.
       hex_send_final_response( (hexstatus_t)mask );
     }
-    return;
-  }
-  hex_finish();
-  return;
+  }  else
+    hex_finish();
 }
 
 
@@ -427,7 +414,6 @@ static void hex_cfg_getmask(pab_t *pab) {
 static void hex_cfg_write_eeprom( __attribute__((unused)) pab_t *pab ) {
   // TODO: Write the 'device_address' data block to EEPROM.
   hex_send_final_response( HEXSTAT_SUCCESS );
-  return;
 }
 
 /*

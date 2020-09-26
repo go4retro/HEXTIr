@@ -279,14 +279,12 @@ static void hex_drv_verify(pab_t *pab) {
     hex_eat_it( len, rc ); // reports status back.
     return;
   } else {
-
     if (!hex_is_bav()) { // we can send response
       hex_send_final_response( rc );
     } else {
       hex_finish();
     }
   }
-  return;
 }
 
 static void hex_drv_write_cmd(pab_t *pab) {
@@ -377,7 +375,6 @@ static void hex_drv_write_cmd(pab_t *pab) {
   } else {
     hex_finish();
   }
-  return;
 }
 
 
@@ -497,7 +494,6 @@ static void hex_drv_write(pab_t *pab) {
   } else {
     hex_finish();
   }
-  return;
 }
 
 static void hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
@@ -510,7 +506,6 @@ static void hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
   }
   transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return;
 }
 
 
@@ -647,7 +642,6 @@ static void hex_drv_read(pab_t *pab) {
   }
   transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return;
 }
 
 
@@ -868,10 +862,9 @@ static void hex_drv_open(pab_t *pab) {
     } else {
       hex_send_final_response( rc );
     }
-    return;
+    return;  // TODO see if we can remove this...
   }
   hex_finish();
-  return;
 }
 
 
@@ -915,10 +908,8 @@ static void hex_drv_close(pab_t *pab) {
 
   if ( !hex_is_bav() ) {
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 /*
@@ -957,7 +948,6 @@ static void hex_drv_restore( pab_t *pab ) {
     hex_send_final_response( rc );
   }
   hex_finish();
-  return;
 }
 
 /*
@@ -1005,10 +995,8 @@ static void hex_drv_delete(pab_t *pab) {
   }
   if (!hex_is_bav()) { // we can send response
     hex_send_final_response( rc );
-    return;
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 /*
@@ -1050,14 +1038,11 @@ static void hex_drv_status( pab_t *pab ) {
       transmit_byte( st );
       transmit_byte( HEXSTAT_SUCCESS );
       hex_finish();
-      return;
     } else {
       hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
-      return;
     }
-  }
-  hex_finish();
-  return;
+  } else
+    hex_finish();
 }
 
 
@@ -1070,7 +1055,6 @@ static void hex_drv_reset( __attribute__((unused)) pab_t *pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return;
 }
 
 
@@ -1138,7 +1122,6 @@ void drv_reset( void )
       // continue until we find no additional files open.
     }
   }
-  return;
 }
 
 
