@@ -42,7 +42,7 @@
 #include "rtc.h"
 #include "softrtc.h"
 
-#ifdef CONFIG_RTC_SOFTWARE
+#ifdef CONFIG_RTC_SOFTWARE  // To hide it from Arduino IDE
 
 static volatile uint8_t ms;
 static softtime_t rtc = 1217647125; // Sat Aug  2 03:18:45 2008 UTC

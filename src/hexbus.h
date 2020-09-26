@@ -26,6 +26,10 @@ extern "C"{
 
 #include "integer.h"
 
+#define DEV_NONE      0
+#define DEV_ALL       DEV_NONE  // Device Code 0 addresses all devices
+#define DEV_MAX       255       // our highest device code
+
 typedef enum _hexcmdtype_t {
                HEXCMD_OPEN = 0,
                HEXCMD_CLOSE,

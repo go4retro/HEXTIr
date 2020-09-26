@@ -82,7 +82,7 @@ void debug_trace(void *ptr, uint16_t start, uint16_t len) {
   uint16_t i;
   uint8_t j;
   uint8_t ch;
-  uint8_t *data = ptr;
+  uint8_t *data = (uint8_t*)ptr;
 
   data+=start;
   for(i=0;i<len;i+=16) {
