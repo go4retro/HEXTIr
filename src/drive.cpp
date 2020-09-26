@@ -210,7 +210,7 @@ static uint16_t next_value_size(file_t* file) {
    transmitted in the verify command until sending stops.
 */
 
-static hexstatus_t hex_drv_verify(pab_t pab) {
+static hexstatus_t hex_drv_verify(pab_t *pab) {
   uint16_t len_prog_mem = 0;
   uint16_t len_prog_stored = 0;
   uint8_t  *data = &buffer[ BUFSIZE / 2 ]; // split our buffer in half
@@ -225,8 +225,8 @@ static hexstatus_t hex_drv_verify(pab_t pab) {
 
   debug_puts_P(PSTR("Verify File\n"));
 
-  file = find_lun(pab.lun);
-  len = pab.datalen;   // this is the size of the object to verify
+  file = find_lun(pab->lun);
+  len = pab->datalen;   // this is the size of the object to verify
 
   res = (file != NULL ? FR_OK : FR_NO_FILE);
 
@@ -289,7 +289,7 @@ static hexstatus_t hex_drv_verify(pab_t pab) {
   return HEXSTAT_SUCCESS;
 }
 
-static hexstatus_t hex_drv_write_cmd(pab_t pab) {
+static hexstatus_t hex_drv_write_cmd(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   BYTE res = FR_OK;
@@ -300,7 +300,7 @@ static hexstatus_t hex_drv_write_cmd(pab_t pab) {
   uint8_t namelen;
   uint8_t cmd;
 
-  len = pab.datalen;
+  len = pab->datalen;
   if (len < BUFSIZE){
     rc = hex_get_data(buffer, len);
     if (rc == HEXSTAT_SUCCESS) {
@@ -411,7 +411,7 @@ static hexstatus_t hex_drv_write_cmd(pab_t pab) {
    what I can tell of the implementation.
 
 */
-static hexstatus_t hex_drv_write(pab_t pab) {
+static hexstatus_t hex_drv_write(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint16_t i;
@@ -421,8 +421,8 @@ static hexstatus_t hex_drv_write(pab_t pab) {
   
   debug_puts_P(PSTR("Write File\n"));
 
-  len = pab.datalen;
-  file = find_lun(pab.lun);
+  len = pab->datalen;
+  file = find_lun(pab->lun);
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel
     return hex_drv_write_cmd(pab);
@@ -430,15 +430,15 @@ static hexstatus_t hex_drv_write(pab_t pab) {
   res = (file != NULL ? FR_OK : FR_NO_FILE);
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
     // if we're not at the right record position, reposition
-    if (file->fp.fsize < pab.buflen * pab.record) {
+    if (file->fp.fsize < pab->buflen * pab->record) {
       // file is too small.  Enlarge.
       // TODO make this more efficient by handling in 256 byte chunks...
       res = f_lseek( &(file->fp), file->fp.fsize );
       buffer[0] = 0;
-      for (i = file->fp.fsize; i < pab.buflen * pab.record; i++)
+      for (i = file->fp.fsize; i < pab->buflen * pab->record; i++)
         res = f_write(&(file->fp), buffer, 1, &written);
     }  else // file is big enough, just find the right spot.
-      res = f_lseek(&(file->fp), pab.buflen * pab.record);
+      res = f_lseek(&(file->fp), pab->buflen * pab->record);
   }
   // OK, read the data we need to send to the file
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
@@ -455,7 +455,7 @@ static hexstatus_t hex_drv_write(pab_t pab) {
   }
   if (file != NULL && (file->attr & FILEATTR_RELATIVE)){
     buffer[0] = 0;
-    for (i=pab.datalen + 1; i <= pab.buflen; i++)
+    for (i=pab->datalen + 1; i <= pab->buflen; i++)
       res = f_write(&(file->fp), buffer, 1, &written);
   }
   if ( len ) {
@@ -500,7 +500,7 @@ static hexstatus_t hex_drv_write(pab_t pab) {
   return HEXSTAT_SUCCESS;
 }
 
-static hexstatus_t hex_drv_read_cmd(pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc;
   // This really should always succeed
   transmit_word(0);      // null file
@@ -534,7 +534,7 @@ static hexstatus_t hex_drv_read_cmd(pab_t pab __attribute__((unused))) {
     special LUN. The amount of bytes to be send is determined by the
     file length    
 */
-static hexstatus_t hex_drv_read(pab_t pab) {
+static hexstatus_t hex_drv_read(pab_t *pab) {
   hexstatus_t rc;
   uint8_t i;
   uint16_t len;
@@ -546,14 +546,14 @@ static hexstatus_t hex_drv_read(pab_t pab) {
 
   debug_puts_P(PSTR("Read File\n"));
 
-  file = find_lun(pab.lun);
+  file = find_lun(pab->lun);
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel read
     return hex_drv_read_cmd(pab);
   }
 
   if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
-    if (pab.lun == 0 ) {
+    if (pab->lun == 0 ) {
       debug_putc('P');
         return hex_read_catalog(file);
     }
@@ -563,13 +563,13 @@ static hexstatus_t hex_drv_read(pab_t pab) {
     }
   }
   if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
-    f_lseek(&(file->fp), pab.buflen * pab.record);
+    f_lseek(&(file->fp), pab->buflen * pab->record);
   if (file != NULL) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab.lun != 0 && pab.lun != 255) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
+    if (fsize != 0 && pab->lun != 0 && pab->lun != 255) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
       // amount of data for next value to be sent
       if (file->attr & FILEATTR_RELATIVE) 
-        fsize = pab.buflen;
+        fsize = pab->buflen;
       else  
         fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
@@ -579,8 +579,8 @@ static hexstatus_t hex_drv_read(pab_t pab) {
         res = FR_EOF;
       } else {
         // size of buffer provided by host (amount to send)
-        if ( fsize > pab.buflen ) {
-          fsize = pab.buflen;
+        if ( fsize > pab->buflen ) {
+          fsize = pab->buflen;
         }
       }
     }
@@ -667,7 +667,7 @@ void drv_start(void) {
    hex_drv_open() -
    open a file for read or write on the SD card.
 */
-static hexstatus_t hex_drv_open(pab_t pab) {
+static hexstatus_t hex_drv_open(pab_t *pab) {
   uint16_t len = 0;
   uint8_t att = 0;
   hexstatus_t rc;
@@ -689,13 +689,15 @@ static hexstatus_t hex_drv_open(pab_t pab) {
   */
   drv_start();
 
+
+
   // we need one more byte for the null terminator, so check.
-  if(pab.datalen > BUFSIZE - 1) { // name too long
-    hex_eat_it( pab.datalen, HEXSTAT_FILE_NAME_INVALID );
+  if(pab->datalen > BUFSIZE - 1) { // name too long
+    hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
     return HEXSTAT_BUS_ERR;
   }
 
-  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
   } else {
@@ -704,7 +706,7 @@ static hexstatus_t hex_drv_open(pab_t pab) {
   }
   
   path = &(buffer[3]);
-  pathlen = pab.datalen - 3;
+  pathlen = pab->datalen - 3;
   // file path, trimmed whitespaces
   trim(&path, &pathlen);
 
@@ -715,13 +717,13 @@ static hexstatus_t hex_drv_open(pab_t pab) {
   //*****************************************************
   // special file name "$" -> catalog
   if (path[0]=='$') {
-    file = reserve_lun(pab.lun);
-    return hex_open_catalog(file, pab.lun, att, (char*)path);  // check file!= null in there
+    file = reserve_lun(pab->lun);
+    return hex_open_catalog(file, pab->lun, att, (char*)path);  // check file!= null in there
   }
   //*******************************************************
   // special file name "" -> command_mode
   if (path[0] == 0)  {
-    file = reserve_lun(pab.lun);
+    file = reserve_lun(pab->lun);
     if (file != NULL){
       file->attr |= FILEATTR_COMMAND;
       rc = HEXSTAT_SUCCESS;
@@ -763,7 +765,7 @@ static hexstatus_t hex_drv_open(pab_t pab) {
     rc = HEXSTAT_OPTION_ERR; // no name?
   } else {
     if ( fs_initialized ) {
-      file = reserve_lun(pab.lun);
+      file = reserve_lun(pab->lun);
     }
     if (file != NULL) {
       res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
@@ -800,7 +802,7 @@ static hexstatus_t hex_drv_open(pab_t pab) {
           break;
       }
       if (rc) {
-        free_lun(pab.lun); // free up buffer
+        free_lun(pab->lun); // free up buffer
       }
     } else { // too many open files, or file system maybe not initialized?
       rc = HEXSTAT_MAX_LUNS;
@@ -835,7 +837,7 @@ static hexstatus_t hex_drv_open(pab_t pab) {
             file->attr |= FILEATTR_DISPLAY;
           }
           // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
-          if (pab.lun != 0 ) {
+          if (pab->lun != 0 ) {
             if (len) {
               fsize = len; // non zero length requested, use it.
             } else {
@@ -872,20 +874,20 @@ static hexstatus_t hex_drv_open(pab_t pab) {
    If the file is not open, appropriate status is returned
 
 */
-static hexstatus_t hex_drv_close(pab_t pab) {
+static hexstatus_t hex_drv_close(pab_t *pab) {
   hexstatus_t rc;
   file_t* file = NULL;
   BYTE res = 0;
 
   debug_puts_P(PSTR("Close File\n"));
 
-  file = find_lun(pab.lun);
+  file = find_lun(pab->lun);
   if (file != NULL) {
     // Don't need to close the command channel.
     if(!(file->attr & FILEATTR_CATALOG) && !(file->attr & FILEATTR_COMMAND)) {
       res = f_close(&(file->fp));
     }
-    free_lun(pab.lun);
+    free_lun(pab->lun);
     switch (res) {
       case FR_OK:
         rc = HEXSTAT_SUCCESS;
@@ -916,14 +918,14 @@ static hexstatus_t hex_drv_close(pab_t pab) {
    reset file to beginning
    valid for update, input mode open files.
 */
-static hexstatus_t hex_drv_restore( pab_t pab ) {
+static hexstatus_t hex_drv_restore( pab_t *pab ) {
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   file_t*  file = NULL;
   //BYTE     res = 0;
 
   debug_puts_P(PSTR("Drive Restore\n"));
   if ( open_files ) {
-    file = find_lun(pab.lun);
+    file = find_lun(pab->lun);
     if ( file == NULL ) {
       rc = HEXSTAT_DEVICE_ERR;
     }
@@ -954,7 +956,7 @@ static hexstatus_t hex_drv_restore( pab_t pab ) {
    hex_drv_delete() -
    delete a file from the SD card.
 */
-static hexstatus_t hex_drv_delete(pab_t pab) {
+static hexstatus_t hex_drv_delete(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
 
@@ -962,7 +964,7 @@ static hexstatus_t hex_drv_delete(pab_t pab) {
 
   memset(buffer, 0, BUFSIZE);
 
-  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
     return HEXSTAT_BUS_ERR;
@@ -975,7 +977,7 @@ static hexstatus_t hex_drv_delete(pab_t pab) {
 
   if ( rc == HEXSTAT_SUCCESS ) {
     // If we did not fill buffer, we have a null at end due to memset before retrieval.
-    if ( pab.datalen < BUFSIZE - 1 ) {
+    if ( pab->datalen < BUFSIZE - 1 ) {
       // remove file
       fr = f_unlink(&fs, buffer);
       switch (fr) {
@@ -1005,16 +1007,16 @@ static hexstatus_t hex_drv_delete(pab_t pab) {
     hex_drv_status() -
     initial simplistic implementation
 */
-static hexstatus_t hex_drv_status( pab_t pab ) {
+static hexstatus_t hex_drv_status( pab_t *pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
   debug_puts_P(PSTR("Drive Status\n"));
-  if ( pab.lun == 0 ) {
+  if ( pab->lun == 0 ) {
     st = open_files ? FILE_DEV_IS_OPEN : FILE_REQ_STATUS_NONE;
     st |= FILE_IO_MODE_READWRITE;  // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
   } else {
-    file = find_lun(pab.lun);
+    file = find_lun(pab->lun);
     if ( file == NULL ) {
       st = FILE_IO_MODE_READWRITE | FILE_DEV_TYPE_INTERNAL | FILE_SUPPORTS_RELATIVE;
     } else {
@@ -1034,7 +1036,7 @@ static hexstatus_t hex_drv_status( pab_t pab ) {
     }
   }
   if ( !hex_is_bav() ) {
-    if ( pab.buflen >= 1 )
+    if ( pab->buflen >= 1 )
     {
       transmit_word( 1 );
       transmit_byte( st );
@@ -1051,7 +1053,7 @@ static hexstatus_t hex_drv_status( pab_t pab ) {
 }
 
 
-static hexstatus_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
+static hexstatus_t hex_drv_reset( __attribute__((unused)) pab_t *pab) {
 
   drv_reset();
   // release the bus ignoring any further action on bus. no response sent.

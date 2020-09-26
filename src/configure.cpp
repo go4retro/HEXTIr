@@ -128,12 +128,12 @@ static volatile uint8_t cfg_open = 0;
    CALL IO(222,202,STATUS) ! 202 = command to retrieve support mask (tells us which devices are supported) STATUS=mask
    CLOSE #1
 */
-static hexstatus_t hex_cfg_open( pab_t pab ) {
+static hexstatus_t hex_cfg_open( pab_t *pab ) {
   uint16_t len = 0;
   uint8_t  att = 0;
   hexstatus_t  rc;
 
-  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
   } else {
@@ -183,7 +183,7 @@ static hexstatus_t hex_cfg_open( pab_t pab ) {
  * hex_cfg_close() - 
  * Close an open configuration port
  */
-static hexstatus_t hex_cfg_close( pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_cfg_close( pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   if ( cfg_open ) {
@@ -204,11 +204,11 @@ static hexstatus_t hex_cfg_close( pab_t pab __attribute__((unused))) {
 /*
  * hex_cfg_read() - 
  * Reads the specified RECORD from configuration as
- * given by the pab.record field.  Response is in form
+ * given by the pab->record field.  Response is in form
  * of a string such as 'D=100' or 'P=12'.
  * 
  */
-static hexstatus_t hex_cfg_read( pab_t pab ) {
+static hexstatus_t hex_cfg_read( pab_t *pab ) {
   uint16_t len = 0;
   //uint8_t mask = our_support_mask();
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -217,14 +217,14 @@ static hexstatus_t hex_cfg_read( pab_t pab ) {
 
   if ( !hex_is_bav() ) {
     if ( ( cfg_open & (OPENMODE_READ | OPENMODE_RELATIVE) ) == (OPENMODE_READ | OPENMODE_RELATIVE) ) {
-      if ( pab.record > (MAX_REGISTRY - 1) ) {
+      if ( pab->record > (MAX_REGISTRY - 1) ) {
         rc = HEXSTAT_EOF;
       } else {
         memset((char*)buffer, 0, BUFSIZE);
-        //if (( (1 << pab.record ) & mask ) != 0 ) {
-        //  buffer[ len++ ] = pgm_read_byte( &config_option[ pab.record ] );
+        //if (( (1 << pab->record ) & mask ) != 0 ) {
+        //  buffer[ len++ ] = pgm_read_byte( &config_option[ pab->record ] );
         //  buffer[ len++ ] = '=';
-        //  dev = device_address[ pab.record ];
+        //  dev = device_address[ pab->record ];
         //  itoa( dev, (char *)&buffer[ len ], 10 ) ;
         //  len = strlen((char *)buffer);
           strcpy((char *)buffer,"D=100");
@@ -262,7 +262,7 @@ static hexstatus_t hex_cfg_read( pab_t pab ) {
  * hex_cfg_restore() -
  * minimal "restore" support.
  */
-static hexstatus_t hex_cfg_restore( pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_cfg_restore( pab_t *pab __attribute__((unused))) {
   hexstatus_t rc;
 
   if ( !hex_is_bav() ) {
@@ -282,7 +282,7 @@ static hexstatus_t hex_cfg_restore( pab_t pab __attribute__((unused))) {
 /*
  * hex_cfg_write() -
  * write and update address in use for specified peripheral by
- * record number provided in pab.record and the data buffer, 
+ * record number provided in pab->record and the data buffer,
  * which must contain an appropriate option string for the
  * given device, matching format of the read operation.
  * 
@@ -290,7 +290,7 @@ static hexstatus_t hex_cfg_restore( pab_t pab __attribute__((unused))) {
  * 
  * Record number in pab specifies which peripheral to affect.
  */
-static hexstatus_t hex_cfg_write( pab_t pab ) {
+static hexstatus_t hex_cfg_write( pab_t *pab ) {
   char    *p = NULL;
   char    *s;
   uint8_t  ch;
@@ -299,7 +299,7 @@ static hexstatus_t hex_cfg_write( pab_t pab ) {
   uint8_t  change_mask = 0;
 
 
-  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS ) {
+  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
     /* our "data" to parse begins at buffer[0] and is consists of 'len' bytes. */
     p = (char *)&buffer[0];
     s = p;
@@ -313,7 +313,7 @@ static hexstatus_t hex_cfg_write( pab_t pab ) {
     if ( *p++ == '=' ) {
       ch &= ~0x20; // map to uppercase if lower.
       // Now, is this a valid option given the record we are writing?
-      //if ( ch != (uint8_t)pgm_read_byte( &config_option[ pab.record ] )) {
+      //if ( ch != (uint8_t)pgm_read_byte( &config_option[ pab->record ] )) {
       //  rc = HEXSTAT_OPTION_ERR; // bad or invalid option for this record
       //} else
       {
@@ -333,10 +333,10 @@ static hexstatus_t hex_cfg_write( pab_t pab ) {
           p++;
         }
         // At this point, we should be at end of input data...
-        if ( (( (unsigned int)p - (unsigned int)s) < pab.datalen ) ) {
+        if ( (( (unsigned int)p - (unsigned int)s) < pab->datalen ) ) {
           rc = HEXSTAT_OPTION_ERR;
         }
-        change_mask = (1 << pab.record); // and our address "group" number.
+        change_mask = (1 << pab->record); // and our address "group" number.
       }
     } else {
       rc = HEXSTAT_OPTION_ERR;
@@ -349,11 +349,11 @@ static hexstatus_t hex_cfg_write( pab_t pab ) {
         rc = HEXSTAT_OPTION_ERR;
         //ch = our_support_mask() & change_mask; // check to ensure that we are not trying to set address on unsupported periperhals
         //if ( ch == change_mask ) {
-        //  if ( (1 << pab.record) & change_mask ) {
-        //    if ( addr >= (uint8_t)pgm_read_byte( &low_device_address[ pab.record ] ) &&
-        //         addr <= (uint8_t)pgm_read_byte( &high_device_address[ pab.record ] ) )
+        //  if ( (1 << pab->record) & change_mask ) {
+        //    if ( addr >= (uint8_t)pgm_read_byte( &low_device_address[ pab->record ] ) &&
+        //         addr <= (uint8_t)pgm_read_byte( &high_device_address[ pab->record ] ) )
         //    {
-        //      device_address[ pab.record ] = addr; // this will be a structure that will be updated to EEPROM at some point.
+        //      device_address[ pab->record ] = addr; // this will be a structure that will be updated to EEPROM at some point.
               rc = HEXSTAT_SUCCESS;
         //    }
         //  }
@@ -385,14 +385,14 @@ static hexstatus_t hex_cfg_write( pab_t pab ) {
    returns the current configuration mask indicating which peripheral
    groups are currently supported.
 */
-static hexstatus_t hex_cfg_getmask(pab_t pab) {
+static hexstatus_t hex_cfg_getmask(pab_t *pab) {
   uint8_t mask = 0;
 
   if ( !hex_is_bav() ) {
     // we should only be asked to send one byte; if zero bytes, then send mask as return status
     // if > 1 byte, send buffer size error response.
     //mask = our_support_mask();
-    if ( pab.buflen == 1 ) {
+    if ( pab->buflen == 1 ) {
       transmit_word( 1 );
       transmit_byte( mask );
       transmit_byte( HEXSTAT_SUCCESS );
@@ -413,7 +413,7 @@ static hexstatus_t hex_cfg_getmask(pab_t pab) {
  * update the content of EEPROM with the current device address block
  * of supported peripherals.
  */
-static hexstatus_t hex_cfg_write_eeprom( __attribute__((unused)) pab_t pab ) {
+static hexstatus_t hex_cfg_write_eeprom( __attribute__((unused)) pab_t *pab ) {
   // TODO: Write the 'device_address' data block to EEPROM.
   hex_send_final_response( HEXSTAT_SUCCESS );
   return HEXSTAT_SUCCESS;
@@ -423,7 +423,7 @@ static hexstatus_t hex_cfg_write_eeprom( __attribute__((unused)) pab_t pab ) {
    hex_cfg_reset() -
    handle the reset commad if directed to us.
 */
-static hexstatus_t hex_cfg_reset( pab_t pab) {
+static hexstatus_t hex_cfg_reset( pab_t *pab) {
   cfg_open = 0;
   return hex_null(pab);
 }

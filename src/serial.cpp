@@ -44,7 +44,7 @@ volatile uint8_t  ser_open = 0;
 /*
    her_ser_open()
 */
-static hexstatus_t hex_ser_open(pab_t pab) {
+static hexstatus_t hex_ser_open(pab_t *pab) {
   char     *attrib;
   __attribute__((unused))long     baud = 9600;
   uint16_t len;
@@ -55,7 +55,7 @@ static hexstatus_t hex_ser_open(pab_t pab) {
 
   len = 0;
   memset( buffer, 0, BUFSIZE );
-  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
+  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS )
   {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];  // tells us open for read, write or both.
@@ -82,7 +82,7 @@ static hexstatus_t hex_ser_open(pab_t pab) {
         len = len ? len : BUFSIZE;
         if ( att & OPENMODE_UPDATE ) {
           ser_open = att; // 00 attribute = illegal.
-          if ( pab.datalen > 3 ) { // see if we have a B= in the buffer.
+          if ( pab->datalen > 3 ) { // see if we have a B= in the buffer.
             attrib = strtok( (char *)&buffer[ 3 ], baud_attrib );
             if ( attrib != NULL ) {
               baud = atol( attrib + 2 );
@@ -125,7 +125,7 @@ static hexstatus_t hex_ser_open(pab_t pab) {
 /*
    hex_ser_close()
 */
-static hexstatus_t hex_ser_close(__attribute__((unused)) pab_t pab) {
+static hexstatus_t hex_ser_close(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   if ( ser_open ) {
@@ -142,8 +142,8 @@ static hexstatus_t hex_ser_close(__attribute__((unused)) pab_t pab) {
 }
 
 
-static hexstatus_t hex_ser_read(pab_t pab) {
-  uint16_t len = pab.buflen;
+static hexstatus_t hex_ser_read(pab_t *pab) {
+  uint16_t len = pab->buflen;
   uint16_t bcount = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
@@ -157,8 +157,8 @@ static hexstatus_t hex_ser_read(pab_t pab) {
 //#else
     bcount = (uart0_data_available() ? 1 : 0); // TODO  need to implement true count
 //#endif
-    if ( bcount > pab.buflen ) {
-      bcount = pab.buflen;
+    if ( bcount > pab->buflen ) {
+      bcount = pab->buflen;
     }
   }
 
@@ -202,13 +202,13 @@ static hexstatus_t hex_ser_read(pab_t pab) {
 }
 
 
-static hexstatus_t hex_ser_write(pab_t pab) {
+static hexstatus_t hex_ser_write(pab_t *pab) {
   uint16_t len;
   uint16_t i;
   uint16_t j;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
-  len = pab.datalen;
+  len = pab->datalen;
   if ( ser_open & OPENMODE_WRITE ) {
     while (len && rc == HEXSTAT_SUCCESS ) {
       i = (len >= BUFSIZE ? BUFSIZE : len);
@@ -245,19 +245,19 @@ static hexstatus_t hex_ser_write(pab_t pab) {
 }
 
 
-static hexstatus_t hex_ser_rtn_sta(pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_ser_rtn_sta(pab_t *pab __attribute__((unused))) {
   // TBD
   return HEXSTAT_SUCCESS;
 }
 
 
-static hexstatus_t hex_ser_set_opts(pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_ser_set_opts(pab_t *pab __attribute__((unused))) {
   // TBD
   return HEXSTAT_SUCCESS;
 }
 
 
-static hexstatus_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
+static hexstatus_t hex_ser_reset(pab_t *pab __attribute__((unused))) {
 
   ser_reset();
   // release the bus ignoring any further action on bus. no response sent.

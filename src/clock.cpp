@@ -44,7 +44,7 @@ volatile uint8_t  rtc_open = 0;
    WORK IN MAJOR PROGRESS.
    These routines will currently flag an unused parameter 'pab' warning...
 */
-static hexstatus_t hex_rtc_open( pab_t pab ) {
+static hexstatus_t hex_rtc_open( pab_t *pab ) {
   uint16_t len;
   uint8_t  att;
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -52,7 +52,7 @@ static hexstatus_t hex_rtc_open( pab_t pab ) {
   debug_puts_P(PSTR("Open RTC\n"));
 
   len = 0;
-  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
+  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS )
   {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];    // tells us open for read, write or both.
@@ -88,7 +88,7 @@ static hexstatus_t hex_rtc_open( pab_t pab ) {
 /*
    Close access to RTC module. Shuts down Wire.
 */
-static hexstatus_t hex_rtc_close(pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_rtc_close(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   debug_puts_P(PSTR("Close RTC\n"));
@@ -106,7 +106,7 @@ static hexstatus_t hex_rtc_close(pab_t pab __attribute__((unused))) {
    Return time in format YYYY,MM,DD,HH,MM,SS in 24h form.
    When RTC opened in INPUT or UPDATE mode.
 */
-static hexstatus_t hex_rtc_read(pab_t pab) {
+static hexstatus_t hex_rtc_read(pab_t *pab) {
   uint16_t len = 0;
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
@@ -148,7 +148,7 @@ static hexstatus_t hex_rtc_read(pab_t pab) {
   }
   if ( !hex_is_bav() ) {
     if ( rc == HEXSTAT_SUCCESS ) {
-      len = (len > pab.buflen) ? pab.buflen : len;
+      len = (len > pab->buflen) ? pab->buflen : len;
       transmit_word( len );
       for ( i = 0; i < len; i++ ) {
         transmit_byte( buffer[ i ] );
@@ -216,7 +216,7 @@ uint8_t parse_num(uint16_t* value, uint8_t digits, uint8_t *cur, uint8_t len) {
    Set time when we receive time in format YY,MM,DD,HH,MM,SS
    When RTC opened in OUTPUT or UPDATE mode.
 */
-static hexstatus_t hex_rtc_write( pab_t pab ) {
+static hexstatus_t hex_rtc_write( pab_t *pab ) {
 #ifdef HEX_WRITE_OLD
   uint16_t len;
   char     *token;
@@ -235,7 +235,7 @@ static hexstatus_t hex_rtc_write( pab_t pab ) {
 
   debug_puts_P(PSTR("Write RTC\n"));
 
-  len = pab.datalen;
+  len = pab->datalen;
   if ( rtc_open & OPENMODE_WRITE ) {
     rc = (len < BUFSIZE ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR );
     if ( rc == HEXSTAT_SUCCESS ) {
@@ -331,7 +331,7 @@ static hexstatus_t hex_rtc_write( pab_t pab ) {
 }
 
 
-static hexstatus_t hex_rtc_reset( pab_t pab __attribute__((unused))) {
+static hexstatus_t hex_rtc_reset( pab_t *pab __attribute__((unused))) {
   clock_reset();
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();

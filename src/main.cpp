@@ -54,12 +54,12 @@ registry_t  registry;
    open, and ensure our file lun tables are reset.
    There is NO response to this command.
 */
-static hexstatus_t hex_reset_bus(pab_t pab) {
+static hexstatus_t hex_reset_bus(pab_t *pab) {
 
   debug_puts_P(PSTR("Reset Bus\n"));
 
   // We ONLY do all devices if the command is directed to device 0.
-  if ( pab.dev == 0 ) {
+  if ( pab->dev == 0 ) {
     drv_reset();
     prn_reset();
     ser_reset();
@@ -76,7 +76,7 @@ static hexstatus_t hex_reset_bus(pab_t pab) {
 }
 
 
-static void execute_command(pab_t pab) {
+static void execute_command(pab_t *pab) {
   cmd_proc  handler;
 #ifdef USE_NEW_OPTABLE
   cmd_op_t  *op;
@@ -97,17 +97,17 @@ static void execute_command(pab_t pab) {
   // device code within the PAB IS found to be in our registry.
   // If it is found, then we'll use the "unsupported" command
   // default handler.
-  if ( pab.dev != 0 ) {
+  if ( pab->dev != 0 ) {
     i++;
   }
 
   while ( i < registry.num_devices ) {
     // does the incoming PAB have a device in this group in the registry?
 #ifdef USE_NEW_OPTABLE
-    if ( registry.entry[ i ].dev_cur == pab.dev ) {
+    if ( registry.entry[ i ].dev_cur == pab->dev ) {
 #else
-    if ( ( registry.entry[ i ].dev_low <= pab.dev ) &&
-         ( registry.entry[ i ].dev_high >= pab.dev ) )
+    if ( ( registry.entry[ i ].dev_low <= pab->dev ) &&
+         ( registry.entry[ i ].dev_high >= pab->dev ) )
     {
 #endif
       // If so...
@@ -127,9 +127,9 @@ static void execute_command(pab_t pab) {
         cmd = pgm_read_byte( &op[j] );
 #endif
         j++;
-      } while ( ( cmd != HEXCMD_INVALID_MARKER ) && cmd != pab.cmd );
+      } while ( ( cmd != HEXCMD_INVALID_MARKER ) && cmd != pab->cmd );
       // If we found the command, we have the index to the operations routine
-      if ( cmd == pab.cmd ) {
+      if ( cmd == pab->cmd ) {
         // found it!
         j--;  // here's the cmd index
         // fetch the handler for this command for this device group.
@@ -313,7 +313,7 @@ int main(void) {
           if ( pabdata.pab.dev == 0 && pabdata.pab.cmd != HEXCMD_RESET_BUS ) {
             pabdata.pab.cmd = HEXCMD_NULL; // change out to NULL operation and let bus float.
           }
-          execute_command( pabdata.pab );
+          execute_command( &(pabdata.pab) );
           ignore_cmd = TRUE;  // in case someone sends more data, ignore it.
         }
       } else {
