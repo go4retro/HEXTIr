@@ -23,6 +23,7 @@
 #include <util/delay.h>
 
 #include "config.h"
+#include "configure.h"
 #include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
@@ -85,8 +86,7 @@ static void hex_prn_open(pab_t *pab) {
       len = len ? len : BUFSIZE;
       hex_send_size_response( len );
     }
-    else
-    {
+    else {
       hex_send_final_response( rc );
     }
   } else

@@ -233,7 +233,8 @@ static char* format_file_size(uint32_t bytes, char* buf, uint8_t width) {
 }
 
 
-hexstatus_t hex_read_catalog(file_t *file) {
+
+void hex_read_catalog(file_t *file) {
   hexstatus_t rc;
   BYTE res = FR_OK;
   char *filename;
@@ -272,10 +273,9 @@ hexstatus_t hex_read_catalog(file_t *file) {
   rc = HEXSTAT_SUCCESS;
   transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return HEXSTAT_SUCCESS;
 }
 
-hexstatus_t hex_read_catalog_txt(file_t * file) {
+void hex_read_catalog_txt(file_t * file) {
   hexstatus_t rc;
   BYTE res = FR_OK;
   FILINFO fno;
@@ -331,10 +331,9 @@ hexstatus_t hex_read_catalog_txt(file_t * file) {
   }
   transmit_byte(rc);    // status code
   hex_finish();
-  return HEXSTAT_SUCCESS;
 }
 
-hexstatus_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
+void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t fsize = 0;
   BYTE res = FR_OK;
@@ -400,12 +399,11 @@ hexstatus_t hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path)
       transmit_word(0);
       transmit_byte(HEXSTAT_SUCCESS);    // status code
       hex_finish();
-      return HEXSTAT_SUCCESS;
+      return;
     } else {
       hex_send_final_response( rc );
     }
   }
   hex_finish();
   debug_putc('E');
-  return HEXSTAT_BUS_ERR;
 }

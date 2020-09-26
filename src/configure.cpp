@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include "config.h"
+#include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "registry.h"
@@ -178,7 +179,7 @@ static void hex_cfg_open( pab_t *pab ) {
       transmit_word( 4 );
       transmit_word( len );
       transmit_word( 0 );      // position at record 0
-      transmit_byte( HEXSTAT_SUCCESS );
+      transmit_byte( rc );
       hex_finish();
     } else {
       hex_send_final_response( rc );
@@ -307,7 +308,6 @@ static void hex_cfg_write( pab_t *pab ) {
     s = p;
   } else {
     hex_release_bus();
-    return;
   }
 
   if ( (cfg_open & (OPENMODE_WRITE | OPENMODE_RELATIVE) ) == (OPENMODE_WRITE | OPENMODE_RELATIVE) ) {
@@ -401,7 +401,7 @@ static void hex_cfg_getmask(pab_t *pab) {
       // regardless of buffer size sent, respond with the mask value as status.
       hex_send_final_response( (hexstatus_t)mask );
     }
-  }  else
+  } else
     hex_finish();
 }
 

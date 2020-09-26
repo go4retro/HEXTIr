@@ -22,28 +22,27 @@
 #include <avr/pgmspace.h>
 
 #include "config.h"
-
 #include "catalog.h"
+#include "configure.h"
 #include "debug.h"
+#include "diskio.h"
 #include "ff.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "led.h"
 #include "timer.h"
-
 #include "drive.h"
 
 #define FR_EOF     255    // We need an EOF error for hexbus_read.
 
 FATFS fs;
-#include "diskio.h"
 
 // Global defines
 uint8_t open_files = 0;
 luntbl_t files[MAX_OPEN_FILES]; // file number to file mapping
 uint8_t fs_initialized = FALSE;
 
-
+#ifndef JIM_PARSER
 /**
  * Remove all leading and trailing whitespaces
  */
@@ -74,6 +73,8 @@ static void trim(uint8_t **buf, uint8_t *blen) {
   (*buf)[*blen] = '\0';
   return;
 }
+
+#endif
 
 static file_t* find_file_in_use(uint8_t *lun) {
   uint8_t i;
@@ -286,7 +287,34 @@ static void hex_drv_verify(pab_t *pab) {
     }
   }
 }
+#ifdef JIM_PARSER
+typedef enum _diskcmd_t {
+  DISK_CMD_NONE = 0,
+  DISK_CMD_CHDIR,
+  DISK_CMD_MKDIR,
+  DISK_CMD_RMDIR,
+  DISK_CMD_RENAME,
+  DISK_CMD_COPY,
+  DISK_CMD_PWD
+} diskcmd_t;
 
+static const action_t dcmds[14] = {
+                                  {DISK_CMD_CHDIR,"cd"},
+                                  {DISK_CMD_CHDIR,"chdir"},
+                                  {DISK_CMD_MKDIR,"md"},
+                                  {DISK_CMD_MKDIR,"mkdir"},
+                                  {DISK_CMD_RMDIR,"rd"},
+                                  {DISK_CMD_RMDIR,"rmdir"},
+                                  {DISK_CMD_RENAME,"rn"},
+                                  {DISK_CMD_RENAME,"rename"},
+                                  {DISK_CMD_RENAME,"mv"},
+                                  {DISK_CMD_RENAME,"move"},
+                                  {DISK_CMD_COPY,"cp"},
+                                  {DISK_CMD_COPY,"copy"},
+                                  {DISK_CMD_PWD,"pwd"},
+                                  {DISK_CMD_NONE,""}
+                                };
+#endif
 static void hex_drv_write_cmd(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
@@ -423,6 +451,7 @@ static void hex_drv_write(pab_t *pab) {
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel
     hex_drv_write_cmd(pab);
+    return;
   }
   res = (file != NULL ? FR_OK : FR_NO_FILE);
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
@@ -550,13 +579,13 @@ static void hex_drv_read(pab_t *pab) {
   if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab->lun == 0 ) {
       debug_putc('P');
-        hex_read_catalog(file);
-        return;
+      hex_read_catalog(file);
+      return;
     }
     else {
       debug_putc('T');
-        hex_read_catalog_txt(file);
-        return;
+      hex_read_catalog_txt(file);
+      return;
     }
   }
   if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
@@ -607,10 +636,10 @@ static void hex_drv_read(pab_t *pab) {
         for (i = 0; i < read; i++) {
           rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
         }
-      }
-      else
-      {
+      } else {
+        // TODO Which one should it be?
         res = FR_RW_ERROR;
+        rc = HEXSTAT_DATA_ERR;
       }
 
       fsize -= read;
@@ -946,7 +975,7 @@ static void hex_drv_restore( pab_t *pab ) {
       rc = HEXSTAT_UNSUPP_CMD;
     }
     hex_send_final_response( rc );
-  }
+  } // TODO should this be an else...?
   hex_finish();
 }
 
@@ -975,7 +1004,7 @@ static void hex_drv_delete(pab_t *pab) {
 
   if ( rc == HEXSTAT_SUCCESS ) {
     // If we did not fill buffer, we have a null at end due to memset before retrieval.
-    if ( pab->datalen < BUFSIZE - 1 ) {
+    if ( pab->datalen < BUFSIZE - 1 ) { // TODO cna probably go to BUFFER len
       // remove file
       fr = f_unlink(&fs, buffer);
       switch (fr) {

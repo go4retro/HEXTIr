@@ -68,7 +68,15 @@ hexstatus_t hex_get_data(uint8_t buf[256], uint16_t len);
 void hex_eat_it(uint16_t length, hexstatus_t rc);
 void hex_unsupported(pab_t *pab);
 void hex_null(pab_t *pab __attribute__((unused)));
-//void trim(uint8_t **buf, uint8_t *blen);
+#ifdef JIM_PARSER
+hexstatus_t hex_write_cmd_helper(uint16_t len);
+uint8_t parse_cmd(const action_t actions[], char **buf, uint8_t *blen);
+hexstatus_t hex_exec_cmd(char* buf, uint8_t len);
+void hex_open_cmd(pab_t pab);
+void hex_write_cmd(pab_t pab);
+void hex_close_cmd(void);
+void trim(uint8_t **buf, uint8_t *blen);
+#endif
 #ifdef USE_OPEN_HELPER
 hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att);
 #endif

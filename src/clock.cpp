@@ -26,6 +26,7 @@
 #include <avr/pgmspace.h>
 
 #include "config.h"
+#include "configure.h"
 #include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
@@ -61,7 +62,7 @@ static void hex_rtc_open( pab_t *pab ) {
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
-    att = buffer[ 2 ];
+    att = buffer[ 2 ];    // tells us open for read, write or both.
   } else {
     hex_release_bus();
     return;

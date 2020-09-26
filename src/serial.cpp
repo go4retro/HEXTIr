@@ -23,6 +23,7 @@
 #include <avr/pgmspace.h>
 
 #include "config.h"
+#include "configure.h"
 #include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
