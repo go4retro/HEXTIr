@@ -44,7 +44,7 @@ volatile uint8_t  ser_open = 0;
 /*
    her_ser_open()
 */
-static hexstatus_t hex_ser_open(pab_t *pab) {
+static void hex_ser_open(pab_t *pab) {
   char     *attrib;
   __attribute__((unused))long     baud = 9600;
   uint16_t len;
@@ -58,7 +58,7 @@ static hexstatus_t hex_ser_open(pab_t *pab) {
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
-    return HEXSTAT_TOO_LONG;
+    return;
   }
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
@@ -66,11 +66,11 @@ static hexstatus_t hex_ser_open(pab_t *pab) {
     att = buffer[ 2 ];
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 #endif
   if(rc != HEXSTAT_SUCCESS)
-    return rc;
+    return;
 
   // Now, we need to parse the input buffer and decide on parameters.
   // realistically, all we can actually support is B=xxx.  Some other
@@ -113,7 +113,7 @@ static hexstatus_t hex_ser_open(pab_t *pab) {
           transmit_word( 0 );
           transmit_byte( HEXSTAT_SUCCESS );
           hex_finish();
-          return HEXSTAT_SUCCESS;
+          return;
         } else {
           rc = HEXSTAT_APPEND_MODE_ERR;
         }
@@ -124,17 +124,17 @@ static hexstatus_t hex_ser_open(pab_t *pab) {
       rc = HEXSTAT_ALREADY_OPEN;
     }
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
 /*
    hex_ser_close()
 */
-static hexstatus_t hex_ser_close(pab_t *pab __attribute__((unused))) {
+static void hex_ser_close(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   if ( ser_open ) {
@@ -144,14 +144,14 @@ static hexstatus_t hex_ser_close(pab_t *pab __attribute__((unused))) {
   }
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
-static hexstatus_t hex_ser_read(pab_t *pab) {
+static void hex_ser_read(pab_t *pab) {
   uint16_t len = pab->buflen;
   uint16_t bcount = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
@@ -204,14 +204,14 @@ static hexstatus_t hex_ser_read(pab_t *pab) {
       // not open at all?
       hex_send_final_response( HEXSTAT_NOT_OPEN );
     }
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
-static hexstatus_t hex_ser_write(pab_t *pab) {
+static void hex_ser_write(pab_t *pab) {
   uint16_t len;
   uint16_t i;
   uint16_t j;
@@ -242,31 +242,31 @@ static hexstatus_t hex_ser_write(pab_t *pab) {
 
   if ( len ) {
     hex_eat_it( len, rc );
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
-static hexstatus_t hex_ser_rtn_sta(pab_t *pab __attribute__((unused))) {
+static void hex_ser_rtn_sta(pab_t *pab __attribute__((unused))) {
   // TBD
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
-static hexstatus_t hex_ser_set_opts(pab_t *pab __attribute__((unused))) {
+static void hex_ser_set_opts(pab_t *pab __attribute__((unused))) {
   // TBD
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
-static hexstatus_t hex_ser_reset(pab_t *pab __attribute__((unused))) {
+static void hex_ser_reset(pab_t *pab __attribute__((unused))) {
 
   ser_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -275,7 +275,7 @@ static hexstatus_t hex_ser_reset(pab_t *pab __attribute__((unused))) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 

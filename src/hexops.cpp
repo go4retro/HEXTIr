@@ -75,17 +75,15 @@ void hex_eat_it(uint16_t length, hexstatus_t status )
  * hex_unsupported() should be used for any command on any device
  * where we provide no support for that command.
  */
-hexstatus_t hex_unsupported(pab_t *pab) {
+void hex_unsupported(pab_t *pab) {
   hex_eat_it(pab->datalen, HEXSTAT_UNSUPP_CMD );
-  return HEXSTAT_UNSUPP_CMD;
 }
 
 
-hexstatus_t hex_null(pab_t *pab __attribute__((unused))) {
+void hex_null(pab_t *pab __attribute__((unused))) {
   hex_release_bus();
   while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
     ;
-  return HEXSTAT_SUCCESS;
 }
 
 #ifdef USE_OPEN_HELPER

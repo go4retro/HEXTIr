@@ -41,7 +41,7 @@ volatile uint8_t  prn_open = 0;
    hex_prn_open() -
    "opens" the Serial.object for use as a printer at device code 12 (default PC-324 printer).
 */
-static hexstatus_t hex_prn_open(pab_t *pab) {
+static void hex_prn_open(pab_t *pab) {
   uint16_t len = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   uint8_t  att = 0;
@@ -54,7 +54,7 @@ static hexstatus_t hex_prn_open(pab_t *pab) {
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
-    return HEXSTAT_TOO_LONG;
+    return;
   }
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
@@ -62,11 +62,11 @@ static hexstatus_t hex_prn_open(pab_t *pab) {
     att = buffer[ 2 ];
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 #endif
   if(rc != HEXSTAT_SUCCESS)
-    return rc;
+    return;
 
   if ( !prn_open ) {
     if ( att != OPENMODE_WRITE ) {
@@ -89,10 +89,10 @@ static hexstatus_t hex_prn_open(pab_t *pab) {
     {
       hex_send_final_response( rc );
     }
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -100,7 +100,7 @@ static hexstatus_t hex_prn_open(pab_t *pab) {
    hex_prn_close() -
    closes printer at device 12 for use from host.
 */
-static hexstatus_t hex_prn_close(__attribute__((unused)) pab_t *pab) {
+static void hex_prn_close(__attribute__((unused)) pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   if ( !prn_open ) {
@@ -111,7 +111,7 @@ static hexstatus_t hex_prn_close(__attribute__((unused)) pab_t *pab) {
     // send 0000 response with appropriate status code.
     hex_send_final_response( rc );
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
@@ -119,7 +119,7 @@ static hexstatus_t hex_prn_close(__attribute__((unused)) pab_t *pab) {
     hex_prn_write() -
     write data to serial port when printer is open.
 */
-static hexstatus_t hex_prn_write(pab_t *pab) {
+static void hex_prn_write(pab_t *pab) {
   uint16_t len;
   uint16_t i;
   uint8_t  written = 0;
@@ -190,11 +190,11 @@ static hexstatus_t hex_prn_write(pab_t *pab) {
   } else {
     hex_finish();
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
-static hexstatus_t hex_prn_reset( __attribute__((unused)) pab_t *pab) {
+static void hex_prn_reset( __attribute__((unused)) pab_t *pab) {
   
   prn_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -203,7 +203,7 @@ static hexstatus_t hex_prn_reset( __attribute__((unused)) pab_t *pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 

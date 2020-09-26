@@ -44,7 +44,7 @@ volatile uint8_t  rtc_open = 0;
    WORK IN MAJOR PROGRESS.
    These routines will currently flag an unused parameter 'pab' warning...
 */
-static hexstatus_t hex_rtc_open( pab_t *pab ) {
+static void hex_rtc_open( pab_t *pab ) {
   uint16_t len;
   uint8_t  att;
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -56,7 +56,7 @@ static hexstatus_t hex_rtc_open( pab_t *pab ) {
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
-    return HEXSTAT_TOO_LONG;
+    return;
   }
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
@@ -64,11 +64,11 @@ static hexstatus_t hex_rtc_open( pab_t *pab ) {
     att = buffer[ 2 ];
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 #endif
   if(rc != HEXSTAT_SUCCESS)
-    return rc;
+    return;
 
   if ( !hex_is_bav() ) {
     if ( !rtc_open ) {
@@ -80,7 +80,7 @@ static hexstatus_t hex_rtc_open( pab_t *pab ) {
         transmit_word( 0 );
         transmit_byte( HEXSTAT_SUCCESS );
         hex_finish();
-        return HEXSTAT_SUCCESS;
+        return;
       } else {
         rc = HEXSTAT_ATTR_ERR; // append not allowed on RTC.  INPUT|OUTPUT|UPDATE is OK.
       }
@@ -88,16 +88,16 @@ static hexstatus_t hex_rtc_open( pab_t *pab ) {
       rc = HEXSTAT_ALREADY_OPEN;
     }
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 /*
    Close access to RTC module. Shuts down Wire.
 */
-static hexstatus_t hex_rtc_close(pab_t *pab __attribute__((unused))) {
+static void hex_rtc_close(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   debug_puts_P(PSTR("Close RTC\n"));
@@ -108,14 +108,14 @@ static hexstatus_t hex_rtc_close(pab_t *pab __attribute__((unused))) {
     rc = HEXSTAT_NOT_OPEN;
   }
   hex_send_final_response(rc);
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 /*
    Return time in format YYYY,MM,DD,HH,MM,SS in 24h form.
    When RTC opened in INPUT or UPDATE mode.
 */
-static hexstatus_t hex_rtc_read(pab_t *pab) {
+static void hex_rtc_read(pab_t *pab) {
   uint16_t len = 0;
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
@@ -167,10 +167,10 @@ static hexstatus_t hex_rtc_read(pab_t *pab) {
     } else {
       hex_send_final_response( rc );
     }
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
@@ -225,7 +225,7 @@ uint8_t parse_num(uint16_t* value, uint8_t digits, uint8_t *cur, uint8_t len) {
    Set time when we receive time in format YY,MM,DD,HH,MM,SS
    When RTC opened in OUTPUT or UPDATE mode.
 */
-static hexstatus_t hex_rtc_write( pab_t *pab ) {
+static void hex_rtc_write( pab_t *pab ) {
 #ifdef HEX_WRITE_OLD
   uint16_t len;
   char     *token;
@@ -329,18 +329,17 @@ static hexstatus_t hex_rtc_write( pab_t *pab ) {
   }
   if ( rc == HEXSTAT_DATA_ERR ) {
     hex_eat_it( len, rc );
-    return HEXSTAT_BUS_ERR;
+    return;
   }
   if ( !hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
 }
 
 
-static hexstatus_t hex_rtc_reset( pab_t *pab __attribute__((unused))) {
+static void hex_rtc_reset( pab_t *pab __attribute__((unused))) {
   clock_reset();
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
@@ -348,7 +347,6 @@ static hexstatus_t hex_rtc_reset( pab_t *pab __attribute__((unused))) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXSTAT_SUCCESS;
 }
 
 
@@ -356,7 +354,6 @@ void clock_reset() {
   if ( rtc_open ) {
     rtc_open = 0;
   }
-  return;
 }
 
 

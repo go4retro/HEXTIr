@@ -66,8 +66,8 @@ typedef struct _pab_raw_t {
 
 hexstatus_t hex_get_data(uint8_t buf[256], uint16_t len);
 void hex_eat_it(uint16_t length, hexstatus_t rc);
-hexstatus_t hex_unsupported(pab_t *pab);
-hexstatus_t hex_null(pab_t *pab __attribute__((unused)));
+void hex_unsupported(pab_t *pab);
+void hex_null(pab_t *pab __attribute__((unused)));
 //void trim(uint8_t **buf, uint8_t *blen);
 #ifdef USE_OPEN_HELPER
 hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att);

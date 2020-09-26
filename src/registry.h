@@ -26,7 +26,7 @@
 #define RTC_ADD       0
 #endif
 
-typedef hexstatus_t (*cmd_proc)(pab_t *pab);
+typedef void (*cmd_proc)(pab_t *pab);
 
 #ifdef USE_NEW_OPTABLE
 // This is used as a marker in our registry to indicate end of operations table.
@@ -35,7 +35,7 @@ typedef hexstatus_t (*cmd_proc)(pab_t *pab);
 
 typedef struct _cmd_op_t {
   hexcmdtype_t command;
-  hexstatus_t (*operation)(pab_t*);
+  void (*operation)(pab_t*);
 } cmd_op_t;
 
 #else

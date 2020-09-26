@@ -128,7 +128,7 @@ static volatile uint8_t cfg_open = 0;
    CALL IO(222,202,STATUS) ! 202 = command to retrieve support mask (tells us which devices are supported) STATUS=mask
    CLOSE #1
 */
-static hexstatus_t hex_cfg_open( pab_t *pab ) {
+static void hex_cfg_open( pab_t *pab ) {
   uint16_t len = 0;
   uint8_t  att = 0;
   hexstatus_t  rc;
@@ -138,7 +138,7 @@ static hexstatus_t hex_cfg_open( pab_t *pab ) {
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
-    return HEXSTAT_TOO_LONG;
+    return;
   }
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
@@ -146,11 +146,11 @@ static hexstatus_t hex_cfg_open( pab_t *pab ) {
     att = buffer[ 2 ];
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 #endif
   if(rc != HEXSTAT_SUCCESS)
-    return rc;
+    return;
 
   if ( cfg_open ) {
     rc = HEXSTAT_ALREADY_OPEN;
@@ -183,10 +183,10 @@ static hexstatus_t hex_cfg_open( pab_t *pab ) {
     } else {
       hex_send_final_response( rc );
     }
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -194,7 +194,7 @@ static hexstatus_t hex_cfg_open( pab_t *pab ) {
  * hex_cfg_close() - 
  * Close an open configuration port
  */
-static hexstatus_t hex_cfg_close( pab_t *pab __attribute__((unused))) {
+static void hex_cfg_close( pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   if ( cfg_open ) {
@@ -205,10 +205,10 @@ static hexstatus_t hex_cfg_close( pab_t *pab __attribute__((unused))) {
 
   if ( !hex_is_bav() ) {
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -219,7 +219,7 @@ static hexstatus_t hex_cfg_close( pab_t *pab __attribute__((unused))) {
  * of a string such as 'D=100' or 'P=12'.
  * 
  */
-static hexstatus_t hex_cfg_read( pab_t *pab ) {
+static void hex_cfg_read( pab_t *pab ) {
   uint16_t len = 0;
   //uint8_t mask = our_support_mask();
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -258,14 +258,14 @@ static hexstatus_t hex_cfg_read( pab_t *pab ) {
       }
       transmit_byte( rc );
       hex_finish();
-      return HEXSTAT_SUCCESS;
+      return;
     } else {
       hex_send_final_response( rc );
-      return HEXSTAT_SUCCESS;
+      return;
     }
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -273,7 +273,7 @@ static hexstatus_t hex_cfg_read( pab_t *pab ) {
  * hex_cfg_restore() -
  * minimal "restore" support.
  */
-static hexstatus_t hex_cfg_restore( pab_t *pab __attribute__((unused))) {
+static void hex_cfg_restore( pab_t *pab __attribute__((unused))) {
   hexstatus_t rc;
 
   if ( !hex_is_bav() ) {
@@ -283,10 +283,10 @@ static hexstatus_t hex_cfg_restore( pab_t *pab __attribute__((unused))) {
       rc = HEXSTAT_NOT_OPEN;
     }
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -301,7 +301,7 @@ static hexstatus_t hex_cfg_restore( pab_t *pab __attribute__((unused))) {
  * 
  * Record number in pab specifies which peripheral to affect.
  */
-static hexstatus_t hex_cfg_write( pab_t *pab ) {
+static void hex_cfg_write( pab_t *pab ) {
   char    *p = NULL;
   char    *s;
   uint8_t  ch;
@@ -316,7 +316,7 @@ static hexstatus_t hex_cfg_write( pab_t *pab ) {
     s = p;
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 
   if ( (cfg_open & (OPENMODE_WRITE | OPENMODE_RELATIVE) ) == (OPENMODE_WRITE | OPENMODE_RELATIVE) ) {
@@ -384,10 +384,10 @@ static hexstatus_t hex_cfg_write( pab_t *pab ) {
   }
   if ( !hex_is_bav() ) {
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -396,7 +396,7 @@ static hexstatus_t hex_cfg_write( pab_t *pab ) {
    returns the current configuration mask indicating which peripheral
    groups are currently supported.
 */
-static hexstatus_t hex_cfg_getmask(pab_t *pab) {
+static void hex_cfg_getmask(pab_t *pab) {
   uint8_t mask = 0;
 
   if ( !hex_is_bav() ) {
@@ -412,10 +412,10 @@ static hexstatus_t hex_cfg_getmask(pab_t *pab) {
       // regardless of buffer size sent, respond with the mask value as status.
       hex_send_final_response( (hexstatus_t)mask );
     }
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -424,19 +424,19 @@ static hexstatus_t hex_cfg_getmask(pab_t *pab) {
  * update the content of EEPROM with the current device address block
  * of supported peripherals.
  */
-static hexstatus_t hex_cfg_write_eeprom( __attribute__((unused)) pab_t *pab ) {
+static void hex_cfg_write_eeprom( __attribute__((unused)) pab_t *pab ) {
   // TODO: Write the 'device_address' data block to EEPROM.
   hex_send_final_response( HEXSTAT_SUCCESS );
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 /*
    hex_cfg_reset() -
    handle the reset commad if directed to us.
 */
-static hexstatus_t hex_cfg_reset( pab_t *pab) {
+static void hex_cfg_reset( pab_t *pab) {
   cfg_open = 0;
-  return hex_null(pab);
+  hex_null(pab);
 }
 
 

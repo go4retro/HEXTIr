@@ -210,7 +210,7 @@ static uint16_t next_value_size(file_t* file) {
    transmitted in the verify command until sending stops.
 */
 
-static hexstatus_t hex_drv_verify(pab_t *pab) {
+static void hex_drv_verify(pab_t *pab) {
   uint16_t len_prog_mem = 0;
   uint16_t len_prog_stored = 0;
   uint8_t  *data = &buffer[ BUFSIZE / 2 ]; // split our buffer in half
@@ -237,7 +237,7 @@ static hexstatus_t hex_drv_verify(pab_t *pab) {
 
     if ( hex_get_data(buffer, i) ) { // use front half of buffer for incoming data from the host.
       hex_release_bus();
-      return HEXSTAT_BUS_ERR;
+      return;
     }
 
     if (res == FR_OK) {
@@ -277,7 +277,7 @@ static hexstatus_t hex_drv_verify(pab_t *pab) {
       rc = HEXSTAT_DEVICE_ERR;
     }
     hex_eat_it( len, rc ); // reports status back.
-    return HEXSTAT_BUS_ERR;
+    return;
   } else {
 
     if (!hex_is_bav()) { // we can send response
@@ -286,10 +286,10 @@ static hexstatus_t hex_drv_verify(pab_t *pab) {
       hex_finish();
     }
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
-static hexstatus_t hex_drv_write_cmd(pab_t *pab) {
+static void hex_drv_write_cmd(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   BYTE res = FR_OK;
@@ -359,7 +359,7 @@ static hexstatus_t hex_drv_write_cmd(pab_t *pab) {
     res = FR_INVALID_OBJECT;
     // TODO what error should this be?
     hex_eat_it( len, HEXSTAT_BUS_ERR ); // reports status back.
-    return HEXSTAT_BUS_ERR;
+    return;
   }
   if (rc == HEXSTAT_SUCCESS) {
     switch (res) {
@@ -377,7 +377,7 @@ static hexstatus_t hex_drv_write_cmd(pab_t *pab) {
   } else {
     hex_finish();
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
@@ -411,7 +411,7 @@ static hexstatus_t hex_drv_write_cmd(pab_t *pab) {
    what I can tell of the implementation.
 
 */
-static hexstatus_t hex_drv_write(pab_t *pab) {
+static void hex_drv_write(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint16_t i;
@@ -425,7 +425,7 @@ static hexstatus_t hex_drv_write(pab_t *pab) {
   file = find_lun(pab->lun);
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel
-    return hex_drv_write_cmd(pab);
+    hex_drv_write_cmd(pab);
   }
   res = (file != NULL ? FR_OK : FR_NO_FILE);
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
@@ -464,7 +464,7 @@ static hexstatus_t hex_drv_write(pab_t *pab) {
     }
     // TODO what error should we return to caller?
     hex_eat_it( len, rc );
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 
   // if in DISPLAY mode
@@ -497,10 +497,10 @@ static hexstatus_t hex_drv_write(pab_t *pab) {
   } else {
     hex_finish();
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
-static hexstatus_t hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
+static void hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc;
   // This really should always succeed
   transmit_word(0);      // null file
@@ -510,7 +510,7 @@ static hexstatus_t hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
   }
   transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
@@ -534,7 +534,7 @@ static hexstatus_t hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
     special LUN. The amount of bytes to be send is determined by the
     file length    
 */
-static hexstatus_t hex_drv_read(pab_t *pab) {
+static void hex_drv_read(pab_t *pab) {
   hexstatus_t rc;
   uint8_t i;
   uint16_t len;
@@ -549,17 +549,19 @@ static hexstatus_t hex_drv_read(pab_t *pab) {
   file = find_lun(pab->lun);
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel read
-    return hex_drv_read_cmd(pab);
+    hex_drv_read_cmd(pab);
   }
 
   if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab->lun == 0 ) {
       debug_putc('P');
-        return hex_read_catalog(file);
+        hex_read_catalog(file);
+        return;
     }
     else {
       debug_putc('T');
-        return hex_read_catalog_txt(file);
+        hex_read_catalog_txt(file);
+        return;
     }
   }
   if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
@@ -645,7 +647,7 @@ static hexstatus_t hex_drv_read(pab_t *pab) {
   }
   transmit_byte( rc ); // status byte transmit
   hex_finish();
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
@@ -667,7 +669,7 @@ void drv_start(void) {
    hex_drv_open() -
    open a file for read or write on the SD card.
 */
-static hexstatus_t hex_drv_open(pab_t *pab) {
+static void hex_drv_open(pab_t *pab) {
   uint16_t len = 0;
   uint8_t att = 0;
   hexstatus_t rc;
@@ -696,7 +698,7 @@ static hexstatus_t hex_drv_open(pab_t *pab) {
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
-    return HEXSTAT_FILE_NAME_INVALID;
+    return;
   }
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
@@ -704,11 +706,11 @@ static hexstatus_t hex_drv_open(pab_t *pab) {
     att = buffer[ 2 ];
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR;
+    return;
   }
 #endif
   if(rc != HEXSTAT_SUCCESS)
-    return rc;
+    return;
 
   path = &(buffer[3]);
   pathlen = pab->datalen - 3;
@@ -723,7 +725,8 @@ static hexstatus_t hex_drv_open(pab_t *pab) {
   // special file name "$" -> catalog
   if (path[0]=='$') {
     file = reserve_lun(pab->lun);
-    return hex_open_catalog(file, pab->lun, att, (char*)path);  // check file!= null in there
+    hex_open_catalog(file, pab->lun, att, (char*)path);  // check file!= null in there
+    return;
   }
   //*******************************************************
   // special file name "" -> command_mode
@@ -741,13 +744,13 @@ static hexstatus_t hex_drv_open(pab_t *pab) {
         transmit_word(255);
         transmit_byte(HEXSTAT_SUCCESS);    // status code
         hex_finish();
-        return HEXSTAT_SUCCESS;
+        return;
       } else
         hex_send_final_response( rc );
     }
     hex_finish();
     debug_putc('E');
-    return HEXSTAT_BUS_ERR;
+    return;
   }
   //*******************************************************
   // map attributes to FatFS file access mode
@@ -865,10 +868,10 @@ static hexstatus_t hex_drv_open(pab_t *pab) {
     } else {
       hex_send_final_response( rc );
     }
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
@@ -879,7 +882,7 @@ static hexstatus_t hex_drv_open(pab_t *pab) {
    If the file is not open, appropriate status is returned
 
 */
-static hexstatus_t hex_drv_close(pab_t *pab) {
+static void hex_drv_close(pab_t *pab) {
   hexstatus_t rc;
   file_t* file = NULL;
   BYTE res = 0;
@@ -912,10 +915,10 @@ static hexstatus_t hex_drv_close(pab_t *pab) {
 
   if ( !hex_is_bav() ) {
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 /*
@@ -923,7 +926,7 @@ static hexstatus_t hex_drv_close(pab_t *pab) {
    reset file to beginning
    valid for update, input mode open files.
 */
-static hexstatus_t hex_drv_restore( pab_t *pab ) {
+static void hex_drv_restore( pab_t *pab ) {
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   file_t*  file = NULL;
   //BYTE     res = 0;
@@ -954,14 +957,14 @@ static hexstatus_t hex_drv_restore( pab_t *pab ) {
     hex_send_final_response( rc );
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 /*
    hex_drv_delete() -
    delete a file from the SD card.
 */
-static hexstatus_t hex_drv_delete(pab_t *pab) {
+static void hex_drv_delete(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
 
@@ -972,7 +975,7 @@ static hexstatus_t hex_drv_delete(pab_t *pab) {
   if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
-    return HEXSTAT_BUS_ERR;
+    return;
   }
   // simplistic removal. doesn't check for much besides
   // existance at this point.  We should be able to know if
@@ -1002,17 +1005,17 @@ static hexstatus_t hex_drv_delete(pab_t *pab) {
   }
   if (!hex_is_bav()) { // we can send response
     hex_send_final_response( rc );
-    return HEXSTAT_SUCCESS;
+    return;
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 /*
     hex_drv_status() -
     initial simplistic implementation
 */
-static hexstatus_t hex_drv_status( pab_t *pab ) {
+static void hex_drv_status( pab_t *pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
@@ -1047,18 +1050,18 @@ static hexstatus_t hex_drv_status( pab_t *pab ) {
       transmit_byte( st );
       transmit_byte( HEXSTAT_SUCCESS );
       hex_finish();
-      return HEXSTAT_SUCCESS;
+      return;
     } else {
       hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
-      return HEXSTAT_SUCCESS;
+      return;
     }
   }
   hex_finish();
-  return HEXSTAT_BUS_ERR;
+  return;
 }
 
 
-static hexstatus_t hex_drv_reset( __attribute__((unused)) pab_t *pab) {
+static void hex_drv_reset( __attribute__((unused)) pab_t *pab) {
 
   drv_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -1067,7 +1070,7 @@ static hexstatus_t hex_drv_reset( __attribute__((unused)) pab_t *pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXSTAT_SUCCESS;
+  return;
 }
 
 
