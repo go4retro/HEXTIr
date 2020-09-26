@@ -6,8 +6,7 @@
 #ifndef REGISTRY_H
 #define REGISTRY_H
 
-//#define MAX_REGISTRY      8
-#define MAX_REGISTRY   (1 + 1 + PRN_ADD + SER_ADD + RTC_ADD) // drive + null device
+#ifdef NEW_REG_CNT
 #ifdef INCLUDE_PRINTER
 #define PRN_ADD       1
 #else
@@ -22,6 +21,11 @@
 #define RTC_ADD       1
 #else
 #define RTC_ADD       0
+#endif
+// TODO  Why do I need to define 4 extra devices when there are only 3?
+#define MAX_REGISTRY   (1 + 1 + 1 + 1 + PRN_ADD + SER_ADD + RTC_ADD) // drive, cfg, null device
+#else
+#define MAX_REGISTRY      8
 #endif
 
 typedef uint8_t (*cmd_proc)(pab_t pab);

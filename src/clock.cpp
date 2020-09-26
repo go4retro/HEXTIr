@@ -31,13 +31,13 @@
 #include "registry.h"
 #include "rtc.h"
 #include "time.h"
-
 #include "clock.h"
 
 #ifdef INCLUDE_CLOCK
 
 // Global references
 extern uint8_t buffer[BUFSIZE];
+
 // Global defines
 volatile uint8_t  rtc_open = 0;
 
@@ -377,18 +377,39 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+void clock_register(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, ops);
+#else
+  //cfg1_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, op_table, fn_table);
+#endif
+#else
+  uint8_t i = registry.num_devices;
+
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_RTC_START;
+  registry.entry[ i ].dev_cur = DEV_RTC_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_RTC_END; // support 230-239 as device codes
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ i ].oplist = (cmd_op_t *)ops;
+#else
+  registry.entry[ i ].operation = (cmd_proc *)fn_table;
+  registry.entry[ i ].command = (uint8_t *)op_table;
+#endif
+#endif
+}
+
 
 void clock_init() {
   struct tm t;
 
   rtc_init();
 
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, (const cmd_op_t**)&ops);
-#else
-  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#ifdef INIT_COMBO
+  clock_register();
 #endif
-
   // if RTC has been stopped, store default date in it.
   if(rtc_get_state() == RTC_INVALID) {
     t.tm_year = __YEAR__ - 1900;

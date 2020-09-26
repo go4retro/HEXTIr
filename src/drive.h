@@ -52,6 +52,7 @@ typedef struct _luntbl_t {
 
 
 void drv_reset(void);
+void drv_register(void);
 void drv_init(void);
 
 #endif /* DRIVE_H */

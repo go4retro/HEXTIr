@@ -22,15 +22,14 @@
 #include <avr/pgmspace.h>
 
 #include "config.h"
-
 #include "catalog.h"
 #include "debug.h"
 #include "ff.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "led.h"
+#include "registry.h"
 #include "timer.h"
-
 #include "drive.h"
 
 #define FR_EOF     255    // We need an EOF error for hexbus_read.
@@ -1119,6 +1118,29 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+void drv_register(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, ops);
+#else
+  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, op_table, fn_table);
+#endif
+  disk_init();
+#else
+  uint8_t i = registry.num_devices;
+
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_DRV_START;
+  registry.entry[ i ].dev_cur = DEV_DRV_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_DRV_END; // support 100-109 for disks
+#ifdef USE_NEW_OPTABLE
+#else
+  registry.entry[ i ].operation = (cmd_proc *)&fn_table;
+  registry.entry[ i ].command = (uint8_t *)&op_table;
+#endif
+#endif
+}
+
 
 void drv_reset( void )
 {
@@ -1151,11 +1173,8 @@ void drv_init(void) {
   }
   open_files = 0;
   fs_initialized = FALSE;
-
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, (const cmd_op_t**)&ops);
-#else
-  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#ifdef INIT_COMBO
+  drv_register();
 #endif
   disk_init();
 }

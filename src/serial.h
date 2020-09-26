@@ -31,9 +31,11 @@
 
 #ifdef INCLUDE_SERIAL
 void ser_reset(void);
+void ser_register(void);
 void ser_init(void);
 #else
 #define ser_reset()     do {} while(0)
+#define ser_register()  do {} while(0)
 #define ser_init()      do {} while(0)
 #endif
 #endif /* SERIAL_H */

@@ -30,9 +30,12 @@
 #include "hexops.h"
 #include "registry.h"
 #include "timer.h"
+#include "configure.h"
 
 // Global references
 extern uint8_t buffer[BUFSIZE];
+
+#ifndef NEW_REG_CNT
 //
 // Eventually, this is configuration info that will be in EEPROM, in some form, I think...
 // so the #ifdef's would disappear... the system will have a means of informing which group(s)
@@ -42,32 +45,32 @@ extern uint8_t buffer[BUFSIZE];
 // the build process, and configured via special commands at an address that is always supported.
 //  DRIVE GROUP 0 is always supported.
 //  other groups may be optionally included in the build.
-//uint8_t device_address[ 8 ] = {
-//  DEFAULT_DRIVE,   // periph 0
-//  DEFAULT_PRINTER, // periph 1
-//  DEFAULT_SERIAL,  // periph 2
-//  DEFAULT_CLOCK,   // periph 3
-//  NO_DEV,          // periph 4
-//  NO_DEV,          // periph 5
-//  NO_DEV,          // periph 6
-//  DEFAULT_CFGDEV,  // periph 7
-//};
+uint8_t device_address[ MAX_REGISTRY ] = {
+  DEFAULT_DRIVE,   // periph 0
+  DEFAULT_PRINTER, // periph 1
+  DEFAULT_SERIAL,  // periph 2
+  DEFAULT_CLOCK,   // periph 3
+  NO_DEV,          // periph 4
+  NO_DEV,          // periph 5
+  NO_DEV,          // periph 6
+  DEFAULT_CFGDEV,  // periph 7
+};
 
-//static const uint8_t config_option[ 8 - 1 ] PROGMEM = {
-//  'D', 'P', 'S', 'C', ' ', ' ', ' '
-//};
+static const uint8_t config_option[ MAX_REGISTRY - 1 ] PROGMEM = {
+  'D', 'P', 'S', 'C', ' ', ' ', ' '
+};
 
 // Bitmask of supported groups : 1 = drive, etc.
-//static const uint8_t supported_groups PROGMEM = {
-//  SUPPORT_DRV
-//  | SUPPORT_PRN
-//  | SUPPORT_SER
-//  | SUPPORT_RTC
+static const uint8_t supported_groups PROGMEM = {
+  SUPPORT_DRV
+  | SUPPORT_PRN
+  | SUPPORT_SER
+  | SUPPORT_RTC
   //  | SUPPORT_CFG  // This group is NOT indicated in the supported configurable devices
   // additional group functions may be added later for periph 4, 5, and 6.  Periph 7 is reserved for cfg.
-//};
+};
 
-/*static const uint8_t low_device_address[ 8 - 1 ] PROGMEM = {
+static const uint8_t low_device_address[ 8 - 1 ] PROGMEM = {
   DRV_DEV,
   PRN_DEV,
   SER_DEV,
@@ -85,8 +88,8 @@ static const uint8_t high_device_address[ 8 - 1 ] PROGMEM = {
   0,
   0,
   0
-};*/
-
+};
+#endif
 
 /*
  * Configuration port open status, 0 = closed.
@@ -99,9 +102,13 @@ static volatile uint8_t cfg_open = 0;
     This data (our supported groups) is built during compile time
     and stored in flash.  does not need to be in eeprom though.
 */
-//static inline uint8_t our_support_mask(void) {
-//  return (uint8_t)pgm_read_byte( &supported_groups );
-//}
+static inline uint8_t our_support_mask(void) {
+#ifndef NEW_REG_CNT
+  return (uint8_t)pgm_read_byte( &supported_groups );
+#else
+  return 0;
+#endif
+}
 
 
 
@@ -490,6 +497,36 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+/*
+   Caveat for using CONFIGURATION device:
+   When we register this device, there is only one address
+   that can be used with this function.  So; only run
+   configuration when the peripheral is the ONLY thing connected
+   to the bus.
+*/
+void cfg_register1(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_CFG_START, DEV_CFG_DEFAULT, DEV_CFG_END, ops);
+#else
+  cfg_register(DEV_CFG_START, DEV_CFG_DEFAULT, DEV_CFG_END, op_table, fn_table);
+#endif
+#else
+  uint8_t i = registry.num_devices;
+
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_CFG_START;
+  registry.entry[ i ].dev_cur = DEV_CFG_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_CFG_END;
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ i ].oplist = (cmd_op_t *)ops;
+#else
+  registry.entry[ i ].operation = (cmd_proc *)fn_table;
+  registry.entry[ i ].command = (uint8_t *)op_table;
+#endif
+#endif
+}
+
 
 /*
     we may need these when we switch to eeprom...
@@ -504,30 +541,21 @@ void cfg_reset( void )
 void cfg_init( void )
 {
   cfg_open = 0;
-  /*
-     Caveat for using CONFIGURATION device:
-     When we register this device, there is only one address
-     that can be used with this function.  So; only run
-     configuration when the peripheral is the ONLY thing connected
-     to the bus.
-  */
 
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_CFG_START, DEV_CFG_DEFAULT, DEV_CFG_END, (const cmd_op_t**)&ops);
-#else
-  cfg_register(DEV_CFG_START, DEV_CFG_DEFAULT, DEV_CFG_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
-#endif
   // TODO: read the EEPROM configuration, if it exists, into the 'device_address' block
   // loading our current default device addresses for supported devices in the build.
   // Load only the addresses for the devices supported by the build configuration.
   // call 'our_support_mask()' to get this information.
+#ifdef INIT_COMBO
+  cfg_register1();
+#endif
   
 }
 
 #ifdef USE_NEW_OPTABLE
-void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const cmd_op_t **ops) {
+void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const cmd_op_t ops[]) {
 #else
-void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const uint8_t **op_table, const cmd_proc **fn_table) {
+void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const uint8_t op_table[], const cmd_proc fn_table[]) {
 #endif
   uint8_t i;
 

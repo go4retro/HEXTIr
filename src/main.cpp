@@ -181,11 +181,32 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
-void reg_init(void) {
+
+static inline void reg_init(void) {
+#ifdef NEW_REGISTER
 #ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_ALL, DEV_ALL, DEV_MAX, (const cmd_op_t**)&ops);
+  cfg_register(DEV_ALL, DEV_ALL, DEV_MAX, ops);
 #else
-  cfg_register(DEV_ALL, DEV_ALL, DEV_MAX, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+  cfg_register(DEV_ALL, DEV_ALL, DEV_MAX, op_table, fn_table);
+#endif
+#else
+  registry.num_devices = 1;
+  registry.entry[ 0 ].dev_low = DEV_ALL;
+  registry.entry[ 0 ].dev_cur = DEV_ALL;
+  registry.entry[ 0 ].dev_high = DEV_MAX;
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ 0 ].oplist = (cmd_op_t *)&ops;
+#else
+  registry.entry[ 0 ].operation = (cmd_proc *)&fn_table;
+  registry.entry[ 0 ].command = (uint8_t *)&op_table;
+#endif
+#endif
+#ifndef INIT_COMBO
+  cfg_register1();
+  drv_register();
+  prn_register();
+  ser_register();
+  clock_register();
 #endif
 }
 
@@ -195,27 +216,29 @@ void reg_init(void) {
    Building non-Arduino, we'll call it once at the beginning
    of the main() function.
 */
-
 void setup(void) {
   board_init();
   debug_init();
-  disk_init();
-  hex_init();
-  leds_init();
-  timer_init();
-  reg_init(); // this must be done first.
-  drv_init();
-  ser_init();
-  prn_init();
-  cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
 #  if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
   uart_init();
   swuart_init();
 #  endif
 
-  config = ee_get_config();
-
   sei();
+
+  disk_init();
+  hex_init();
+  leds_init();
+  timer_init();
+#ifdef INIT_COMBO
+  reg_init();
+#endif
+  drv_init();
+  ser_init();
+  prn_init();
+  cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
+
+  config = ee_get_config();
 
   clock_init();
 
@@ -237,6 +260,9 @@ int main(void) {
 #endif
 
   setup();
+#ifndef INIT_COMBO
+  reg_init(); // this must be done first.
+#endif
 
   pabdata.pab.cmd = 0;
   pabdata.pab.lun = 0;
@@ -295,6 +321,7 @@ int main(void) {
         }
       }
 
+#ifdef NEW_DEV_CHK
       if ( !ignore_cmd ) {
         ignore_cmd = TRUE;
         for (uint8_t j = 0; j < registry.num_devices; j++) {
@@ -305,7 +332,30 @@ int main(void) {
           }
         }
       }
-
+#else
+      if ( !ignore_cmd ) {
+       if ( !( ( pabdata.pab.dev == 0 ) ||
+                ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] )
+                || ( pabdata.pab.dev == device_address[ CONFIG_GROUP ] )
+#ifdef INCLUDE_PRINTER
+                ||
+                (( pabdata.pab.dev == device_address[ PRINTER_GROUP ] ) )
+#endif
+#ifdef INCLUDE_CLOCK
+                ||
+                (( pabdata.pab.dev == device_address[ CLOCK_GROUP ] ) )
+#endif
+#ifdef INCLUDE_SERIAL
+                ||
+                (( pabdata.pab.dev == device_address[ SERIAL_GROUP ] ) )
+#endif
+              )
+           )
+        {
+          ignore_cmd = TRUE;
+        }
+      }
+#endif
       if ( !ignore_cmd ) {
         if (i == 9) {
           // exec command
