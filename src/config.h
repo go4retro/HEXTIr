@@ -22,6 +22,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define USE_NEW_OPTABLE
+
 #include <avr/io.h>
 
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
@@ -167,24 +169,24 @@ static inline void pwr_irq_disable(void) {
 
 
 static inline void sdcard_interface_init(void) {
-  DDRB  &= ~_BV(PB0);  // wp
+  DDRB  &= ~_BV(PB0);  // detect
   PORTB |=  _BV(PB0);
-  DDRB  &= ~_BV(PB1);  // detect
+  DDRB  &= ~_BV(PB1);  // wp
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
-  PCMSK0 |= _BV(PCINT1);
+  PCMSK0 |= _BV(PCINT0);
   //EIMSK |=  _BV(INT6);
 }
 
 
 static inline uint8_t sdcard_detect(void) {
-  return !(PINB & _BV(PIN1));
+  return !(PINB & _BV(PIN0));
 }
 
 
 static inline uint8_t sdcard_wp(void) {
-  return PINB & _BV(PIN0);
+  return PINB & _BV(PIN1);
 }
 
 
@@ -246,6 +248,10 @@ static inline void pwr_irq_disable(void) {
 #  define LED_BUSY_OUT        PORTD
 #  define LED_BUSY_PIN        _BV(PIN7)
 
+#  define HAVE_SD
+#  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
+#  define SD_SUPPLY_VOLTAGE     (1L<<21)
+
 /* 250kHz slow, 2MHz fast */
 #  define SPI_DIVISOR_SLOW 64
 #  define SPI_DIVISOR_FAST 8
@@ -256,9 +262,9 @@ static inline void pwr_irq_disable(void) {
 
 static inline void sdcard_interface_init(void) {
 #ifdef ARDUINO_AVR_UNO
-  DDRB  &= ~_BV(PB0);  // wp
+  DDRB  &= ~_BV(PB0);  // detect
   PORTB |=  _BV(PB0);
-  DDRB  &= ~_BV(PB1);  // detect
+  DDRB  &= ~_BV(PB1);  // wp
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
@@ -269,7 +275,7 @@ static inline void sdcard_interface_init(void) {
 
 static inline uint8_t sdcard_detect(void) {
 #ifdef ARDUINO_AVR_UNO
-  return !(PINB & _BV(PIN1));
+  return !(PINB & _BV(PIN0));
 #else
   return 1;
 #endif
@@ -277,7 +283,7 @@ static inline uint8_t sdcard_detect(void) {
 
 static inline uint8_t sdcard_wp(void) {
 #ifdef ARDUINO_AVR_UNO
-  return PINB & _BV(PIN0);
+  return PINB & _BV(PIN1);
 #else
   return 0;
 #endif
@@ -341,9 +347,9 @@ static inline void pwr_irq_disable(void) {
 #  define SPI_DIVISOR_FAST 8
 
 static inline void sdcard_interface_init(void) {
-  DDRB  &= ~_BV(PB0);  // wp
+  DDRB  &= ~_BV(PB0);  // detect
   PORTB |=  _BV(PB0);
-  DDRB  &= ~_BV(PB1);  // detect
+  DDRB  &= ~_BV(PB1);  // wp
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
@@ -352,11 +358,11 @@ static inline void sdcard_interface_init(void) {
 }
 
 static inline uint8_t sdcard_detect(void) {
-  return !(PINB & _BV(PIN1));
+  return !(PINB & _BV(PIN0));
 }
 
 static inline uint8_t sdcard_wp(void) {
-  return PINB & _BV(PIN0);
+  return PINB & _BV(PIN1);
 }
 
 

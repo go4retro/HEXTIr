@@ -25,13 +25,15 @@
 #include "hexops.h"
 #include "registry.h"
 
+#define DEV_SER_START   20            // Device code for RS-232 Serial peripheral using serial (def=300 baud)
+#define DEV_SER_DEFAULT DEV_SER_START
+#define DEV_SER_END     23            // Serial peripherals were allowed from 20-23 for device codes.
+
 #ifdef INCLUDE_SERIAL
 void ser_reset(void);
-void ser_register(registry_t *registry);
 void ser_init(void);
 #else
 #define ser_reset()     do {} while(0)
-#define ser_register(x) do {} while(0)
 #define ser_init()      do {} while(0)
 #endif
 #endif /* SERIAL_H */

@@ -660,6 +660,20 @@ static uint8_t hex_drv_read(pab_t pab) {
 
 
 /*
+   drv_start - open filesystem.
+   make- ignore/ empty function.
+*/
+void drv_start(void) {
+
+  if (!fs_initialized) {
+    if (f_mount(1, &fs) == FR_OK) {
+      fs_initialized = TRUE;
+    }
+  }
+}
+
+
+/*
    hex_drv_open() -
    open a file for read or write on the SD card.
 */
@@ -675,6 +689,15 @@ static uint8_t hex_drv_open(pab_t pab) {
   uint8_t pathlen;
 
   debug_puts_P(PSTR("\n\rOpen File\n\r"));
+
+  /*
+     If we are attempting to use the SD card, we
+     initialize it NOW.  If it fails (no card present)
+     or other reasons, the various SD file usage commands
+     will be failed with a device-error, simply by
+     testing the sd_initialized flag as needed.
+  */
+  drv_start();
 
   // we need one more byte for the null terminator, so check.
   if(pab.datalen > BUFSIZE - 1) { // name too long
@@ -1052,23 +1075,22 @@ static uint8_t hex_drv_reset( __attribute__((unused)) pab_t pab) {
 
 
 /*
-   drv_start - open filesystem.
-   make- ignore/ empty function.
-*/
-void drv_start(void) {
-  
-  if (!fs_initialized) {
-    if (f_mount(1, &fs) == FR_OK) {
-      fs_initialized = TRUE;
-    }
-  }
-  return;
-}
-
-
-/*
    Command handling registry for device
 */
+#ifdef USE_NEW_OPTABLE
+static const cmd_op_t ops[] PROGMEM = {
+                                        {HEXCMD_OPEN, hex_drv_open},
+                                        {HEXCMD_CLOSE, hex_drv_close},
+                                        {HEXCMD_READ, hex_drv_read},
+                                        {HEXCMD_WRITE, hex_drv_write},
+                                        {HEXCMD_RESTORE, hex_drv_restore},
+                                        {HEXCMD_RETURN_STATUS, hex_drv_status},
+                                        {HEXCMD_DELETE, hex_drv_delete},
+                                        {HEXCMD_VERIFY, hex_drv_verify},
+                                        {HEXCMD_RESET_BUS, hex_drv_reset},
+                                        {(hexcmdtype_t)HEXCMD_INVALID_MARKER, NULL}
+                                      }; // end of table.
+#else
 static const cmd_proc fn_table[] PROGMEM = {
   hex_drv_open,
   hex_drv_close,
@@ -1095,19 +1117,7 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
-
-
-void drv_register(registry_t *registry)
-{
-  uint8_t i = registry->num_devices;
-
-  registry->num_devices++;
-  registry->entry[ i ].device_code_start = DRV_DEV;
-  registry->entry[ i ].device_code_end = MAX_DRV; // support 100-109 for disks
-  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry->entry[ i ].command = (uint8_t *)&op_table;
-  return;
-}
+#endif
 
 
 void drv_reset( void )
@@ -1115,7 +1125,7 @@ void drv_reset( void )
   file_t* file = NULL;
   uint8_t lun;
 
-  debug_puts_P(PSTR("\n\rReset\n\r"));
+  debug_puts_P(PSTR("Reset\n"));
 
   if ( open_files ) {
     // find file(s) that are open, get file pointer and lun number
@@ -1135,10 +1145,17 @@ void drv_reset( void )
 void drv_init(void) {
   uint8_t i;
 
+  // close all open files
   for (i = 0; i < MAX_OPEN_FILES; i++) {
     files[i].used = FALSE;
   }
   open_files = 0;
   fs_initialized = FALSE;
-  return;
+
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, (const cmd_op_t**)&ops);
+#else
+  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#endif
+  disk_init();
 }

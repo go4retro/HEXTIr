@@ -23,8 +23,10 @@
 #include <avr/pgmspace.h>
 
 #include "config.h"
+#include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
+#include "registry.h"
 #include "timer.h"
 #include "uart.h"
 #include "serial.h"
@@ -269,6 +271,18 @@ static uint8_t hex_ser_reset( __attribute__((unused)) pab_t pab) {
    Command handling registry for device
 */
 
+#ifdef USE_NEW_OPTABLE
+static const cmd_op_t ops[] PROGMEM = {
+                                        {HEXCMD_OPEN,            hex_ser_open},
+                                        {HEXCMD_CLOSE,           hex_ser_close},
+                                        {HEXCMD_READ,            hex_ser_read},
+                                        {HEXCMD_WRITE,           hex_ser_write},
+                                        {HEXCMD_RETURN_STATUS,   hex_ser_rtn_sta},
+                                        {HEXCMD_SET_OPTIONS,     hex_ser_set_opts},
+                                        {HEXCMD_RESET_BUS,       hex_ser_reset},
+                                        {(hexcmdtype_t)HEXCMD_INVALID_MARKER,  NULL}
+                                      };
+#else
 static const cmd_proc fn_table[] PROGMEM = {
   hex_ser_open,
   hex_ser_close,
@@ -290,18 +304,7 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
-
-
-void ser_register(registry_t *registry) {
-  uint8_t i = registry->num_devices;
-
-  registry->num_devices++;
-  registry->entry[ i ].device_code_start = SER_DEV;
-  registry->entry[ i ].device_code_end = MAX_SER; // support 20, 21, 22, 23 as device codes
-  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry->entry[ i ].command = (uint8_t *)&op_table;
-  return;
-}
+#endif
 
 
 void ser_reset(void) {
@@ -317,5 +320,10 @@ void ser_reset(void) {
 
 void ser_init(void) {
   ser_open = FALSE;
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, (const cmd_op_t**)&ops);
+#else
+  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#endif
 }
 #endif

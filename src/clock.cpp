@@ -28,6 +28,7 @@
 #include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
+#include "registry.h"
 #include "rtc.h"
 #include "time.h"
 
@@ -335,10 +336,28 @@ static uint8_t hex_rtc_reset( pab_t pab __attribute__((unused))) {
 }
 
 
+void clock_reset() {
+  if ( rtc_open ) {
+    rtc_open = 0;
+  }
+  return;
+}
+
+
 /*
    Command handling registry for device
 */
 
+#ifdef USE_NEW_OPTABLE
+static const cmd_op_t ops[] PROGMEM = {
+                                        {HEXCMD_OPEN,            hex_rtc_open},
+                                        {HEXCMD_CLOSE,           hex_rtc_close},
+                                        {HEXCMD_READ,            hex_rtc_read},
+                                        {HEXCMD_WRITE,           hex_rtc_write},
+                                        {HEXCMD_RESET_BUS,       hex_rtc_reset},
+                                        {(hexcmdtype_t)HEXCMD_INVALID_MARKER,  NULL}
+                                      };
+#else
 static const cmd_proc fn_table[] PROGMEM = {
   hex_rtc_open,
   hex_rtc_close,
@@ -356,30 +375,19 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
-
-void clock_reset() {
-  if ( rtc_open ) {
-    rtc_open = 0;
-  }
-  return;
-}
-
-void clock_register(registry_t *registry) {
-  uint8_t i = registry->num_devices;
-
-  registry->num_devices++;
-  registry->entry[ i ].device_code_start = RTC_DEV;
-  registry->entry[ i ].device_code_end = MAX_RTC; // support 230-239 as device codes
-  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry->entry[ i ].command = (uint8_t *)&op_table;
-  return;
-}
+#endif
 
 
 void clock_init() {
   struct tm t;
 
   rtc_init();
+
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, (const cmd_op_t**)&ops);
+#else
+  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#endif
 
   // if RTC has been stopped, store default date in it.
   if(rtc_get_state() == RTC_INVALID) {
@@ -391,6 +399,5 @@ void clock_init() {
     t.tm_sec = __SEC__;
     rtc_set(&t);
   }
-  return;
 }
 #endif

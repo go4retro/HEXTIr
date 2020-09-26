@@ -23,10 +23,12 @@
 #include <util/delay.h>
 
 #include "config.h"
+#include "debug.h"
 #include "hexbus.h"
 #include "hexops.h"
-#include "timer.h"
+#include "registry.h"
 #include "swuart.h"
+#include "timer.h"
 #include "printer.h"
 
 #ifdef INCLUDE_PRINTER
@@ -197,6 +199,15 @@ static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
 /*
  * Command handling registry for device
  */
+#ifdef USE_NEW_OPTABLE
+static const cmd_op_t ops[] PROGMEM = {
+                                        {HEXCMD_OPEN,            hex_prn_open},
+                                        {HEXCMD_CLOSE,           hex_prn_close},
+                                        {HEXCMD_WRITE,           hex_prn_write},
+                                        {HEXCMD_RESET_BUS,       hex_prn_reset},
+                                        {HEXCMD_INVALID_MARKER,  NULL}
+                                      };
+#else
 static const cmd_proc fn_table[] PROGMEM = {
   hex_prn_open,
   hex_prn_close,
@@ -212,31 +223,24 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
-
-
-void prn_register(registry_t *registry) {
-  uint8_t i = registry->num_devices;
-  
-  registry->num_devices++;
-  registry->entry[ i ].device_code_start = PRN_DEV;
-  registry->entry[ i ].device_code_end = PRN_DEV+9; // support 10 thru 19 as device codes.
-  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry->entry[ i ].command = (uint8_t *)&op_table;
-  return;
-}
+#endif
 
 void prn_reset( void ) {
   prn_open = 0; // make sure our printer is closed.
-  return;
 }
 
 void prn_init( void ) {
 
   prn_open = 0;
+
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, (const cmd_op_t**)&ops);
+#else
+  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#endif
 //#ifndef ARDUINO
   // TODO not sure where BPS rate is set on Arduino...
 //  swuart_setrate(0, SB9600);
 //#endif
-  return;
 }
 #endif
