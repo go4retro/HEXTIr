@@ -344,6 +344,7 @@ static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len) {
   break;
   case DISK_CMD_RENAME:
     i = 0;
+    rc = HEXSTAT_OPTION_ERR; // no =
     while(i < len) {
       // handle rename
       if(buf[i] == '=') {
@@ -351,20 +352,21 @@ static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len) {
         j = len - i - 1;
         trim (&buf, &i);
         trim (&buf2, &j);
-        res = f_rename(&fs, (UCHAR*)buf2, (UCHAR*)buf);
+        rc = HEXSTAT_SUCCESS;
+        res = f_rename(&fs, (UCHAR*)buf, (UCHAR*)buf2);
         break;
       } else {
         // no =
         i++;
       }
     }
-    rc = HEXSTAT_OPTION_ERR; // no =
     break;
   case DISK_CMD_COPY:
   case DISK_CMD_PWD:
     //populate error string with cwd.
   default:
     rc = hex_exec_cmd(buf, len);
+    break;
   }
   switch(res) {
   case FR_OK:
@@ -793,7 +795,15 @@ static void hex_drv_read(pab_t *pab) {
    drv_start - open filesystem.
    make- ignore/ empty function.
 */
-void drv_start(void) {
+/*
+   If we are attempting to use the SD card, we
+   initialize it NOW.  If it fails (no card present)
+   or other reasons, the various SD file usage commands
+   will be failed with a device-error, simply by
+   testing the sd_initialized flag as needed.
+*/
+
+static void drv_start(void) {
 
   if (!fs_initialized) {
     if (f_mount(1, &fs) == FR_OK) {
@@ -818,6 +828,8 @@ static void hex_drv_open(pab_t *pab) {
   char *path;
   uint8_t pathlen;
 
+  drv_start();
+
 #ifdef USE_CMD_LUN
   //*******************************************************
   // special LUN = 255
@@ -826,19 +838,9 @@ static void hex_drv_open(pab_t *pab) {
     hex_open_cmd(pab);
     return;
   }
-
 #endif
 
   debug_puts_P(PSTR("Open File\n"));
-
-  /*
-     If we are attempting to use the SD card, we
-     initialize it NOW.  If it fails (no card present)
-     or other reasons, the various SD file usage commands
-     will be failed with a device-error, simply by
-     testing the sd_initialized flag as needed.
-  */
-  drv_start();
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_FILE_NAME_INVALID, &len, &att);
@@ -1090,6 +1092,9 @@ static void hex_drv_restore( pab_t *pab ) {
   //BYTE     res = 0;
 
   debug_puts_P(PSTR("Drive Restore\n"));
+
+  drv_start();
+
   if ( open_files ) {
     file = find_lun(pab->lun);
     if ( file == NULL ) {
@@ -1126,6 +1131,8 @@ static void hex_drv_delete(pab_t *pab) {
   FRESULT fr;
 
   debug_puts_P(PSTR("Delete File\n"));
+
+  drv_start();
 
   if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
   } else {
@@ -1297,6 +1304,8 @@ void drv_reset( void )
   uint8_t lun;
 
   debug_puts_P(PSTR("Reset\n"));
+
+  drv_start();
 
   if ( open_files ) {
     // find file(s) that are open, get file pointer and lun number

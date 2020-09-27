@@ -187,33 +187,6 @@ static char *skip_blanks( char *inbuf ) {
   *ebuf = 0;
   return inbuf;
 }
-#else
-uint8_t parse_num(uint16_t* value, uint8_t digits, uint8_t *cur, uint8_t len) {
-  uint8_t digits_found = 0;
-  uint8_t err = 0;
-
-  while(!err && *cur < len) {
-    if(buffer[*cur] == ' ') {
-      (*cur)++;
-      if(digits_found) {
-        break;
-      }
-    } else if(buffer[*cur] >= '0' && buffer[*cur] <= '9') {
-      if(digits_found < digits) {
-        *value = *value  * 10 + (buffer[(*cur)++] - '0');
-        digits_found++;
-      } else // too many digits
-        err = 1;
-    } else if(buffer[*cur] == ',') {
-      (*cur)++;
-      break;
-    }
-    else {
-      err = 1;
-    }
-  }
-  return (!digits_found || err);
-}
 #endif
 
 
@@ -226,16 +199,17 @@ static void hex_rtc_write( pab_t *pab ) {
   uint16_t len;
   char     *token;
   int16_t   t_array[6];
-#else
-  uint8_t len;
-  uint16_t yr = 0;
-  uint16_t mon = 0;
-  uint16_t day = 0;
-  uint16_t hour = 0;
-  uint16_t min = 0;
-  uint16_t sec = 0;
-#endif
   uint8_t  i = 0;
+#else
+  char* buf;
+  uint8_t len;
+  uint32_t yr = 0;
+  uint32_t mon = 0;
+  uint32_t day = 0;
+  uint32_t hour = 0;
+  uint32_t min = 0;
+  uint32_t sec = 0;
+#endif
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
 #ifdef USE_CMD_LUN
@@ -248,6 +222,7 @@ static void hex_rtc_write( pab_t *pab ) {
   debug_puts_P(PSTR("Write RTC\n"));
 
   len = pab->datalen;
+  buf = (char *)buffer;
   if ( rtc_open & OPENMODE_WRITE ) {
     rc = (len < BUFSIZE ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR );
     if ( rc == HEXSTAT_SUCCESS ) {
@@ -303,12 +278,12 @@ static void hex_rtc_write( pab_t *pab ) {
         // process data in buffer and set clock.
         // incoming data should be formatted as YYYY,MM,DD,hh,mm,ss
         rc = HEXSTAT_DATA_INVALID; // assume data is bad.
-        if(!parse_num(&yr, 4, &i, len) && (yr < 100 || yr > 1999))  // year between 00 and 255 or 1900+
-          if(!parse_num(&mon, 2, &i, len) && mon > 0 && mon < 13)   // month between 01 and 12
-            if(!parse_num(&day, 2, &i, len) && day > 0 && day < 32) // day between 1 and 31 (I know, some months are less; room for improvement here.)
-              if(!parse_num(&hour, 2, &i, len) && hour < 24)        // hour between 0 and 23
-                if(!parse_num(&min, 2, &i, len) && min < 60)        // minutes between 00 and 59
-                  if(!parse_num(&sec, 2, &i, len) && sec < 60) {    // seconds between 00 and 59
+        if(!parse_number(&buf, &len, 4, &yr) && (yr < 100 || yr > 1999))  // year between 00 and 255 or 1900+
+          if(!parse_number(&buf, &len, 2, &mon) && mon > 0 && mon < 13)   // month between 01 and 12
+            if(!parse_number(&buf, &len, 2, &day) && day > 0 && day < 32) // day between 1 and 31 (I know, some months are less; room for improvement here.)
+              if(!parse_number(&buf, &len, 2, &hour) && hour < 24)        // hour between 0 and 23
+                if(!parse_number(&buf, &len, 2, &min) && min < 60)        // minutes between 00 and 59
+                  if(!parse_number(&buf, &len, 2, &sec) && sec < 60) {    // seconds between 00 and 59
                     rc = HEXSTAT_SUCCESS;
                     struct tm t;
                     if(yr < 100)

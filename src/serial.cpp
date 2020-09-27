@@ -89,29 +89,26 @@ static const action_t ti_cmds[] = {
 static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   sercmd_t cmd;
-  uint8_t i = 0;
-  char* buf2;
-  uint8_t len2;
   uint32_t value;
 
   // path, trimmed whitespaces
   trim(&buf, &len);
 
-  cmd = (sercmd_t) parse_equate(cmds, &buf, &len, &buf2, &len2);
+  cmd = (sercmd_t) parse_equate(cmds, &buf, &len);
   if(cmd != SER_CMD_NONE) {
     //skip spaces
-    trim (&buf2, &len2);
+    trim (&buf, &len);
   }
   switch (cmd) {
   case SER_CMD_BPS:
-    if(!parse_number(buf2, &i, len2, 6, &value)) {
+    if(!parse_number(&buf, &len, 6, &value)) {
       cfg->bpsrate = value;
       // set bps rate
     } else
       rc = HEXSTAT_DATA_ERR;
     break;
   case SER_CMD_LEN:
-    if(!parse_number(buf2, &i, len2, 1, &value)) {
+    if(!parse_number(&buf, &len, 1, &value)) {
       switch((uint8_t)value) {
       case 5:
         cfg->length = LENGTH_5;
@@ -133,7 +130,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
       rc = HEXSTAT_DATA_ERR;
     break;
   case SER_CMD_PARITY:
-    switch(lower(buf2[0])) {
+    switch(lower(buf[0])) {
     case 'o':
       cfg->parity = PARITY_ODD;
       break;
@@ -155,7 +152,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
     }
     break;
   case SER_CMD_PARCHK:
-    switch(lower(buf2[0])) {
+    switch(lower(buf[0])) {
     case 'y':
     case '1':
       cfg->parchk = TRUE;
@@ -170,12 +167,12 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
     }
     break;
   case SER_CMD_NULLS:
-    if(!parse_number(buf2, &i, len2, 2, &value)) {
+    if(!parse_number(&buf, &len, 2, &value)) {
       cfg->nulls = (uint8_t)value;
     }
     break;
   case SER_CMD_STOP:
-    if(!parse_number(buf2, &i, len2, 2, &value)) {
+    if(!parse_number(&buf, &len, 2, &value)) {
       switch((uint8_t)value) {
       case 1:
         cfg->stopbits = STOP_0;
@@ -190,7 +187,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
      }
     break;
   case SER_CMD_ECHO:
-    switch(lower(buf2[0])) {
+    switch(lower(buf[0])) {
     case 'y':
     case '1':
       cfg->echo = TRUE;
@@ -205,7 +202,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
     }
     break;
   case SER_CMD_CR:
-    switch(lower(buf2[0])) {
+    switch(lower(buf[0])) {
     case 'n':
       cfg->line = LINE_NONE;
       break;
@@ -220,7 +217,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
     }
     break;
   case SER_CMD_TRANSFER:
-    switch(lower(buf2[0])) {
+    switch(lower(buf[0])) {
     case 'r':
       cfg->xfer = XFER_REC;
       break;
@@ -236,7 +233,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
     }
     break;
   case SER_CMD_OVERRUN:
-    switch(lower(buf2[0])) {
+    switch(lower(buf[0])) {
     case 'y':
     case '1':
       cfg->overrun = TRUE;

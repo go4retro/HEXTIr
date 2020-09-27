@@ -30,6 +30,8 @@
 #define DEV_SER_DEFAULT DEV_SER_START
 #define DEV_SER_END     23            // Serial peripherals were allowed from 20-23 for device codes.
 
+#ifdef INCLUDE_SERIAL
+
 typedef enum _lineopt_t {
   LINE_CR,
   LINE_CRLF,
@@ -56,7 +58,7 @@ typedef struct _serialcfg_t {
   uint8_t overrun;
 } serialcfg_t;
 
-#ifdef INCLUDE_SERIAL
+
 void ser_reset(void);
 void ser_register(void);
 void ser_init(void);

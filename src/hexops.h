@@ -75,18 +75,19 @@ hexstatus_t hex_get_data(uint8_t buf[256], uint16_t len);
 void hex_eat_it(uint16_t length, hexstatus_t rc);
 void hex_unsupported(pab_t *pab);
 void hex_null(pab_t *pab __attribute__((unused)));
+
+uint8_t parse_number(char** buf, uint8_t *len, uint8_t digits, uint32_t* value);
 #ifdef USE_CMD_LUN
-hexstatus_t hex_write_cmd_helper(uint16_t len);
-uint8_t parse_number(char* buf, uint8_t *cur, uint8_t len, uint8_t digits, uint32_t* value);
-uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len, char **buf2, uint8_t *len2);
+void trim(char **buf, uint8_t *blen);
+void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2);
+uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len);
 uint8_t parse_cmd(const action_t actions[], char **buf, uint8_t *blen);
 hexstatus_t hex_exec_cmd(char* buf, uint8_t len);
 hexstatus_t hex_exec_cmds(char* buf, uint8_t len);
 void hex_open_cmd(pab_t *pab);
 void hex_write_cmd(pab_t *pab);
 void hex_close_cmd(void);
-void trim(char **buf, uint8_t *blen);
-void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2);
+hexstatus_t hex_write_cmd_helper(uint16_t len);
 #endif
 #ifdef USE_OPEN_HELPER
 hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att);

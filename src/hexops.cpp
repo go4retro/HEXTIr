@@ -31,31 +31,38 @@
 // add 1 to buffer size to handle null termination if used as a string
 uint8_t buffer[BUFSIZE + 1];
 
-uint8_t parse_number(char* buf, uint8_t *cur, uint8_t len, uint8_t digits, uint32_t* value) {
+uint8_t parse_number(char** buf, uint8_t *len, uint8_t digits, uint32_t* value) {
+  uint8_t i = 0;
   uint8_t digits_found = FALSE;
   uint8_t err = FALSE;
 
-  while(!err && *cur < len) {
-    if(buf[*cur] == ' ') {
-      (*cur)++;
+  *value = 0;
+  while(!err && i < *len) {
+    if((*buf)[i] == ' ') {
+      i++;
       if(digits_found) {
-        break;
+        break; // space after digits
       }
-    } else if(buf[*cur] >= '0' && buf[*cur] <= '9') {
+    } else if((*buf)[i] >= '0' && (*buf)[i] <= '9') {
       if(digits_found < digits) {
-        *value = *value  * 10 + (buf[(*cur)++] - '0');
-        digits_found++;
+        *value = *value  * 10 + ((*buf)[i++] - '0');
+        digits_found = TRUE;
       } else // too many digits
         err = 1;
-    } else if(buf[*cur] == ',') {
-      (*cur)++;
+    } else if((*buf)[i] == ',') {
+      i++;
       break;
     }
     else {
       err = TRUE;
     }
   }
-  return (!digits_found || err);
+  err = !digits_found || err;
+  if(!err) {
+    *buf = *buf + i;
+    (*len) -= i;
+  }
+  return err;
 }
 
 
@@ -70,7 +77,6 @@ hexstatus_t hex_get_data(uint8_t *buf, uint16_t len) {
     }
   }
   if (len > 0) {
-    debug_putcrlf();
     debug_trace(buf, 0, len);
   }
   return HEXSTAT_SUCCESS;
@@ -176,7 +182,6 @@ uint8_t parse_cmd(const action_t list[], char **buf, uint8_t *blen) {
       *buf = *buf + i;
       (*blen) -= i;
       return list[j].action;
-      break;
     } else if(i == *blen) {
       // past end of command, try again
       j += 1;
@@ -192,26 +197,28 @@ uint8_t parse_cmd(const action_t list[], char **buf, uint8_t *blen) {
 }
 
 
-uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len, char **buf2, uint8_t *len2) {
+uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len) {
   uint8_t opt;
   uint8_t i;
+  char* buf2;
+  uint8_t len2;
 
   trim(buf, len);
   for(i = 0; i < *len; i++) {
     if((*buf)[i] == '=') {
-      *buf2 = &((*buf)[i + 1]);
-      *len2 = *len - i - 1;
-      *len = i;
+      buf2 = &((*buf)[i + 1]);
+      len2 = *len - i - 1;
       // handle set
-      trim (buf, len);
-      opt = parse_cmd(list, buf, len);
+      opt = parse_cmd(list, buf, &i);
       if(opt) {
-        trim (buf2, len2);
-        return opt;
+        *len = i;
+        *buf = buf2;
+        *len = len2;
+        trim (&buf2, &len2);
       }
+      return opt;
     } else {
       // no =
-      i++;
     }
   }
   return 0;
@@ -280,8 +287,6 @@ static const action_t cmds[] = {
 // should be of the form "set <parm>=<value>"
 hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
-  char *buf2;
-  uint8_t len2;
   execcmd_t cmd;
   set_opt_t opt;
   uint8_t i = 0;
@@ -298,11 +303,11 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
   }
   switch (cmd) {
   case EXEC_CMD_SET:
-    opt = (set_opt_t)parse_equate(opts, &buf, &len, &buf2, &len2);
+    opt = (set_opt_t)parse_equate(opts, &buf, &len);
     switch(opt) {
     case SET_OPT_DEVICE:
       rc = HEXSTAT_DATA_ERR; // value too large or not a number
-      if(!parse_number(buf, &i, len, 3, &value)) {
+      if(!parse_number(&buf, &len, 3, &value)) {
         if(value <= DEV_MAX) {
           rc = HEXSTAT_DATA_INVALID; // no such device
           for(i = 0; i < registry.num_devices; i++) {
