@@ -33,6 +33,8 @@
 #include "timer.h"
 #include "configure.h"
 
+#ifdef USE_CFG_DEVICE
+
 #ifndef NEW_REG_CNT
 //
 // Eventually, this is configuration info that will be in EEPROM, in some form, I think...
@@ -545,6 +547,7 @@ void cfg_init( void )
 #endif
   
 }
+#endif
 
 #ifdef USE_NEW_OPTABLE
 void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const cmd_op_t ops[]) {
@@ -569,4 +572,5 @@ void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const uint8_t op_table
   registry.entry[ i ].command = (uint8_t *)op_table;
 #endif
 }
+
 

@@ -64,7 +64,9 @@ static void hex_reset_bus(pab_t *pab) {
     prn_reset();
     ser_reset();
     clock_reset();
+#ifdef USE_CFG_DEVICE
     cfg_reset();
+#endif
   }
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
@@ -200,7 +202,9 @@ static inline void reg_init(void) {
 #endif
 #endif
 #ifndef INIT_COMBO
+#ifdef USE_CFG_DEVICE
   cfg_register1();
+#endif
   drv_register();
   prn_register();
   ser_register();
@@ -235,8 +239,9 @@ void setup(void) {
   drv_init();
   ser_init();
   prn_init();
+#ifdef USE_CFG_DEVICE
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
-
+#endif
   config = ee_get_config();
 
   clock_init();
@@ -334,19 +339,19 @@ int main(void) {
 #else
       if ( !ignore_cmd ) {
        if ( !( ( pabdata.pab.dev == 0 ) ||
-                ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] )
-                || ( pabdata.pab.dev == device_address[ CONFIG_GROUP ] )
+                ( pabdata.pab.dev DEV_DRV_START )
+                || ( pabdata.pab.dev == DEV_CFG_START )
 #ifdef INCLUDE_PRINTER
                 ||
-                (( pabdata.pab.dev == device_address[ PRINTER_GROUP ] ) )
+                (( pabdata.pab.dev == DEV_PRN_DEFAULT ) )
 #endif
 #ifdef INCLUDE_CLOCK
                 ||
-                (( pabdata.pab.dev == device_address[ CLOCK_GROUP ] ) )
+                (( pabdata.pab.dev == DEV_RTC_START ) )
 #endif
 #ifdef INCLUDE_SERIAL
                 ||
-                (( pabdata.pab.dev == device_address[ SERIAL_GROUP ] ) )
+                (( pabdata.pab.dev == DEV_SER_START ) )
 #endif
               )
            )

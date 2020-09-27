@@ -31,6 +31,34 @@
 // add 1 to buffer size to handle null termination if used as a string
 uint8_t buffer[BUFSIZE + 1];
 
+// For reference as we implement per device config:
+
+/*
+   hex_cfg_open() -
+
+   Open the configuration device to allow reconfiguration
+   of the supported peripheral's addresses.
+
+   If mask is retrieved via command, the bit mask values
+   tell which peripheral(s) are supported by the system.
+
+   REC 0 = drive
+   REC 1 = printer
+   REC 2 = serial
+   REC 3 = clock
+   REC 4 = unused/reserved
+   REC 5 = unused/reserved
+   REC 6 = unused/reserved
+
+   OPEN #n,"222",RELATIVE[,INPUT | OUTPUT | UPDATE]
+   INPUT #1,REC n,A$
+   PRINT #1,REC n,A$
+   CALL IO(222,238,STATUS) ! 238 = command to update EEPROM with current data
+   CALL IO(222,202,STATUS) ! 202 = command to retrieve support mask (tells us which devices are supported) STATUS=mask
+   CLOSE #1
+*/
+
+
 uint8_t parse_number(char** buf, uint8_t *len, uint8_t digits, uint32_t* value) {
   uint8_t i = 0;
   uint8_t digits_found = FALSE;
