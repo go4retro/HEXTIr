@@ -22,6 +22,11 @@
 #define HEXOPS_H
 
 #define LUN_CMD       255
+#ifdef USE_CMD_LUN
+#define LUN_RAW       254
+#else
+#define LUN_RAW       255
+#endif
 
 // add 1 to buffer size to handle null termination if used as a string
 extern uint8_t buffer[BUFSIZE + 1];
@@ -62,20 +67,26 @@ typedef struct _pab_raw_t {
 #define FILEATTR_DISPLAY   8
 #define FILEATTR_CATALOG  16
 #define FILEATTR_RELATIVE 32
+#ifndef USE_CMD_LUN
 #define FILEATTR_COMMAND  64
+#endif
 
 hexstatus_t hex_get_data(uint8_t buf[256], uint16_t len);
 void hex_eat_it(uint16_t length, hexstatus_t rc);
 void hex_unsupported(pab_t *pab);
 void hex_null(pab_t *pab __attribute__((unused)));
-#ifdef JIM_PARSER
+#ifdef USE_CMD_LUN
 hexstatus_t hex_write_cmd_helper(uint16_t len);
+uint8_t parse_number(char* buf, uint8_t *cur, uint8_t len, uint8_t digits, uint32_t* value);
+uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len, char **buf2, uint8_t *len2);
 uint8_t parse_cmd(const action_t actions[], char **buf, uint8_t *blen);
 hexstatus_t hex_exec_cmd(char* buf, uint8_t len);
-void hex_open_cmd(pab_t pab);
-void hex_write_cmd(pab_t pab);
+hexstatus_t hex_exec_cmds(char* buf, uint8_t len);
+void hex_open_cmd(pab_t *pab);
+void hex_write_cmd(pab_t *pab);
 void hex_close_cmd(void);
-void trim(uint8_t **buf, uint8_t *blen);
+void trim(char **buf, uint8_t *blen);
+void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2);
 #endif
 #ifdef USE_OPEN_HELPER
 hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att);

@@ -28,6 +28,7 @@
 #define NEW_DEV_CHK 1
 #define NEW_REG_CNT 1
 #define USE_OPEN_HELPER 1
+#define USE_CMD_LUN 1
 
 #include <avr/io.h>
 

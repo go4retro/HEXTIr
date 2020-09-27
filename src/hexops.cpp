@@ -31,6 +31,34 @@
 // add 1 to buffer size to handle null termination if used as a string
 uint8_t buffer[BUFSIZE + 1];
 
+uint8_t parse_number(char* buf, uint8_t *cur, uint8_t len, uint8_t digits, uint32_t* value) {
+  uint8_t digits_found = FALSE;
+  uint8_t err = FALSE;
+
+  while(!err && *cur < len) {
+    if(buf[*cur] == ' ') {
+      (*cur)++;
+      if(digits_found) {
+        break;
+      }
+    } else if(buf[*cur] >= '0' && buf[*cur] <= '9') {
+      if(digits_found < digits) {
+        *value = *value  * 10 + (buf[(*cur)++] - '0');
+        digits_found++;
+      } else // too many digits
+        err = 1;
+    } else if(buf[*cur] == ',') {
+      (*cur)++;
+      break;
+    }
+    else {
+      err = TRUE;
+    }
+  }
+  return (!digits_found || err);
+}
+
+
 hexstatus_t hex_get_data(uint8_t *buf, uint16_t len) {
   uint16_t i = 0;
 
@@ -104,7 +132,7 @@ hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t 
 }
 #endif
 
-#ifdef JIM_PARSER
+#ifdef USE_CMD_LUN
 /**
  * Remove all leading and trailing whitespaces
  */
@@ -164,14 +192,55 @@ uint8_t parse_cmd(const action_t list[], char **buf, uint8_t *blen) {
 }
 
 
-void hex_open_cmd(pab_t pab) {
+uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len, char **buf2, uint8_t *len2) {
+  uint8_t opt;
+  uint8_t i;
+
+  trim(buf, len);
+  for(i = 0; i < *len; i++) {
+    if((*buf)[i] == '=') {
+      *buf2 = &((*buf)[i + 1]);
+      *len2 = *len - i - 1;
+      *len = i;
+      // handle set
+      trim (buf, len);
+      opt = parse_cmd(list, buf, len);
+      if(opt) {
+        trim (buf2, len2);
+        return opt;
+      }
+    } else {
+      // no =
+      i++;
+    }
+  }
+  return 0;
+}
+
+
+void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2) {
+  uint8_t i;
+
+  *len2 = 0;
+  for(i = 0; i < *len; i++) {
+    if((*buf)[i] == ',') {
+      // found a separator
+        *buf2 = &(*buf)[i + 1];
+      *len2 = *len - i - 1;
+      *len = i;
+      return;
+    }
+  }
+}
+
+
+void hex_open_cmd(pab_t *pab) {
   uint16_t len;
   uint8_t att;
 
   debug_puts_P(PSTR("\n\rOpen Command\n\r"));
 
-  // we need one more byte for the null terminator, so check.
-  if(hex_open_helper(pab, &len, &att) != HEXSTAT_SUCCESS)
+  if(hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att) != HEXSTAT_SUCCESS)
     return;
 
   // we should check length, as it should be 0, and att should be WRITE or UPDATE
@@ -212,10 +281,11 @@ static const action_t cmds[] = {
 hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   char *buf2;
+  uint8_t len2;
   execcmd_t cmd;
   set_opt_t opt;
   uint8_t i = 0;
-  uint8_t j = 0;
+  uint32_t value = 0;
 
   debug_puts_P(PSTR("\n\rExec General Command\n\r"));
 
@@ -228,31 +298,29 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
   }
   switch (cmd) {
   case EXEC_CMD_SET:
-    while(i < len) {
-      if(buf[i] == '=') {
-        buf2 = &buf[i + 1];
-        j = len - i - 1;
-        // handle set
-        trim (&buf, &i);
-        opt = (set_opt_t)parse_cmd(opts, &buf, &len);
-        if(opt) {
-          trim (&buf2, &j);
-          switch(opt) {
-          case SET_OPT_DEVICE:
-            // set device id to parm
-            rc = HEXSTAT_SUCCESS;
-            break;
-          default:
-            // error
-            rc = HEXSTAT_OPTION_ERR;
-            break;
+    opt = (set_opt_t)parse_equate(opts, &buf, &len, &buf2, &len2);
+    switch(opt) {
+    case SET_OPT_DEVICE:
+      rc = HEXSTAT_DATA_ERR; // value too large or not a number
+      if(!parse_number(buf, &i, len, 3, &value)) {
+        if(value <= DEV_MAX) {
+          rc = HEXSTAT_DATA_INVALID; // no such device
+          for(i = 0; i < registry.num_devices; i++) {
+            if(
+                (registry.entry[i].dev_low <= (uint8_t)value)
+                && (registry.entry[i].dev_high >= (uint8_t)value)
+              ) {
+              registry.entry[i].dev_cur = (uint8_t)value;
+              rc = HEXSTAT_SUCCESS;
+              break;
+            }
           }
         }
-        break;
-      } else {
-        // no =
-        i++;
       }
+      break;
+    default:
+      // possible error
+      break;
     }
     break;
   default:
@@ -260,6 +328,25 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
     rc = HEXSTAT_OPTION_ERR;
     break;
   }
+  return rc;
+}
+
+hexstatus_t hex_exec_cmds(char* buf, uint8_t len) {
+char *buf2;
+uint8_t len2;
+hexstatus_t rc = HEXSTAT_SUCCESS;
+hexstatus_t rc2;
+
+  buf2 = buf;
+  len2 = len;
+  do {
+    buf = buf2;
+    len = len2;
+    split_cmd(&buf, &len, &buf2, &len2);
+    rc2 = hex_exec_cmd(buf, len);
+    // pick the last error.
+    rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
+  } while(len2);
   return rc;
 }
 
@@ -279,14 +366,14 @@ hexstatus_t hex_write_cmd_helper(uint16_t len) {
 }
 
 
-void hex_write_cmd(pab_t pab) {
+void hex_write_cmd(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t len;
   char *buf;
 
   debug_puts_P(PSTR("\n\rHandle Common Command\n\r"));
 
-  len = pab.datalen;
+  len = pab->datalen;
   rc = hex_write_cmd_helper(len);
   if(rc != HEXSTAT_SUCCESS) {
     return;
@@ -294,7 +381,7 @@ void hex_write_cmd(pab_t pab) {
   buf = (char *)buffer;
   // path, trimmed whitespaces
   trim(&buf, &len);
-  rc = hex_exec_cmd(buf, len);
+  rc = hex_exec_cmds(buf, len);
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
   } else {

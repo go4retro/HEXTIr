@@ -43,11 +43,11 @@ uint8_t open_files = 0;
 luntbl_t files[MAX_OPEN_FILES]; // file number to file mapping
 uint8_t fs_initialized = FALSE;
 
-#ifndef JIM_PARSER
+#ifndef USE_CMD_LUN
 /**
  * Remove all leading and trailing whitespaces
  */
-static void trim(uint8_t **buf, uint8_t *blen) {
+static void trim(char **buf, uint8_t *blen) {
   uint8_t i;
 
   // Trim leading space
@@ -288,7 +288,7 @@ static void hex_drv_verify(pab_t *pab) {
     }
   }
 }
-#ifdef JIM_PARSER
+#ifdef USE_CMD_LUN
 typedef enum _diskcmd_t {
   DISK_CMD_NONE = 0,
   DISK_CMD_CHDIR,
@@ -315,30 +315,124 @@ static const action_t dcmds[14] = {
                                   {DISK_CMD_PWD,"pwd"},
                                   {DISK_CMD_NONE,""}
                                 };
-#endif
-static void hex_drv_write_cmd(pab_t *pab) {
+
+static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
-  uint16_t len;
+  diskcmd_t cmd;
+  FRESULT res = FR_OK;
+  uint8_t i;
+  uint8_t j;
+  char* buf2;
+
+  // path, trimmed whitespaces
+  trim(&buf, &len);
+
+  cmd = (diskcmd_t) parse_cmd(dcmds, &buf, &len);
+  if(cmd != DISK_CMD_NONE) {
+    //skip spaces
+    trim (&buf, &len);
+  }
+  switch (cmd) {
+  case DISK_CMD_CHDIR:
+    res = f_chdir(&fs,(UCHAR*)buf);
+    break;
+  case DISK_CMD_MKDIR:
+    res = f_mkdir(&fs,(UCHAR*)buf);
+    break;
+  case DISK_CMD_RMDIR:
+  res = f_unlink(&fs,(UCHAR*)buf);
+  break;
+  case DISK_CMD_RENAME:
+    i = 0;
+    while(i < len) {
+      // handle rename
+      if(buf[i] == '=') {
+        buf2 = &buf[i + 1];
+        j = len - i - 1;
+        trim (&buf, &i);
+        trim (&buf2, &j);
+        res = f_rename(&fs, (UCHAR*)buf2, (UCHAR*)buf);
+        break;
+      } else {
+        // no =
+        i++;
+      }
+    }
+    rc = HEXSTAT_OPTION_ERR; // no =
+    break;
+  case DISK_CMD_COPY:
+  case DISK_CMD_PWD:
+    //populate error string with cwd.
+  default:
+    rc = hex_exec_cmd(buf, len);
+  }
+  switch(res) {
+  case FR_OK:
+    break;
+  default:
+    // TODO should put better errors here
+    rc = HEXSTAT_DEVICE_ERR;
+    break;
+  }
+  return rc;
+}
+
+
+static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len) {
+  char * buf2;
+  uint8_t len2;
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  hexstatus_t rc2;
+
+  buf2 = buf;
+  len2 = len;
+  do {
+    buf = buf2;
+    len = len2;
+    split_cmd(&buf, &len, &buf2, &len2);
+    rc2 = drv_exec_cmd(buf, len);
+    // pick the last error.
+    rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
+  } while(len2);
+  return rc;
+}
+#endif
+
+
+static void drv_write_cmd(pab_t *pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+#ifndef USE_CMD_LUN
   BYTE res = FR_OK;
-  uint8_t *s;
-  uint8_t *comma;
-  uint8_t *newname;
-  uint8_t *name;
+  uint16_t len;
+  char *s;
+  char *comma;
+  char *newname;
+  char *name;
   uint8_t namelen;
   uint8_t cmd;
+#endif
 
+  debug_puts_P(PSTR("Exec Disk Command\n"));
+
+#ifdef USE_CMD_LUN
+  rc = hex_write_cmd_helper(pab->datalen);
+  if(rc != HEXSTAT_SUCCESS) {
+    return;
+  }
+  rc = drv_exec_cmds((char *)buffer, pab->datalen);
+#else
   len = pab->datalen;
   if (len < BUFSIZE){
     rc = hex_get_data(buffer, len);
     if (rc == HEXSTAT_SUCCESS) {
-      name = &(buffer[0]);
+      name = (char*)&(buffer[0]);
       namelen = len;
       // path, trimmed whitespaces
       trim(&name, &namelen);
       // ToDo: We need a simple parser. That requires more knowledge of C/C++ then I have
       // and some string operations. This is a very simple implementation:
       do {
-        comma = (uint8_t *)strchr((char *)name, ',');
+        comma = strchr((char *)name, ',');
         if (comma != NULL) comma[0] = 0; // terminating next command
         namelen = strlen((char *)name);
         trim(&name, &namelen);
@@ -358,7 +452,7 @@ static void hex_drv_write_cmd(pab_t *pab) {
           cmd = name[0];
           name = &(name[3]);
           if (cmd == 'r' || cmd == 'R'){
-            s = (uint8_t *)strchr((char *)name, '=');
+            s = strchr((char *)name, '=');
             if (s != NULL){
               s[0] = 0; // terminating 0 for name
               newname = &(s[1]);
@@ -388,6 +482,7 @@ static void hex_drv_write_cmd(pab_t *pab) {
     hex_eat_it( len, HEXSTAT_BUS_ERR ); // reports status back.
     return;
   }
+
   if (rc == HEXSTAT_SUCCESS) {
     switch (res) {
       case FR_OK:
@@ -398,7 +493,7 @@ static void hex_drv_write_cmd(pab_t *pab) {
         break;
     }
   }
-
+#endif
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
   } else {
@@ -445,15 +540,24 @@ static void hex_drv_write(pab_t *pab) {
   file_t* file = NULL;
   BYTE res = FR_OK;
   
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    // handle command channel
+    drv_write_cmd(pab);
+    return;
+  }
+#endif
   debug_puts_P(PSTR("Write File\n"));
 
   len = pab->datalen;
   file = find_lun(pab->lun);
+#ifndef USE_CMD_LUN
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel
-    hex_drv_write_cmd(pab);
+    drv_write_cmd(pab);
     return;
   }
+#endif
   res = (file != NULL ? FR_OK : FR_NO_FILE);
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
     // if we're not at the right record position, reposition
@@ -559,6 +663,7 @@ static void hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
     special LUN. The amount of bytes to be send is determined by the
     file length    
 */
+// TODO replace 255 above with 254 if we use LUN CMD
 static void hex_drv_read(pab_t *pab) {
   hexstatus_t rc;
   uint8_t i;
@@ -569,14 +674,23 @@ static void hex_drv_read(pab_t *pab) {
   BYTE res = FR_OK;
   file_t* file;
 
+#ifdef USE_CMD_LUN
+  if (pab->lun == LUN_CMD) {
+    // handle command channel read
+    hex_drv_read_cmd(pab);
+    return;
+  }
+#endif
+
   debug_puts_P(PSTR("Read File\n"));
 
   file = find_lun(pab->lun);
+#ifndef USE_CMD_LUN
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel read
     hex_drv_read_cmd(pab);
   }
-
+#endif
   if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab->lun == 0 ) {
       debug_putc('P');
@@ -593,7 +707,7 @@ static void hex_drv_read(pab_t *pab) {
     f_lseek(&(file->fp), pab->buflen * pab->record);
   if (file != NULL) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab->lun != 0 && pab->lun != 255) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
+    if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
       // amount of data for next value to be sent
       if (file->attr & FILEATTR_RELATIVE) 
         fsize = pab->buflen;
@@ -701,8 +815,19 @@ static void hex_drv_open(pab_t *pab) {
   uint16_t fsize = 0;
   file_t* file = NULL;
   BYTE res = FR_OK;
-  uint8_t *path;
+  char *path;
   uint8_t pathlen;
+
+#ifdef USE_CMD_LUN
+  //*******************************************************
+  // special LUN = 255
+  if(pab->lun == LUN_CMD) {
+  //if (path[0] == 0)  {
+    hex_open_cmd(pab);
+    return;
+  }
+
+#endif
 
   debug_puts_P(PSTR("Open File\n"));
 
@@ -714,8 +839,6 @@ static void hex_drv_open(pab_t *pab) {
      testing the sd_initialized flag as needed.
   */
   drv_start();
-
-
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_FILE_NAME_INVALID, &len, &att);
@@ -736,13 +859,13 @@ static void hex_drv_open(pab_t *pab) {
   }
 #endif
 
-  path = &(buffer[3]);
+  path = (char *)&(buffer[3]);
   pathlen = pab->datalen - 3;
   // file path, trimmed whitespaces
   trim(&path, &pathlen);
 
   debug_puts_P(PSTR("Filename: "));
-  debug_puts((char *)path);
+  debug_puts(path);
   debug_putcrlf();
 
   //*****************************************************
@@ -753,6 +876,7 @@ static void hex_drv_open(pab_t *pab) {
     return;
   }
   //*******************************************************
+#ifndef USE_CMD_LUN
   // special file name "" -> command_mode
   if (path[0] == 0)  {
     file = reserve_lun(pab->lun);
@@ -777,6 +901,7 @@ static void hex_drv_open(pab_t *pab) {
     return;
   }
   //*******************************************************
+#endif
   // map attributes to FatFS file access mode
   switch (att & OPENMODE_MASK) {
     case OPENMODE_APPEND:  // append mode
@@ -910,12 +1035,24 @@ static void hex_drv_close(pab_t *pab) {
   file_t* file = NULL;
   BYTE res = 0;
 
+#ifdef USE_CMD_LUN
+  if (pab->lun == LUN_CMD) {
+    // handle command channel read
+    hex_close_cmd();
+    return;
+  }
+#endif
+
   debug_puts_P(PSTR("Close File\n"));
 
   file = find_lun(pab->lun);
   if (file != NULL) {
+#ifndef USE_CMD_LUN
     // Don't need to close the command channel.
     if(!(file->attr & FILEATTR_CATALOG) && !(file->attr & FILEATTR_COMMAND)) {
+#else
+    if(!(file->attr & FILEATTR_CATALOG)) {
+#endif
       res = f_close(&(file->fp));
     }
     free_lun(pab->lun);

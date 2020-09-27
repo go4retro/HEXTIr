@@ -142,6 +142,8 @@ static void hex_cfg_open( pab_t *pab ) {
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
+  if(rc != HEXSTAT_SUCCESS)
+    return;
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
@@ -156,8 +158,6 @@ static void hex_cfg_open( pab_t *pab ) {
     return;
   }
 #endif
-  if(rc != HEXSTAT_SUCCESS)
-    return;
 
   if ( cfg_open ) {
     rc = HEXSTAT_ALREADY_OPEN;

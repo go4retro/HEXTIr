@@ -24,10 +24,37 @@
 #include "config.h"
 #include "hexops.h"
 #include "registry.h"
+#include "uart.h"
 
 #define DEV_SER_START   20            // Device code for RS-232 Serial peripheral using serial (def=300 baud)
 #define DEV_SER_DEFAULT DEV_SER_START
 #define DEV_SER_END     23            // Serial peripherals were allowed from 20-23 for device codes.
+
+typedef enum _lineopt_t {
+  LINE_CR,
+  LINE_CRLF,
+  LINE_NONE
+} lineopt_t;
+
+typedef enum _xferopt_t {
+  XFER_REC,
+  XFER_CHAR,
+  XFER_CHARWAIT
+} xferopt_t;
+
+
+typedef struct _serialcfg_t {
+  uint32_t bpsrate;
+  uartlen_t length;
+  uartstop_t stopbits;
+  uartpar_t parity;
+  uint8_t parchk;
+  uint8_t nulls;
+  uint8_t echo;
+  lineopt_t line;
+  xferopt_t xfer;
+  uint8_t overrun;
+} serialcfg_t;
 
 #ifdef INCLUDE_SERIAL
 void ser_reset(void);

@@ -34,20 +34,293 @@
 
 #ifdef INCLUDE_SERIAL
 
-static const char baud_attrib[] PROGMEM = "B=";
 // Global defines
 volatile uint8_t  ser_open = 0;
+static serialcfg_t _cfg;
 
-//#ifdef ARDUINO
-//SoftwareSerial    serial_peripheral( 8, 9 );  // either can support interrupts, and are otherwise available.
-//#endif
+#ifdef USE_CMD_LUN
 
-/*
+typedef enum _sercmd_t {
+                          SER_CMD_NONE = 0,
+                          SER_CMD_BPS,
+                          SER_CMD_LEN,
+                          SER_CMD_PARITY,
+                          SER_CMD_PARCHK,
+                          SER_CMD_NULLS,
+                          SER_CMD_STOP,
+                          SER_CMD_ECHO,
+                          SER_CMD_LINE,
+                          SER_CMD_TRANSFER,
+                          SER_CMD_OVERRUN,
+                          SER_CMD_TW,
+                          SER_CMD_NU,
+                          SER_CMD_CH,
+                          SER_CMD_EC,
+                          SER_CMD_CR,
+                          SER_CMD_LF
+} sercmd_t;
+
+static const action_t cmds[] = {
+                                  {SER_CMD_BPS,"b"},
+                                  {SER_CMD_BPS,".ba"},
+                                  {SER_CMD_LEN,"d"},
+                                  {SER_CMD_LEN,".da"},
+                                  {SER_CMD_PARITY,"p"},
+                                  {SER_CMD_PARITY,".pa"},
+                                  {SER_CMD_PARCHK,"c"},
+                                  {SER_CMD_NULLS,"n"},
+                                  {SER_CMD_STOP,"s"},
+                                  {SER_CMD_ECHO,"e"},
+                                  {SER_CMD_LINE,"r"},
+                                  {SER_CMD_TRANSFER,"t"},
+                                  {SER_CMD_OVERRUN,"o"},
+                                  {SER_CMD_NONE,""}
+                                };
+static const action_t ti_cmds[] = {
+                                  {SER_CMD_TW,"tw"},
+                                  {SER_CMD_NU,"nu"},
+                                  {SER_CMD_CH,"ch"},
+                                  {SER_CMD_EC,"ec"},
+                                  {SER_CMD_CR,"cr"},
+                                  {SER_CMD_LF,"lf"},
+                                  {SER_CMD_NONE,""}
+                                };
+
+static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  sercmd_t cmd;
+  uint8_t i = 0;
+  char* buf2;
+  uint8_t len2;
+  uint32_t value;
+
+  // path, trimmed whitespaces
+  trim(&buf, &len);
+
+  cmd = (sercmd_t) parse_equate(cmds, &buf, &len, &buf2, &len2);
+  if(cmd != SER_CMD_NONE) {
+    //skip spaces
+    trim (&buf2, &len2);
+  }
+  switch (cmd) {
+  case SER_CMD_BPS:
+    if(!parse_number(buf2, &i, len2, 6, &value)) {
+      cfg->bpsrate = value;
+      // set bps rate
+    } else
+      rc = HEXSTAT_DATA_ERR;
+    break;
+  case SER_CMD_LEN:
+    if(!parse_number(buf2, &i, len2, 1, &value)) {
+      switch((uint8_t)value) {
+      case 5:
+        cfg->length = LENGTH_5;
+        break;
+      case 6:
+        cfg->length = LENGTH_6;
+        break;
+      case 7:
+        cfg->length = LENGTH_7;
+        break;
+      case 8:
+        cfg->length = LENGTH_8;
+        break;
+      default:
+        rc = HEXSTAT_DATA_ERR;
+        break;
+      }
+    } else
+      rc = HEXSTAT_DATA_ERR;
+    break;
+  case SER_CMD_PARITY:
+    switch(lower(buf2[0])) {
+    case 'o':
+      cfg->parity = PARITY_ODD;
+      break;
+    case 'e':
+      cfg->parity = PARITY_EVEN;
+      break;
+    case 'n':
+      cfg->parity = PARITY_NONE;
+      break;
+    case 's':
+      // TODO What is space parity?
+      break;
+    case 'm':
+      // TODO What is MARK parity?
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  case SER_CMD_PARCHK:
+    switch(lower(buf2[0])) {
+    case 'y':
+    case '1':
+      cfg->parchk = TRUE;
+      break;
+    case 'n':
+    case '0':
+      cfg->parchk = FALSE;
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  case SER_CMD_NULLS:
+    if(!parse_number(buf2, &i, len2, 2, &value)) {
+      cfg->nulls = (uint8_t)value;
+    }
+    break;
+  case SER_CMD_STOP:
+    if(!parse_number(buf2, &i, len2, 2, &value)) {
+      switch((uint8_t)value) {
+      case 1:
+        cfg->stopbits = STOP_0;
+        break;
+      case 2:
+        cfg->stopbits = STOP_1;
+        break;
+      default:
+        rc = HEXSTAT_DATA_ERR;
+        break;
+      }
+     }
+    break;
+  case SER_CMD_ECHO:
+    switch(lower(buf2[0])) {
+    case 'y':
+    case '1':
+      cfg->echo = TRUE;
+      break;
+    case 'n':
+    case '0':
+      cfg->echo = FALSE;
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  case SER_CMD_CR:
+    switch(lower(buf2[0])) {
+    case 'n':
+      cfg->line = LINE_NONE;
+      break;
+      cfg->line = LINE_CR;
+      break;
+    case 'l':
+      cfg->line = LINE_CRLF;
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  case SER_CMD_TRANSFER:
+    switch(lower(buf2[0])) {
+    case 'r':
+      cfg->xfer = XFER_REC;
+      break;
+    case 'c':
+      cfg->xfer = XFER_CHAR;
+      break;
+    case 'w':
+      cfg->xfer = XFER_CHARWAIT;
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  case SER_CMD_OVERRUN:
+    switch(lower(buf2[0])) {
+    case 'y':
+    case '1':
+      cfg->overrun = TRUE;
+      break;
+    case 'n':
+    case '0':
+      cfg->overrun = FALSE;
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  default:
+    cmd = (sercmd_t) parse_cmd(ti_cmds, &buf, &len);
+    switch (cmd) {
+    case SER_CMD_TW:
+      cfg->stopbits = STOP_1;
+      break;
+    case SER_CMD_NU:
+      cfg->length = LENGTH_6;
+      break;
+    case SER_CMD_CH:
+      cfg->parchk = TRUE;
+      break;
+    case SER_CMD_EC:
+      cfg->echo = FALSE;
+      break;
+    case SER_CMD_CR:
+      cfg->line = LINE_NONE; // seems wrong
+      break;
+    case SER_CMD_LF:
+      cfg->line = LINE_CR; // Seems wrong
+      break;
+    default:
+      rc = hex_exec_cmd(buf, len);
+    }
+  }
+  return rc;
+}
+
+static inline hexstatus_t ser_exec_cmds(char* buf, uint8_t len, serialcfg_t *cfg) {
+  char * buf2;
+  uint8_t len2;
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  hexstatus_t rc2;
+
+  buf2 = buf;
+  len2 = len;
+  do {
+    buf = buf2;
+    len = len2;
+    split_cmd(&buf, &len, &buf2, &len2);
+    rc2 = ser_exec_cmd(buf, len, cfg);
+    // pick the last error.
+    rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
+  } while(len2);
+  return rc;
+}
+
+
+static void ser_write_cmd(pab_t *pab, serialcfg_t *cfg) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P(PSTR("Exec Serial Command\n"));
+
+  rc = hex_write_cmd_helper(pab->datalen);
+  if(rc != HEXSTAT_SUCCESS) {
+    return;
+  }
+  rc = ser_exec_cmds((char *)buffer, pab->datalen, cfg);
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_final_response( rc );
+  } else {
+    hex_finish();
+  }
+}
+#endif
+
+ /*
    her_ser_open()
 */
 static void hex_ser_open(pab_t *pab) {
-  char     *attrib;
-  __attribute__((unused))long     baud = 9600;
+  serialcfg_t cfg;
   uint16_t len;
   uint8_t  att;
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -92,23 +365,22 @@ static void hex_ser_open(pab_t *pab) {
         len = len ? len : BUFSIZE;
         if ( att & OPENMODE_UPDATE ) {
           ser_open = att; // 00 attribute = illegal.
-          if ( pab->datalen > 3 ) { // see if we have a B= in the buffer.
-            attrib = strtok( (char *)&buffer[ 3 ], baud_attrib );
-            if ( attrib != NULL ) {
-              baud = atol( attrib + 2 );
-            }
-          }
-//#ifdef ARDUINO
-//          serial_peripheral.begin( baud );
-//#else
+#ifdef USE_CMD_LUN
+          cfg.bpsrate = _cfg.bpsrate;
+          cfg.echo = _cfg.echo;
+          cfg.length = _cfg.length;
+          cfg.line = _cfg.line;
+          cfg.nulls = _cfg.nulls;
+          cfg.overrun = _cfg.overrun;
+          cfg.parchk = _cfg.parchk;
+          cfg.parity = _cfg.parity;
+          cfg.stopbits = _cfg.stopbits;
+          cfg.xfer = _cfg.xfer;
+          ser_write_cmd(pab, &cfg);
+          uart_config(CALC_BPS(cfg.bpsrate), cfg.length, cfg.parity, cfg.stopbits);
+#else
           uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
-//#endif
-          if ( att & OPENMODE_READ ) {
-//#ifdef ARDUINO
-//            serial_peripheral.listen(); // apply listener if we are expecting input
-//#else
-//#endif
-          }
+#endif
           transmit_word( 4 );
           transmit_word( len );
           transmit_word( 0 );
@@ -135,6 +407,14 @@ static void hex_ser_open(pab_t *pab) {
 */
 static void hex_ser_close(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
+
+#ifdef USE_CMD_LUN
+  if (pab->lun == LUN_CMD) {
+    // handle command channel close
+    hex_close_cmd();
+    return;
+  }
+#endif
 
   if ( ser_open ) {
     ser_reset();
@@ -184,11 +464,7 @@ static void hex_ser_read(pab_t *pab) {
 
         bcount -= len;
         while ( len-- && rc == HEXSTAT_SUCCESS ) {
-//#ifdef ARDUINO
-//          rc = transmit_byte( serial_peripheral.read() );
-//#else
           rc = (transmit_byte( uart_getc() ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
-//#endif
         }
       }
       if ( rc == HEXSTAT_SUCCESS ) {
@@ -213,6 +489,16 @@ static void hex_ser_write(pab_t *pab) {
   uint16_t j;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    // handle command channel
+    ser_write_cmd(pab, &_cfg);
+    return;
+  }
+#endif
+
+  debug_puts_P(PSTR("Write Serial\n"));
+
   len = pab->datalen;
   if ( ser_open & OPENMODE_WRITE ) {
     while (len && rc == HEXSTAT_SUCCESS ) {
@@ -221,11 +507,7 @@ static void hex_ser_write(pab_t *pab) {
       if (rc == HEXSTAT_SUCCESS) {
         j  = 0;
         while (j < len) {
-//#ifdef ARDUINO
-//          serial_peripheral.write( buffer[ j++ ] );
-//#else
           uart_putc(buffer[j++]);
-//#endif
         }
       }
       len -= i;
@@ -272,9 +554,6 @@ static void hex_ser_reset(pab_t *pab __attribute__((unused))) {
 
 void ser_reset(void) {
   if ( ser_open ) {
-//#ifdef ARDUINO
-//    serial_peripheral.end();
-//#endif
     ser_open = FALSE;
   }
   return;
@@ -349,5 +628,17 @@ void ser_init(void) {
 #ifdef INIT_COMBO
   ser_register();
 #endif
+  _cfg.bpsrate = 300;
+  _cfg.echo = TRUE;  // TODO see exactly what this means.
+  _cfg.length = LENGTH_7;
+  _cfg.line = LINE_CRLF;
+  _cfg.nulls = 0;
+  _cfg.overrun = _cfg.overrun;
+  _cfg.parchk = FALSE;
+  _cfg.parity = PARITY_ODD;
+  _cfg.stopbits = STOP_0;
+  _cfg.xfer = XFER_REC;
+  // get updated values from EEPROM...
+
 }
 #endif

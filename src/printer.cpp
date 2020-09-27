@@ -47,8 +47,17 @@ static void hex_prn_open(pab_t *pab) {
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   uint8_t  att = 0;
 
-  debug_puts_P(PSTR("Open Printer\n"));
+#ifdef USE_CMD_LUN
+  //*******************************************************
+  // special LUN = 255
+  if(pab->lun == LUN_CMD) {
+  //if (path[0] == 0)  {
+    hex_open_cmd(pab);
+    return;
+  }
+#endif
 
+  debug_puts_P(PSTR("Open Printer\n"));
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
@@ -101,6 +110,14 @@ static void hex_prn_open(pab_t *pab) {
 static void hex_prn_close(__attribute__((unused)) pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
+#ifdef USE_CMD_LUN
+  if (pab->lun == LUN_CMD) {
+    // handle command channel close
+    hex_close_cmd();
+    return;
+  }
+#endif
+
   if ( !prn_open ) {
     rc = HEXSTAT_NOT_OPEN;
   }
@@ -121,6 +138,14 @@ static void hex_prn_write(pab_t *pab) {
   uint16_t i;
   uint8_t  written = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
+
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    // handle command channel
+    hex_write_cmd(pab);
+    return;
+  }
+#endif
 
   debug_puts_P(PSTR("Write Printer\n"));
 

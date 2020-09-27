@@ -54,6 +54,8 @@ static void hex_rtc_open( pab_t *pab ) {
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
+  if(rc != HEXSTAT_SUCCESS)
+    return;
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
@@ -68,8 +70,6 @@ static void hex_rtc_open( pab_t *pab ) {
     return;
   }
 #endif
-  if(rc != HEXSTAT_SUCCESS)
-    return;
 
   if ( !hex_is_bav() ) {
     if ( !rtc_open ) {
@@ -238,6 +238,13 @@ static void hex_rtc_write( pab_t *pab ) {
   uint8_t  i = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    // handle command channel
+    hex_write_cmd(pab);
+    return;
+  }
+#endif
   debug_puts_P(PSTR("Write RTC\n"));
 
   len = pab->datalen;
