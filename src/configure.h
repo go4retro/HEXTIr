@@ -102,6 +102,6 @@ void cfg_init(void);
 #ifdef USE_NEW_OPTABLE
 void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const cmd_op_t ops[]);
 #else
-void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const uint8_t **op_table, const cmd_proc **fn_table);
+void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const uint8_t op_table[], const cmd_proc fn_table[]);
 #endif
 #endif /* CONFIGURE_H_ */
