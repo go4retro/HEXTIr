@@ -31,9 +31,11 @@
 
 #ifdef INCLUDE_CLOCK
 void clock_reset(void);
+void clock_register(void);
 void clock_init(void);
 #else
 #define clock_reset()     do {} while(0)
+#define clock_register()  do {} while(0)
 #define clock_init()      do {} while(0)
 #endif
 
