@@ -216,7 +216,6 @@ static inline void reg_init(void) {
    Building non-Arduino, we'll call it once at the beginning
    of the main() function.
 */
-
 void setup(void) {
   board_init();
   debug_init();
