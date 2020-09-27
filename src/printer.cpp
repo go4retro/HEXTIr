@@ -51,6 +51,8 @@ static hexstatus_t hex_prn_open(pab_t *pab) {
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
+  if(rc != HEXSTAT_SUCCESS)
+    return rc;
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
@@ -65,8 +67,6 @@ static hexstatus_t hex_prn_open(pab_t *pab) {
     return HEXSTAT_BUS_ERR;
   }
 #endif
-  if(rc != HEXSTAT_SUCCESS)
-    return rc;
 
   if ( !prn_open ) {
     if ( att != OPENMODE_WRITE ) {
@@ -207,6 +207,10 @@ static hexstatus_t hex_prn_reset( __attribute__((unused)) pab_t *pab) {
 }
 
 
+void prn_reset( void ) {
+  prn_open = 0; // make sure our printer is closed.
+}
+
 /*
  * Command handling registry for device
  */
@@ -236,22 +240,38 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
-void prn_reset( void ) {
-  prn_open = 0; // make sure our printer is closed.
+void prn_register(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, ops);
+#else
+  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, op_table, fn_table);
+#endif
+#else
+  uint8_t i = registry.num_devices;
+  
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_PRN_START;
+  registry.entry[ i ].dev_cur = DEV_PRN_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_PRN_END; // support 10 thru 19 as device codes.
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ i ].oplist = (cmd_op_t *)ops;
+#else
+  registry.entry[ i ].operation = (cmd_proc *)fn_table;
+  registry.entry[ i ].command = (uint8_t *)op_table;
+#endif
+#endif
 }
 
 void prn_init( void ) {
 
   prn_open = 0;
-
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, (const cmd_op_t**)&ops);
-#else
-  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
-#endif
 //#ifndef ARDUINO
   // TODO not sure where BPS rate is set on Arduino...
 //  swuart_setrate(0, SB9600);
 //#endif
+#ifdef INIT_COMBO
+  prn_register();
+#endif
 }
 #endif

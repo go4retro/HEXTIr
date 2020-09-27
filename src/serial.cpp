@@ -55,6 +55,8 @@ static hexstatus_t hex_ser_open(pab_t *pab) {
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
+  if(rc != HEXSTAT_SUCCESS)
+    return rc;
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
@@ -63,14 +65,12 @@ static hexstatus_t hex_ser_open(pab_t *pab) {
 
   if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
-    att = buffer[ 2 ];
+    att = buffer[ 2 ];  // tells us open for read, write or both.
   } else {
     hex_release_bus();
     return HEXSTAT_BUS_ERR;
   }
 #endif
-  if(rc != HEXSTAT_SUCCESS)
-    return rc;
 
   // Now, we need to parse the input buffer and decide on parameters.
   // realistically, all we can actually support is B=xxx.  Some other
@@ -279,6 +279,17 @@ static hexstatus_t hex_ser_reset(pab_t *pab __attribute__((unused))) {
 }
 
 
+void ser_reset(void) {
+  if ( ser_open ) {
+//#ifdef ARDUINO
+//    serial_peripheral.end();
+//#endif
+    ser_open = FALSE;
+  }
+  return;
+}
+
+
 /*
    Command handling registry for device
 */
@@ -318,24 +329,34 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+void ser_register(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, ops);
+#else
+  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, op_table, fn_table);
+#endif
+#else
+  uint8_t i = registry.num_devices;
 
-void ser_reset(void) {
-  if ( ser_open ) {
-//#ifdef ARDUINO
-//    serial_peripheral.end();
-//#endif
-    ser_open = FALSE;
-  }
-  return;
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_SER_START;
+  registry.entry[ i ].dev_cur = DEV_SER_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_SER_END; // support 20, 21, 22, 23 as device codes
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ i ].oplist = (cmd_op_t *)ops;
+#else
+  registry.entry[ i ].operation = (cmd_proc *)fn_table;
+  registry.entry[ i ].command = (uint8_t *)op_table;
+#endif
+#endif
 }
 
 
 void ser_init(void) {
   ser_open = FALSE;
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, (const cmd_op_t**)&ops);
-#else
-  cfg_register(DEV_SER_START, DEV_SER_DEFAULT, DEV_SER_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#ifdef INIT_COMBO
+  ser_register();
 #endif
 }
 #endif
