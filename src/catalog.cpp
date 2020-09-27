@@ -233,7 +233,6 @@ static char* format_file_size(uint32_t bytes, char* buf, uint8_t width) {
 }
 
 
-
 void hex_read_catalog(file_t *file) {
   hexstatus_t rc;
   BYTE res = FR_OK;

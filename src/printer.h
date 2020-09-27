@@ -31,9 +31,11 @@
 
 #ifdef INCLUDE_PRINTER
 void prn_reset(void);
+void prn_register(void);
 void prn_init(void);
 #else
 #define prn_reset()     do {} while(0)
+#define prn_register()	do {} while(0)
 #define prn_init()      do {} while(0)
 #endif
 #endif /* PRINTER_H */

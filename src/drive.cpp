@@ -30,6 +30,7 @@
 #include "hexbus.h"
 #include "hexops.h"
 #include "led.h"
+#include "registry.h"
 #include "timer.h"
 #include "drive.h"
 
@@ -718,6 +719,8 @@ static void hex_drv_open(pab_t *pab) {
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_FILE_NAME_INVALID, &len, &att);
+  if(rc != HEXSTAT_SUCCESS)
+    return;
 #else
   if(pab->datalen > BUFSIZE) {
     hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
@@ -732,8 +735,6 @@ static void hex_drv_open(pab_t *pab) {
     return;
   }
 #endif
-  if(rc != HEXSTAT_SUCCESS)
-    return;
 
   path = &(buffer[3]);
   pathlen = pab->datalen - 3;
@@ -989,8 +990,6 @@ static void hex_drv_delete(pab_t *pab) {
 
   debug_puts_P(PSTR("Delete File\n"));
 
-  memset(buffer, 0, BUFSIZE);
-
   if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
   } else {
     hex_release_bus();
@@ -1003,8 +1002,7 @@ static void hex_drv_delete(pab_t *pab) {
   // But for now; this'll do.
 
   if ( rc == HEXSTAT_SUCCESS ) {
-    // If we did not fill buffer, we have a null at end due to memset before retrieval.
-    if ( pab->datalen < BUFSIZE - 1 ) { // TODO cna probably go to BUFFER len
+    if ( pab->datalen < BUFSIZE ) {
       // remove file
       fr = f_unlink(&fs, buffer);
       switch (fr) {
@@ -1132,6 +1130,29 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+void drv_register(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, ops);
+#else
+  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, op_table, fn_table);
+#endif
+  disk_init();
+#else
+  uint8_t i = registry.num_devices;
+
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_DRV_START;
+  registry.entry[ i ].dev_cur = DEV_DRV_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_DRV_END; // support 100-109 for disks
+#ifdef USE_NEW_OPTABLE
+#else
+  registry.entry[ i ].operation = (cmd_proc *)&fn_table;
+  registry.entry[ i ].command = (uint8_t *)&op_table;
+#endif
+#endif
+}
+
 
 void drv_reset( void )
 {
@@ -1163,11 +1184,8 @@ void drv_init(void) {
   }
   open_files = 0;
   fs_initialized = FALSE;
-
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, (const cmd_op_t**)&ops);
-#else
-  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+#ifdef INIT_COMBO
+  drv_register();
 #endif
   disk_init();
 }

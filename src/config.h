@@ -22,8 +22,12 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define USE_NEW_OPTABLE
-#define USE_OPEN_HELPER
+#define USE_NEW_OPTABLE 1
+#define NEW_REGISTER 1
+#define INIT_COMBO 1
+#define NEW_DEV_CHK 1
+#define NEW_REG_CNT 1
+#define USE_OPEN_HELPER 1
 
 #include <avr/io.h>
 
