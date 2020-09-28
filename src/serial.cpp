@@ -319,6 +319,8 @@ static inline void ser_write_cmd(pab_t *pab, serialcfg_t *cfg) {
 */
 static void hex_ser_open(pab_t *pab) {
   uint16_t len;
+  char *buf;
+  uint8_t blen;
   uint8_t  att;
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
@@ -359,10 +361,11 @@ static void hex_ser_open(pab_t *pab) {
 
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
-    if(rc == HEXSTAT_SUCCESS) {
-      // we should check length, as it should be 0, and att should be WRITE or UPDATE
-      rc = ser_exec_cmds((char *)buffer, pab->datalen, &_defaultcfg);
-    }
+    blen = pab->datalen;
+    buf = (char *)buffer;
+    trim(&buf, &blen);
+    // we should check length, as it should be 0, and att should be WRITE or UPDATE
+    rc = ser_exec_cmds(buf, blen, &_defaultcfg);
     if (!hex_is_bav() ) { // we can send response
       hex_send_final_response( rc );
     } else {
@@ -417,8 +420,10 @@ static void hex_ser_open(pab_t *pab) {
 /*
    hex_ser_close()
 */
-static void hex_ser_close(pab_t *pab __attribute__((unused))) {
+static void hex_ser_close(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Close Serial\n");
 
 #ifdef USE_CMD_LUN
   if (pab->lun == LUN_CMD) {

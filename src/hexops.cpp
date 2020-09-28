@@ -282,7 +282,9 @@ void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2) {
 
 void hex_open_cmd(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
+  char *buf;
   uint16_t len;
+  uint8_t blen;
   uint8_t att;
 
   debug_puts_P("Open Command\n");
@@ -290,8 +292,11 @@ void hex_open_cmd(pab_t *pab) {
   if(hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att) != HEXSTAT_SUCCESS)
     return;
 
-  // we should check length, as it should be 0, and att should be WRITE or UPDATE
-  // we should exec multiple commands in here
+  buf = (char *)buffer;
+  blen = pab->datalen;
+  // trim whitespace
+  trim(&buf, &blen);
+  rc = hex_exec_cmds(buf, blen);
 
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXSTAT_SUCCESS ) {
@@ -426,7 +431,7 @@ void hex_write_cmd(pab_t *pab) {
     return;
   }
   buf = (char *)buffer;
-  // path, trimmed whitespaces
+  // trim whitespace
   trim(&buf, &len);
   rc = hex_exec_cmds(buf, len);
   if (!hex_is_bav() ) { // we can send response

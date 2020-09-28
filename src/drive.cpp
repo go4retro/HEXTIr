@@ -822,6 +822,8 @@ static void drv_start(void) {
 static void hex_drv_open(pab_t *pab) {
   uint16_t len = 0;
   uint8_t att = 0;
+  char *buf;
+  uint8_t blen;
   hexstatus_t rc;
   BYTE    mode = 0;
   uint16_t fsize = 0;
@@ -857,8 +859,11 @@ static void hex_drv_open(pab_t *pab) {
   //*******************************************************
   // special LUN = 255
   if(pab->lun == LUN_CMD) {
+    blen = pab->datalen;
+    buf = (char *)buffer;
+    trim(&buf, &blen);
     // we should check length, as it should be 0, and att should be WRITE or UPDATE
-    rc = drv_exec_cmds((char *)buffer, pab->datalen);
+    rc = drv_exec_cmds(buf, blen);
 
     if (!hex_is_bav()) { // we can send response
       if ( rc == HEXSTAT_SUCCESS ) {

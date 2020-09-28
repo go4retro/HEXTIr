@@ -148,6 +148,8 @@ static inline void prn_write_cmd(pab_t *pab, printcfg_t *cfg) {
 */
 static void hex_prn_open(pab_t *pab) {
   uint16_t len = 0;
+  char *buf;
+  uint8_t blen;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   uint8_t  att = 0;
 
@@ -174,10 +176,11 @@ static void hex_prn_open(pab_t *pab) {
 
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
-    if(rc == HEXSTAT_SUCCESS) {
-      // we should check length, as it should be 0, and att should be WRITE or UPDATE
-      rc = prn_exec_cmds((char *)buffer, pab->datalen, &_defaultcfg);
-    }
+    blen = pab->datalen;
+    buf = (char *)buffer;
+    trim(&buf, &blen);
+    // we should check length, as it should be 0, and att should be WRITE or UPDATE
+    rc = prn_exec_cmds(buf, blen, &_defaultcfg);
     if (!hex_is_bav() ) { // we can send response
       hex_send_final_response( rc );
     } else {
@@ -215,8 +218,10 @@ static void hex_prn_open(pab_t *pab) {
    hex_prn_close() -
    closes printer at device 12 for use from host.
 */
-static void hex_prn_close(__attribute__((unused)) pab_t *pab) {
+static void hex_prn_close(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Close Printer\n");
 
 #ifdef USE_CMD_LUN
   if (pab->lun == LUN_CMD) {
