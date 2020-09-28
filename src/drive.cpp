@@ -199,6 +199,43 @@ static uint16_t next_value_size(file_t* file) {
   }
 }
 
+static hexstatus_t fresult2hexstatus(FRESULT fr) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  switch (fr) {
+    case FR_OK:
+      break;
+    //case FR_EOF:
+    //  rc = HEXSTAT_EOF;
+    //  break;
+    case FR_IS_READONLY:
+      rc = HEXSTAT_NOT_WRITE;
+      break;
+    case FR_INVALID_NAME:
+      rc = HEXSTAT_FILE_NAME_INVALID;
+      break;
+    case FR_RW_ERROR:
+      rc = HEXSTAT_DEVICE_ERR;
+      break;
+    case FR_EXIST:
+    case FR_DENIED:
+    case FR_IS_DIRECTORY:
+    case FR_NO_PATH:
+      rc = HEXSTAT_NOT_FOUND;
+      break;
+    case FR_NO_FILE:
+      rc = HEXSTAT_NOT_FOUND;
+      break;
+    case FR_INVALID_OBJECT:
+    case FR_NOT_READY:
+    default:
+      rc = HEXSTAT_DEVICE_ERR;
+      break;
+  }
+  return rc;
+}
+
+
 /*
    https://github.com/m5dk2n comments:
 
@@ -552,7 +589,7 @@ static void hex_drv_write(pab_t *pab) {
   uint16_t i;
   UINT written;
   file_t* file = NULL;
-  BYTE res = FR_OK;
+  FRESULT res = FR_OK;
   
   debug_puts_P("Write File\n");
 
@@ -627,14 +664,7 @@ static void hex_drv_write(pab_t *pab) {
     }
   }
   if (rc == HEXSTAT_SUCCESS) {
-    switch (res) {
-      case FR_OK:
-        rc = HEXSTAT_SUCCESS;
-        break;
-      default:
-        rc = HEXSTAT_DEVICE_ERR;
-        break;
-    }
+    rc = fresult2hexstatus(res);
   }
 
   if (!hex_is_bav() ) { // we can send response
@@ -685,7 +715,7 @@ static void hex_drv_read(pab_t *pab) {
   uint16_t fsize;
   char token;
   UINT read;
-  BYTE res = FR_OK;
+  FRESULT res = FR_OK;
   file_t* file;
 
 #ifdef USE_CMD_LUN
@@ -731,7 +761,7 @@ static void hex_drv_read(pab_t *pab) {
 
     if (res == FR_OK) {
       if ( fsize == 0 ) {
-        res = FR_EOF;
+        rc = HEXSTAT_EOF;
       } else {
         // size of buffer provided by host (amount to send)
         if ( fsize > pab->buflen ) {
@@ -743,7 +773,7 @@ static void hex_drv_read(pab_t *pab) {
     rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 
     // while we have data remaining to send.
-    while ( fsize && rc == HEXSTAT_SUCCESS ) {
+    while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
 
       len = fsize;    // remaining amount to read from file
       // while it fit into buffer or not?  Only read as much
@@ -764,32 +794,19 @@ static void hex_drv_read(pab_t *pab) {
         for (i = 0; i < read; i++) {
           rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
         }
-      } else {
-        // TODO Which one should it be?
-        res = FR_RW_ERROR;
-        rc = HEXSTAT_DATA_ERR;
       }
-
       fsize -= read;
     }
 
-    switch (res) {
-      case FR_OK:
-        if (file->attr & FILEATTR_DISPLAY) {
-          res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
-          if (token == '\r')
-            res = f_read(&(file->fp), &token, 1, &read);
-        } 
-        rc = HEXSTAT_SUCCESS;
-        break;
-      case FR_EOF:
-        rc = HEXSTAT_EOF;
-        break;
-      default:
-        rc = HEXSTAT_DEVICE_ERR;
-        break;
+    if(rc == HEXSTAT_SUCCESS)
+      rc = fresult2hexstatus(res);
+    if(rc == HEXSTAT_SUCCESS) {
+      if (file->attr & FILEATTR_DISPLAY) {
+        res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
+        if (token == '\r')
+          res = f_read(&(file->fp), &token, 1, &read);
+      }
     }
-
   } else {
     transmit_word(0);      // null file
     rc = HEXSTAT_NOT_FOUND;
@@ -837,7 +854,7 @@ static void hex_drv_open(pab_t *pab) {
   BYTE    mode = 0;
   uint16_t fsize = 0;
   file_t* file = NULL;
-  BYTE res = FR_OK;
+  FRESULT res = FR_OK;
   char *path;
   uint8_t pathlen;
 
@@ -953,33 +970,10 @@ static void hex_drv_open(pab_t *pab) {
         res = f_lseek( &(file->fp), file->fp.fsize ); // position for append.
       }
 
-      switch (res) {
-        case FR_OK:
-          rc = HEXSTAT_SUCCESS;
-          fsize = file->fp.fsize;
-          break;
-
-        case FR_IS_READONLY:
-          rc = HEXSTAT_NOT_WRITE;
-          break;
-
-        case FR_INVALID_NAME:
-          rc = HEXSTAT_FILE_NAME_INVALID;
-          break;
-
-        case FR_RW_ERROR:
-          rc = HEXSTAT_DEVICE_ERR;
-          break;
-
-        case FR_EXIST:
-        case FR_DENIED:
-        case FR_IS_DIRECTORY:
-        case FR_NO_PATH:
-        default:
-          rc = HEXSTAT_NOT_FOUND;
-          break;
-      }
-      if (rc) {
+      rc = fresult2hexstatus(res);
+      if(rc == HEXSTAT_SUCCESS) {
+        fsize = file->fp.fsize;
+      } else {
         free_lun(pab->lun); // free up buffer
       }
     } else { // too many open files, or file system maybe not initialized?
@@ -1041,7 +1035,7 @@ static void hex_drv_open(pab_t *pab) {
 static void hex_drv_close(pab_t *pab) {
   hexstatus_t rc;
   file_t* file = NULL;
-  BYTE res = 0;
+  FRESULT res = FR_OK;
 
 #ifdef USE_CMD_LUN
   if (pab->lun == LUN_CMD) {
@@ -1064,16 +1058,7 @@ static void hex_drv_close(pab_t *pab) {
       res = f_close(&(file->fp));
     }
     free_lun(pab->lun);
-    switch (res) {
-      case FR_OK:
-        rc = HEXSTAT_SUCCESS;
-        break;
-      case FR_INVALID_OBJECT:
-      case FR_NOT_READY:
-      default:
-        rc = HEXSTAT_DEVICE_ERR;
-        break;
-    }
+    rc = fresult2hexstatus(res);
   } else {
     rc = HEXSTAT_NOT_OPEN; // File not open.
     if ( !fs_initialized ) {
@@ -1154,20 +1139,10 @@ static void hex_drv_delete(pab_t *pab) {
 
   if ( rc == HEXSTAT_SUCCESS ) {
     buf = (char *)buffer;
-    trim(&buf,&len);
+    trim(&buf, &len);
       // remove file
     fr = f_unlink(&fs, (UCHAR *)buf);
-    switch (fr) {
-      case FR_OK:
-        rc = HEXSTAT_SUCCESS;
-        break;
-      case FR_NO_FILE:
-        rc = HEXSTAT_NOT_FOUND;
-        break;
-      default:
-        rc = HEXSTAT_DEVICE_ERR;
-        break;
-    }
+    rc = fresult2hexstatus(fr);
   }
   if (!hex_is_bav()) { // we can send response
     hex_send_final_response( rc );
