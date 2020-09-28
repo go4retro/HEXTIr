@@ -33,6 +33,7 @@
 
 typedef struct _printcfg_t {
   uint8_t line;
+  uint8_t spacing;
   //uint8_t comp;
 } printcfg_t;
 

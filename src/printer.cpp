@@ -32,6 +32,13 @@
 #include "timer.h"
 #include "printer.h"
 
+/*
+ * Punch List
+ *
+ * TODO: Add Status command
+ *
+ */
+
 #ifdef INCLUDE_PRINTER
 
 // Global defines
@@ -44,13 +51,16 @@ static printcfg_t _cfg;
 typedef enum _prncmd_t {
                           PRN_CMD_NONE = 0,
                           PRN_CMD_CRLF,
+                          PRN_CMD_SPACING,
                           PRN_CMD_COMP
 } prncmd_t;
 
 static const action_t cmds[] PROGMEM = {
-                                        {PRN_CMD_CRLF,  "c"},
-                                        {PRN_CMD_COMP,  "s"},
-                                        {PRN_CMD_NONE,  ""}
+                                        {PRN_CMD_CRLF,      "c"},   // ALC printer/plotter
+                                        {PRN_CMD_CRLF,      "r"},   // 80 column printer
+                                        {PRN_CMD_COMP,      "s"},   // alc printer/plotter
+                                        {PRN_CMD_SPACING,   "l"},   // 80 column printer
+                                        {PRN_CMD_NONE,      ""}
                                        };
 
 static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, printcfg_t *cfg) {
@@ -68,7 +78,7 @@ static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, printcfg_t *cfg) 
   switch (cmd) {
   case PRN_CMD_COMP:
     switch(lower(buf[0])) {
-    case 'y':
+    case 'l':
     case '1':
       // compressed chars
       break;
@@ -91,6 +101,20 @@ static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, printcfg_t *cfg) 
       cfg->line = TRUE;
       // send a CRLF
       break;
+    case PRN_CMD_SPACING:
+      switch(lower(buf[0])) {
+      case 's':
+        // single cr/lf
+        cfg->spacing = 1;
+        break;
+      case 'd':
+        // double cr/lf
+        cfg->spacing = 1;
+        break;
+      default:
+        // hanmdle 3+ lines per lf.
+        break;
+      }
     default:
       rc = HEXSTAT_DATA_ERR;
       break;
@@ -197,6 +221,7 @@ static void hex_prn_open(pab_t *pab) {
   }
   if(rc == HEXSTAT_SUCCESS ) {
     _cfg.line = _defaultcfg.line;
+    _cfg.spacing = _defaultcfg.spacing;
     if(blen)
       rc = prn_exec_cmds(buf, blen, &_cfg);
     prn_open = 1;  // our printer is NOW officially open.
@@ -301,7 +326,9 @@ static void hex_prn_write(pab_t *pab) {
       a CR/LF.
   */
   if ( written && prn_open && _cfg.line) {
-    swuart_putcrlf(0);
+    for(uint8_t n = 0; n < _cfg.spacing; n++) {
+      swuart_putcrlf();
+    }
     swuart_flush();
   }
 
@@ -392,5 +419,6 @@ void prn_init( void ) {
   prn_register();
 #endif
   _defaultcfg.line = TRUE;
+  _defaultcfg.spacing = 1;
 }
 #endif

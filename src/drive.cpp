@@ -17,6 +17,16 @@
 
     drive.cpp: Drive-based device functions.
 */
+
+/*
+ * Punch List
+ *
+ * TODO:  Add in support for Verofy Read/Write operation 0x0c
+ * TODO:  Read Catalog 0x0e
+ * TODO:  Set Options 0x0f
+ * TODO:  Protect/Unprotect File 0x11
+ */
+
 #include <string.h> // TODO can we remove these?
 #include <stdlib.h>
 #include <avr/pgmspace.h>
@@ -741,7 +751,6 @@ static void hex_drv_read(pab_t *pab) {
       len = ( len > BUFSIZE ) ? BUFSIZE : len;
 
       if ( !(file->attr & FILEATTR_CATALOG )) {
-        // memset((char *)buffer, 0, BUFSIZE);  // TODO Do we need this? No!
         res = f_read(&(file->fp), buffer, len, &read);
         if (!res) {
           debug_trace(buffer, 0, read);
@@ -842,6 +851,7 @@ static void hex_drv_open(pab_t *pab) {
     return;
 #else
   if(pab->datalen > BUFSIZE) {
+    // TODO change error to TOO_LONG is USE_CMD_LUN is on.
     hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
     return;
   }
@@ -1085,7 +1095,6 @@ static void hex_drv_close(pab_t *pab) {
 static void hex_drv_restore( pab_t *pab ) {
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   file_t*  file = NULL;
-  //BYTE     res = 0;
 
   debug_puts_P("Drive Restore\n");
 
@@ -1102,20 +1111,18 @@ static void hex_drv_restore( pab_t *pab ) {
 
   if (!hex_is_bav() ) {
     if ( rc == HEXSTAT_SUCCESS ) {
-/*#ifdef ARDUINO
       // If we are restore on an open directory...rewind to start
       if ( file->attr & FILEATTR_CATALOG ) {
-        file->fp.rewindDirectory();
+        //file->fp.rewindDirectory();
+        rc = HEXSTAT_UNSUPP_CMD;
       } else {
         // if we are a normal file, rewind to starting position.
-        file->fp.seek( 0 ); // restore back to start of file.
+        f_lseek(&(file->fp),  0 ); // restore back to start of file.
       }
-#else*/  // TODO need to implement this
-      rc = HEXSTAT_UNSUPP_CMD;
     }
     hex_send_final_response( rc );
-  } // TODO should this be an else...?
-  hex_finish();
+  } else
+    hex_finish();
 }
 
 /*
@@ -1125,16 +1132,20 @@ static void hex_drv_restore( pab_t *pab ) {
 static void hex_drv_delete(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
+  uint8_t len;
+  char *buf;
 
   debug_puts_P("Delete File\n");
 
   drv_start();
 
-  if ( hex_get_data(buffer, pab->datalen) == HEXSTAT_SUCCESS ) {
-  } else {
-    hex_release_bus();
+  if(pab->datalen > BUFSIZE) { // command too long...
+    hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
     return;
   }
+  len = pab->datalen;
+  rc = hex_get_data(buffer, len);
+
   // simplistic removal. doesn't check for much besides
   // existance at this point.  We should be able to know if
   // the file is open or not, and test for that; also should
@@ -1142,22 +1153,20 @@ static void hex_drv_delete(pab_t *pab) {
   // But for now; this'll do.
 
   if ( rc == HEXSTAT_SUCCESS ) {
-    if ( pab->datalen < BUFSIZE ) {
+    buf = (char *)buffer;
+    trim(&buf,&len);
       // remove file
-      fr = f_unlink(&fs, buffer);
-      switch (fr) {
-        case FR_OK:
-          rc = HEXSTAT_SUCCESS;
-          break;
-        case FR_NO_FILE:
-          rc = HEXSTAT_NOT_FOUND;
-          break;
-        default:
-          rc = HEXSTAT_DEVICE_ERR;
-          break;
-      }
-    } else {
-      rc = HEXSTAT_FILE_NAME_INVALID;
+    fr = f_unlink(&fs, (UCHAR *)buf);
+    switch (fr) {
+      case FR_OK:
+        rc = HEXSTAT_SUCCESS;
+        break;
+      case FR_NO_FILE:
+        rc = HEXSTAT_NOT_FOUND;
+        break;
+      default:
+        rc = HEXSTAT_DEVICE_ERR;
+        break;
     }
   }
   if (!hex_is_bav()) { // we can send response

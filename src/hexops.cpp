@@ -284,7 +284,7 @@ void hex_finish_open(uint16_t len, hexstatus_t rc) {
 
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXSTAT_SUCCESS ) {
-      hex_send_size_response(BUFSIZE, 0);
+      hex_send_size_response(len, 0);
     } else {
       hex_send_final_response( rc );
     }
@@ -390,7 +390,7 @@ hexstatus_t rc2;
 hexstatus_t hex_write_cmd_helper(uint16_t len) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  if (len < (BUFSIZE)) {
+  if (len < BUFSIZE) {
     rc = hex_get_data(buffer, len);
     if (rc != HEXSTAT_SUCCESS) {
       // TODO Do we need to do something here
