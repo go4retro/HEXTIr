@@ -79,6 +79,23 @@ static void hex_rtc_open( pab_t *pab ) {
   }
 #endif
 
+#ifdef USE_CMD_LUN
+  //*******************************************************
+  // special LUN = 255
+  if(pab->lun == LUN_CMD) {
+    // we should check length, as it should be 0, and att should be WRITE or UPDATE
+    rc = hex_exec_cmds((char *)buffer, pab->datalen);
+
+    if (!hex_is_bav()) { // we can send response
+      if ( rc == HEXSTAT_SUCCESS ) {
+        hex_send_size_response(BUFSIZE, 0);
+      } else {
+        hex_send_final_response( rc );
+      }
+    } else
+      hex_finish();
+  }
+#endif
   if ( rtc_open ) {
     rc = HEXSTAT_ALREADY_OPEN;
   } else if(!(att & OPENMODE_MASK)) {
@@ -216,6 +233,10 @@ static void hex_rtc_write( pab_t *pab ) {
 #endif
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
+  debug_puts_P("Write RTC\n");
+
+  len = pab->datalen;
+
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // handle command channel
@@ -223,9 +244,7 @@ static void hex_rtc_write( pab_t *pab ) {
     return;
   }
 #endif
-  debug_puts_P("Write RTC\n");
 
-  len = pab->datalen;
   buf = (char *)buffer;
   if ( rtc_open & OPENMODE_WRITE ) {
     rc = (len < BUFSIZE ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR );

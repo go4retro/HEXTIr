@@ -400,32 +400,6 @@ static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len) {
   } while(len2);
   return rc;
 }
-
-
-void drv_open_cmd(pab_t *pab) {
-  hexstatus_t rc = HEXSTAT_SUCCESS;
-  uint16_t len;
-  uint8_t att;
-
-  debug_puts_P("Open Drive Commands\n");
-
-  if(hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att) != HEXSTAT_SUCCESS)
-    return;
-
-  // we should check length, as it should be 0, and att should be WRITE or UPDATE
-  rc = drv_exec_cmds((char *)buffer, pab->datalen);
-
-  if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXSTAT_SUCCESS ) {
-      hex_send_size_response(BUFSIZE, 0);
-    } else {
-      hex_send_final_response( rc );
-    }
-  } else
-    hex_finish();
-}
-
-
 #endif
 
 
@@ -570,6 +544,9 @@ static void hex_drv_write(pab_t *pab) {
   file_t* file = NULL;
   BYTE res = FR_OK;
   
+  debug_puts_P("Write File\n");
+
+  len = pab->datalen;
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // handle command channel
@@ -577,9 +554,6 @@ static void hex_drv_write(pab_t *pab) {
     return;
   }
 #endif
-  debug_puts_P("Write File\n");
-
-  len = pab->datalen;
   file = find_lun(pab->lun);
 #ifndef USE_CMD_LUN
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
@@ -858,15 +832,6 @@ static void hex_drv_open(pab_t *pab) {
 
   drv_start();
 
-#ifdef USE_CMD_LUN
-  //*******************************************************
-  // special LUN = 255
-  if(pab->lun == LUN_CMD) {
-    drv_open_cmd(pab);
-    return;
-  }
-#endif
-
   debug_puts_P("Open File\n");
 
 #ifdef USE_OPEN_HELPER
@@ -885,6 +850,24 @@ static void hex_drv_open(pab_t *pab) {
   } else {
     hex_release_bus();
     return;
+  }
+#endif
+
+#ifdef USE_CMD_LUN
+  //*******************************************************
+  // special LUN = 255
+  if(pab->lun == LUN_CMD) {
+    // we should check length, as it should be 0, and att should be WRITE or UPDATE
+    rc = drv_exec_cmds((char *)buffer, pab->datalen);
+
+    if (!hex_is_bav()) { // we can send response
+      if ( rc == HEXSTAT_SUCCESS ) {
+        hex_send_size_response(BUFSIZE, 0);
+      } else {
+        hex_send_final_response( rc );
+      }
+    } else
+      hex_finish();
   }
 #endif
 

@@ -37,6 +37,7 @@
 // Global defines
 volatile uint8_t  ser_open = 0;
 static serialcfg_t _cfg;
+static serialcfg_t _defaultcfg;
 
 #ifdef USE_CMD_LUN
 
@@ -295,7 +296,7 @@ static inline hexstatus_t ser_exec_cmds(char* buf, uint8_t len, serialcfg_t *cfg
   return rc;
 }
 
-static void ser_write_cmd(pab_t *pab, serialcfg_t *cfg) {
+static inline void ser_write_cmd(pab_t *pab, serialcfg_t *cfg) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   debug_puts_P("Exec Serial Command\n");
@@ -317,7 +318,6 @@ static void ser_write_cmd(pab_t *pab, serialcfg_t *cfg) {
    her_ser_open()
 */
 static void hex_ser_open(pab_t *pab) {
-  serialcfg_t cfg;
   uint16_t len;
   uint8_t  att;
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -356,24 +356,40 @@ static void hex_ser_open(pab_t *pab) {
   // Internal/Display is always 0, other bits not used.
   //
   // work in progress... not ready for prime time.
+
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    if(rc == HEXSTAT_SUCCESS) {
+      // we should check length, as it should be 0, and att should be WRITE or UPDATE
+      rc = ser_exec_cmds((char *)buffer, pab->datalen, &_defaultcfg);
+    }
+    if (!hex_is_bav() ) { // we can send response
+      hex_send_final_response( rc );
+    } else {
+      hex_finish();
+    }
+    return;
+  }
+#endif
+
   if ( !ser_open ) {
     if ( att != 0 ) {
       len = len ? len : BUFSIZE;
       if ( att & OPENMODE_UPDATE ) {
         ser_open = att; // 00 attribute = illegal.
 #ifdef USE_CMD_LUN
-        cfg.bpsrate = _cfg.bpsrate;
-        cfg.echo = _cfg.echo;
-        cfg.length = _cfg.length;
-        cfg.line = _cfg.line;
-        cfg.nulls = _cfg.nulls;
-        cfg.overrun = _cfg.overrun;
-        cfg.parchk = _cfg.parchk;
-        cfg.parity = _cfg.parity;
-        cfg.stopbits = _cfg.stopbits;
-        cfg.xfer = _cfg.xfer;
-        rc = ser_exec_cmds((char *)buffer, pab->datalen, &cfg);
-        uart_config(CALC_BPS(cfg.bpsrate), cfg.length, cfg.parity, cfg.stopbits);
+        _cfg.bpsrate = _defaultcfg.bpsrate;
+        _cfg.echo = _defaultcfg.echo;
+        _cfg.length = _defaultcfg.length;
+        _cfg.line = _defaultcfg.line;
+        _cfg.nulls = _defaultcfg.nulls;
+        _cfg.overrun = _defaultcfg.overrun;
+        _cfg.parchk = _defaultcfg.parchk;
+        _cfg.parity = _defaultcfg.parity;
+        _cfg.stopbits = _defaultcfg.stopbits;
+        _cfg.xfer = _defaultcfg.xfer;
+        rc = ser_exec_cmds((char *)buffer, pab->datalen, &_cfg);
+        uart_config(CALC_BPS(_cfg.bpsrate), _cfg.length, _cfg.parity, _cfg.stopbits);
 #else
         uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
 #endif
@@ -485,6 +501,11 @@ static void hex_ser_write(pab_t *pab) {
   uint16_t j;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
+
+  debug_puts_P("Write Serial\n");
+
+  len = pab->datalen;
+
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // handle command channel
@@ -493,9 +514,6 @@ static void hex_ser_write(pab_t *pab) {
   }
 #endif
 
-  debug_puts_P("Write Serial\n");
-
-  len = pab->datalen;
   if ( ser_open & OPENMODE_WRITE ) {
     while (len && rc == HEXSTAT_SUCCESS ) {
       i = (len >= BUFSIZE ? BUFSIZE : len);
@@ -624,16 +642,16 @@ void ser_init(void) {
 #ifdef INIT_COMBO
   ser_register();
 #endif
-  _cfg.bpsrate = 300;
-  _cfg.echo = TRUE;  // TODO see exactly what this means.
-  _cfg.length = LENGTH_7;
-  _cfg.line = LINE_CRLF;
-  _cfg.nulls = 0;
-  _cfg.overrun = _cfg.overrun;
-  _cfg.parchk = FALSE;
-  _cfg.parity = PARITY_ODD;
-  _cfg.stopbits = STOP_0;
-  _cfg.xfer = XFER_REC;
+  _defaultcfg.bpsrate = 300;
+  _defaultcfg.echo = TRUE;  // TODO see exactly what this means.
+  _defaultcfg.length = LENGTH_7;
+  _defaultcfg.line = LINE_CRLF;
+  _defaultcfg.nulls = 0;
+  _defaultcfg.overrun = _cfg.overrun;
+  _defaultcfg.parchk = FALSE;
+  _defaultcfg.parity = PARITY_ODD;
+  _defaultcfg.stopbits = STOP_0;
+  _defaultcfg.xfer = XFER_REC;
   // get updated values from EEPROM...
 
 }

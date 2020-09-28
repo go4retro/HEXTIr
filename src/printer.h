@@ -30,6 +30,12 @@
 #define DEV_PRN_END     19            // Printers are allowed from 10-19 for device codes.
 
 #ifdef INCLUDE_PRINTER
+
+typedef struct _printcfg_t {
+  uint8_t line;
+  //uint8_t comp;
+} printcfg_t;
+
 void prn_reset(void);
 void prn_register(void);
 void prn_init(void);
