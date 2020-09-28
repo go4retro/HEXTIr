@@ -88,6 +88,7 @@ static void execute_command(pab_t *pab) {
   uint8_t   j;
   uint8_t   cmd;
 
+#ifndef NEW_REGISTER
   // Parse the registry.  If incoming PAB has device code 0, start
   // at index 0 in the registry as those are the handlers for that
   // device code.
@@ -101,6 +102,7 @@ static void execute_command(pab_t *pab) {
   if ( pab->dev != 0 ) {
     i++;
   }
+#endif
 
   while ( i < registry.num_devices ) {
     // does the incoming PAB have a device in this group in the registry?
@@ -236,6 +238,7 @@ void setup(void) {
 #ifdef INIT_COMBO
   reg_init();
 #endif
+  clock_init();
   drv_init();
   ser_init();
   prn_init();
@@ -243,8 +246,6 @@ void setup(void) {
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
 #endif
   config = ee_get_config();
-
-  clock_init();
 
   wakeup_pin_init();
 }

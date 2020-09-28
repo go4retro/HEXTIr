@@ -60,31 +60,31 @@ typedef enum _sercmd_t {
                           SER_CMD_LF
 } sercmd_t;
 
-static const action_t cmds[] = {
-                                  {SER_CMD_BPS,"b"},
-                                  {SER_CMD_BPS,".ba"},
-                                  {SER_CMD_LEN,"d"},
-                                  {SER_CMD_LEN,".da"},
-                                  {SER_CMD_PARITY,"p"},
-                                  {SER_CMD_PARITY,".pa"},
-                                  {SER_CMD_PARCHK,"c"},
-                                  {SER_CMD_NULLS,"n"},
-                                  {SER_CMD_STOP,"s"},
-                                  {SER_CMD_ECHO,"e"},
-                                  {SER_CMD_LINE,"r"},
-                                  {SER_CMD_TRANSFER,"t"},
-                                  {SER_CMD_OVERRUN,"o"},
-                                  {SER_CMD_NONE,""}
-                                };
-static const action_t ti_cmds[] = {
-                                  {SER_CMD_TW,"tw"},
-                                  {SER_CMD_NU,"nu"},
-                                  {SER_CMD_CH,"ch"},
-                                  {SER_CMD_EC,"ec"},
-                                  {SER_CMD_CR,"cr"},
-                                  {SER_CMD_LF,"lf"},
-                                  {SER_CMD_NONE,""}
-                                };
+static const action_t cmds[] PROGMEM = {
+                                        {SER_CMD_BPS,       "b"},
+                                        {SER_CMD_BPS,       ".ba"},
+                                        {SER_CMD_LEN,       "d"},
+                                        {SER_CMD_LEN,       ".da"},
+                                        {SER_CMD_PARITY,    "p"},
+                                        {SER_CMD_PARITY,    ".pa"},
+                                        {SER_CMD_PARCHK,    "c"},
+                                        {SER_CMD_NULLS,     "n"},
+                                        {SER_CMD_STOP,      "s"},
+                                        {SER_CMD_ECHO,      "e"},
+                                        {SER_CMD_LINE,      "r"},
+                                        {SER_CMD_TRANSFER,  "t"},
+                                        {SER_CMD_OVERRUN,   "o"},
+                                        {SER_CMD_NONE,      ""}
+                                       };
+static const action_t ti_cmds[] PROGMEM = {
+                                            {SER_CMD_TW,    "tw"},
+                                            {SER_CMD_NU,    "nu"},
+                                            {SER_CMD_CH,    "ch"},
+                                            {SER_CMD_EC,    "ec"},
+                                            {SER_CMD_CR,    "cr"},
+                                            {SER_CMD_LF,    "lf"},
+                                            {SER_CMD_NONE,  ""}
+                                          };
 
 static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg) {
   hexstatus_t rc = HEXSTAT_SUCCESS;

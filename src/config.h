@@ -30,6 +30,7 @@
 #define USE_OPEN_HELPER 1
 #define USE_CMD_LUN     1
 //#ifdef USE_CFG_DEVICE 1
+#define FLASH_MEM_DATA  1
 
 #include <avr/io.h>
 
@@ -503,6 +504,16 @@ static inline void leds_sleep(void) {
 
 #ifdef CONFIG_UART_BUF_SHIFT
  #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
+#endif
+
+#ifdef FLASH_MEM_DATA
+#define MEM_CLASS PROGMEM
+#define mem_read_byte(x) pgm_read_byte(&(x))
+#define mem_read_word(x) pgm_read_word(&(x))
+#else
+#define MEM_CLASS
+#define mem_read_byte(x) (x)
+#define mem_read_word(x) (x)
 #endif
 
 #include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?

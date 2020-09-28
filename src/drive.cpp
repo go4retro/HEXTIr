@@ -299,21 +299,21 @@ typedef enum _diskcmd_t {
   DISK_CMD_PWD
 } diskcmd_t;
 
-static const action_t dcmds[14] = {
-                                  {DISK_CMD_CHDIR,"cd"},
-                                  {DISK_CMD_CHDIR,"chdir"},
-                                  {DISK_CMD_MKDIR,"md"},
-                                  {DISK_CMD_MKDIR,"mkdir"},
-                                  {DISK_CMD_RMDIR,"rd"},
-                                  {DISK_CMD_RMDIR,"rmdir"},
-                                  {DISK_CMD_RENAME,"rn"},
-                                  {DISK_CMD_RENAME,"rename"},
-                                  {DISK_CMD_RENAME,"mv"},
-                                  {DISK_CMD_RENAME,"move"},
-                                  {DISK_CMD_COPY,"cp"},
-                                  {DISK_CMD_COPY,"copy"},
-                                  {DISK_CMD_PWD,"pwd"},
-                                  {DISK_CMD_NONE,""}
+static const action_t dcmds[14] MEM_CLASS = {
+                                  {DISK_CMD_CHDIR,    "cd"},
+                                  {DISK_CMD_CHDIR,    "chdir"},
+                                  {DISK_CMD_MKDIR,    "md"},
+                                  {DISK_CMD_MKDIR,    "mkdir"},
+                                  {DISK_CMD_RMDIR,    "rd"},
+                                  {DISK_CMD_RMDIR,    "rmdir"},
+                                  {DISK_CMD_RENAME,   "rn"},
+                                  {DISK_CMD_RENAME,   "rename"},
+                                  {DISK_CMD_RENAME,   "mv"},
+                                  {DISK_CMD_RENAME,   "move"},
+                                  {DISK_CMD_COPY,     "cp"},
+                                  {DISK_CMD_COPY,     "copy"},
+                                  {DISK_CMD_PWD,      "pwd"},
+                                  {DISK_CMD_NONE,     ""}
                                 };
 
 static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len) {
@@ -386,6 +386,8 @@ static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   hexstatus_t rc2;
 
+  debug_puts_P("Exec Drive Commands\n");
+
   buf2 = buf;
   len2 = len;
   do {
@@ -405,7 +407,7 @@ void drv_open_cmd(pab_t *pab) {
   uint16_t len;
   uint8_t att;
 
-  debug_puts_P("Open Command\n");
+  debug_puts_P("Open Drive Commands\n");
 
   if(hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att) != HEXSTAT_SUCCESS)
     return;
@@ -1353,4 +1355,9 @@ void drv_init(void) {
   drv_register();
 #endif
   disk_init();
+
+  //strcpy((char *)buffer,"set device=101");
+  //drv_exec_cmds((char *)buffer, strlen((char *)buffer));
+
+
 }

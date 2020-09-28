@@ -45,11 +45,11 @@ typedef enum _prncmd_t {
                           PRN_CMD_COMP
 } prncmd_t;
 
-static const action_t cmds[] = {
-                                  {PRN_CMD_CRLF,"c"},
-                                  {PRN_CMD_COMP,"s"},
-                                  {PRN_CMD_NONE,""}
-                                };
+static const action_t cmds[] PROGMEM = {
+                                        {PRN_CMD_CRLF,  "c"},
+                                        {PRN_CMD_COMP,  "s"},
+                                        {PRN_CMD_NONE,  ""}
+                                       };
 
 static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len) {
   hexstatus_t rc = HEXSTAT_SUCCESS;

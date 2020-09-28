@@ -202,22 +202,34 @@ void trim(char **buf, uint8_t *blen) {
 uint8_t parse_cmd(const action_t list[], char **buf, uint8_t *blen) {
   uint8_t i = 0;
   uint8_t j = 0;
+  uint8_t  action;
+  uint8_t ch;
+
 
   trim(buf, blen);
-  while(list[j].action) {
-    if(!(list[j].text[i])) { // end of command
+  action = mem_read_byte(list[j].action);
+  while(action) {
+    //debug_puts("Action: ");
+    //debug_puthex(action);
+    //debug_puts(": ch = '");
+    ch = mem_read_byte(list[j].text[i]);
+    //debug_putc(ch);
+    //debug_puts("'\n");
+    if(!ch && (i == *blen || (*buf)[i] == ' ')) { // end of command
       *buf = *buf + i;
       (*blen) -= i;
-      return list[j].action;
+      return action;
     } else if(i == *blen) {
       // past end of command, try again
       j += 1;
       i = 0;
-    } else if(lower((*buf)[i]) == list[j].text[i]) {
+      action = mem_read_byte(list[j].action);
+    } else if(lower((*buf)[i]) == ch) {
       i++;
     } else { // no match, start over
       j += 1;
       i = 0;
+      action = mem_read_byte(list[j].action);
     }
   }
   return 0;
@@ -238,10 +250,10 @@ uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len) {
       // handle set
       opt = parse_cmd(list, buf, &i);
       if(opt) {
-        *len = i;
         *buf = buf2;
         *len = len2;
-        trim (&buf2, &len2);
+        trim (buf, len);
+        //debug_trace(*buf,0, *len);
       }
       return opt;
     } else {
@@ -296,7 +308,7 @@ typedef enum _set_opt_t {
   SET_OPT_DEVICE,
 } set_opt_t;
 
-static const action_t opts[] = {
+static const action_t opts[] MEM_CLASS = {
                                 {SET_OPT_DEVICE,"dev"},
                                 {SET_OPT_DEVICE,"device"},
                                 {SET_OPT_NONE,""}
@@ -308,7 +320,7 @@ typedef enum _execcmd_t {
   EXEC_CMD_SET,
 } execcmd_t;
 
-static const action_t cmds[] = {
+static const action_t cmds[] MEM_CLASS = {
                                         {EXEC_CMD_SET,"set"},
                                         {EXEC_CMD_NONE,""}
                                        };
