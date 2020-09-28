@@ -280,23 +280,7 @@ void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2) {
 }
 
 
-void hex_open_cmd(pab_t *pab) {
-  hexstatus_t rc = HEXSTAT_SUCCESS;
-  char *buf;
-  uint16_t len;
-  uint8_t blen;
-  uint8_t att;
-
-  debug_puts_P("Open Command\n");
-
-  if(hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att) != HEXSTAT_SUCCESS)
-    return;
-
-  buf = (char *)buffer;
-  blen = pab->datalen;
-  // trim whitespace
-  trim(&buf, &blen);
-  rc = hex_exec_cmds(buf, blen);
+void hex_finish_open(uint16_t len, hexstatus_t rc) {
 
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXSTAT_SUCCESS ) {
@@ -306,6 +290,7 @@ void hex_open_cmd(pab_t *pab) {
     }
   } else
     hex_finish();
+  return;
 }
 
 typedef enum _set_opt_t {

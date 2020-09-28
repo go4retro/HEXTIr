@@ -359,18 +359,16 @@ static void hex_ser_open(pab_t *pab) {
   //
   // work in progress... not ready for prime time.
 
-#ifdef USE_CMD_LUN
+  blen = pab->datalen - 3;
+  buf = (char *)(buffer + 3);
+  trim(&buf, &blen);
+
+  #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
-    blen = pab->datalen;
-    buf = (char *)buffer;
-    trim(&buf, &blen);
-    // we should check length, as it should be 0, and att should be WRITE or UPDATE
-    rc = ser_exec_cmds(buf, blen, &_defaultcfg);
-    if (!hex_is_bav() ) { // we can send response
-      hex_send_final_response( rc );
-    } else {
-      hex_finish();
-    }
+    // we should check att, as it should be WRITE or UPDATE
+    if(blen)
+      rc = ser_exec_cmds(buf, blen, &_defaultcfg);
+    hex_finish_open(BUFSIZE, rc);
     return;
   }
 #endif
@@ -391,7 +389,8 @@ static void hex_ser_open(pab_t *pab) {
         _cfg.parity = _defaultcfg.parity;
         _cfg.stopbits = _defaultcfg.stopbits;
         _cfg.xfer = _defaultcfg.xfer;
-        rc = ser_exec_cmds((char *)buffer, pab->datalen, &_cfg);
+        if(blen)
+          rc = ser_exec_cmds(buf, blen, &_cfg);
         uart_config(CALC_BPS(_cfg.bpsrate), _cfg.length, _cfg.parity, _cfg.stopbits);
 #else
         uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
@@ -406,14 +405,7 @@ static void hex_ser_open(pab_t *pab) {
     rc = HEXSTAT_ALREADY_OPEN;
   }
 
-  if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXSTAT_SUCCESS ) {
-      hex_send_size_response(len, 0);
-    } else {
-      hex_send_final_response( rc );
-    }
-  } else
-    hex_finish();
+  hex_finish_open(len, rc);
 }
 
 

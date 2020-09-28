@@ -48,15 +48,9 @@ volatile uint8_t  rtc_open = 0;
 static void hex_rtc_open( pab_t *pab ) {
   uint16_t len;
   uint8_t  att;
+  char *buf;
+  uint8_t blen;
   hexstatus_t rc = HEXSTAT_SUCCESS;
-
-#ifdef USE_CMD_LUN
-  // special LUN = 255
-  if(pab->lun == LUN_CMD) {
-    hex_open_cmd(pab);
-    return;
-  }
-#endif
 
   debug_puts_P("Open RTC\n");
 
@@ -83,17 +77,14 @@ static void hex_rtc_open( pab_t *pab ) {
   //*******************************************************
   // special LUN = 255
   if(pab->lun == LUN_CMD) {
-    // we should check length, as it should be 0, and att should be WRITE or UPDATE
-    rc = hex_exec_cmds((char *)buffer, pab->datalen);
-
-    if (!hex_is_bav()) { // we can send response
-      if ( rc == HEXSTAT_SUCCESS ) {
-        hex_send_size_response(BUFSIZE, 0);
-      } else {
-        hex_send_final_response( rc );
-      }
-    } else
-      hex_finish();
+    blen = pab->datalen - 3;
+    buf = (char *)(buffer + 3);
+    trim(&buf, &blen);
+    // we should check att, as it should be WRITE or UPDATE
+    if(blen)
+      rc = hex_exec_cmds(buf, blen);
+    hex_finish_open(BUFSIZE, rc);
+    return;
   }
 #endif
   if ( rtc_open ) {
@@ -102,16 +93,11 @@ static void hex_rtc_open( pab_t *pab ) {
     rc = HEXSTAT_ATTR_ERR; // append not allowed on RTC.  INPUT|OUTPUT|UPDATE is OK.
   }
 
-  if ( !hex_is_bav() ) {
-    if ( rc == HEXSTAT_SUCCESS ) {
-      len = len ? len : BUFSIZE;
-      rtc_open = att;
-      hex_send_size_response(len, 0);
-    } else {
-      hex_send_final_response( rc );
-    }
-  } else
-    hex_finish();
+  if ( rc == HEXSTAT_SUCCESS ) {
+    len = len ? len : BUFSIZE;
+    rtc_open = att;
+  }
+  hex_finish_open(len, rc);
 }
 
 /*

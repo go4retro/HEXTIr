@@ -174,18 +174,16 @@ static void hex_prn_open(pab_t *pab) {
   }
 #endif
 
+  blen = pab->datalen - 3;
+  buf = (char *)(buffer + 3);
+  trim(&buf, &blen);
+
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
-    blen = pab->datalen;
-    buf = (char *)buffer;
-    trim(&buf, &blen);
-    // we should check length, as it should be 0, and att should be WRITE or UPDATE
-    rc = prn_exec_cmds(buf, blen, &_defaultcfg);
-    if (!hex_is_bav() ) { // we can send response
-      hex_send_final_response( rc );
-    } else {
-      hex_finish();
-    }
+    // we should check att, as it should be WRITE or UPDATE
+    if(blen)
+      rc = prn_exec_cmds(buf, blen, &_defaultcfg);
+    hex_finish_open(BUFSIZE, rc);
     return;
   }
 #endif
@@ -199,18 +197,12 @@ static void hex_prn_open(pab_t *pab) {
   }
   if(rc == HEXSTAT_SUCCESS ) {
     _cfg.line = _defaultcfg.line;
-    rc = prn_exec_cmds((char *)buffer, pab->datalen, &_cfg);
+    if(blen)
+      rc = prn_exec_cmds(buf, blen, &_cfg);
     prn_open = 1;  // our printer is NOW officially open.
     len = len ? len : BUFSIZE;
   }
-  if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXSTAT_SUCCESS ) {
-      hex_send_size_response(len, 0);
-    } else {
-      hex_send_final_response( rc );
-    }
-  } else
-    hex_finish();
+  hex_finish_open(len, rc);
 }
 
 

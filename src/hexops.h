@@ -84,7 +84,7 @@ uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len);
 uint8_t parse_cmd(const action_t actions[], char **buf, uint8_t *blen);
 hexstatus_t hex_exec_cmd(char* buf, uint8_t len);
 hexstatus_t hex_exec_cmds(char* buf, uint8_t len);
-void hex_open_cmd(pab_t *pab);
+void hex_finish_open(uint16_t len, hexstatus_t rc);
 void hex_write_cmd(pab_t *pab);
 void hex_close_cmd(void);
 hexstatus_t hex_write_cmd_helper(uint16_t len);

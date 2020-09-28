@@ -859,20 +859,14 @@ static void hex_drv_open(pab_t *pab) {
   //*******************************************************
   // special LUN = 255
   if(pab->lun == LUN_CMD) {
-    blen = pab->datalen;
-    buf = (char *)buffer;
+    blen = pab->datalen - 3;
+    buf = (char *)(buffer + 3);
     trim(&buf, &blen);
-    // we should check length, as it should be 0, and att should be WRITE or UPDATE
-    rc = drv_exec_cmds(buf, blen);
-
-    if (!hex_is_bav()) { // we can send response
-      if ( rc == HEXSTAT_SUCCESS ) {
-        hex_send_size_response(BUFSIZE, 0);
-      } else {
-        hex_send_final_response( rc );
-      }
-    } else
-      hex_finish();
+    // we should check att, as it should be WRITE or UPDATE
+    if(blen)
+      rc = drv_exec_cmds(buf, blen);
+    hex_finish_open(BUFSIZE, rc);
+    return;
   }
 #endif
 
@@ -1023,14 +1017,7 @@ static void hex_drv_open(pab_t *pab) {
     }
   }
 
-  if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXSTAT_SUCCESS ) {
-      hex_send_size_response(fsize, 0);
-    } else {
-      hex_send_final_response( rc );
-    }
-  } else
-    hex_finish();
+  hex_finish_open(fsize, rc);
 }
 
 
