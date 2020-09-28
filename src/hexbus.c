@@ -293,13 +293,15 @@ hexerror_t transmit_word( uint16_t value )
 
 /*
    hex_send_size_response() -
-   send a 2 byte response with a length/data field of two
-   bytes, and a success status response.
+   send a 4 byte response with a
+   * length/data field of two bytes
+   * a record value (potentially meaningless) of two bytes
+   * a success status response.
 */
-void hex_send_size_response( uint16_t len )
-{
-  transmit_word( 2 );
+void hex_send_size_response( uint16_t len , uint16_t record) {
+  transmit_word( 4 );
   transmit_word( len );
+  transmit_word( record );
   transmit_byte( HEXERR_SUCCESS );
   hex_finish();
   return;

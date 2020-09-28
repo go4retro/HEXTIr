@@ -43,11 +43,11 @@
 #else
 
 // Debug to serial
-//#define CONFIG_UART_DEBUG
+#define CONFIG_UART_DEBUG
 //#define CONFIG_UART_DEBUG_SW
 #define CONFIG_UART_DEBUG_RATE    115200
 #define CONFIG_UART_DEBUG_FLUSH
-//#define CONFIG_UART_BUF_SHIFT     8
+#define CONFIG_UART_BUF_SHIFT     8
 
 #endif
 
@@ -223,7 +223,7 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 3
 /* ---------- Hardware configuration: Arduino with low power sleep---------- */
 
-#define INCLUDE_PRINTER
+//#define INCLUDE_PRINTER
 #define INCLUDE_SERIAL
 #define INCLUDE_CLOCK
 

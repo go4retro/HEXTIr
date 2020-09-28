@@ -50,7 +50,15 @@ static void hex_rtc_open( pab_t *pab ) {
   uint8_t  att;
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P(PSTR("Open RTC\n"));
+#ifdef USE_CMD_LUN
+  // special LUN = 255
+  if(pab->lun == LUN_CMD) {
+    hex_open_cmd(pab);
+    return;
+  }
+#endif
+
+  debug_puts_P("Open RTC\n");
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
@@ -71,24 +79,20 @@ static void hex_rtc_open( pab_t *pab ) {
   }
 #endif
 
+  if ( rtc_open ) {
+    rc = HEXSTAT_ALREADY_OPEN;
+  } else if(!(att & OPENMODE_MASK)) {
+    rc = HEXSTAT_ATTR_ERR; // append not allowed on RTC.  INPUT|OUTPUT|UPDATE is OK.
+  }
+
   if ( !hex_is_bav() ) {
-    if ( !rtc_open ) {
-      if ( att & OPENMODE_MASK ) {
-        len = len ? len : BUFSIZE;
-        rtc_open = att;
-        transmit_word( 4 );
-        transmit_word( len );
-        transmit_word( 0 );
-        transmit_byte( HEXSTAT_SUCCESS );
-        hex_finish();
-        return;
-      } else {
-        rc = HEXSTAT_ATTR_ERR; // append not allowed on RTC.  INPUT|OUTPUT|UPDATE is OK.
-      }
+    if ( rc == HEXSTAT_SUCCESS ) {
+      len = len ? len : BUFSIZE;
+      rtc_open = att;
+      hex_send_size_response(len, 0);
     } else {
-      rc = HEXSTAT_ALREADY_OPEN;
+      hex_send_final_response( rc );
     }
-    hex_send_final_response( rc );
   } else
     hex_finish();
 }
@@ -99,7 +103,7 @@ static void hex_rtc_open( pab_t *pab ) {
 static void hex_rtc_close(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P(PSTR("Close RTC\n"));
+  debug_puts_P("Close RTC\n");
 
   if ( rtc_open ) {
     clock_reset();
@@ -118,7 +122,7 @@ static void hex_rtc_read(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
 
-  debug_puts_P(PSTR("Read RTC\n"));
+  debug_puts_P("Read RTC\n");
 
   if ( rtc_open & OPENMODE_READ )
   {
@@ -219,7 +223,7 @@ static void hex_rtc_write( pab_t *pab ) {
     return;
   }
 #endif
-  debug_puts_P(PSTR("Write RTC\n"));
+  debug_puts_P("Write RTC\n");
 
   len = pab->datalen;
   buf = (char *)buffer;

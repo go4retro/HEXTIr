@@ -68,8 +68,7 @@ void debug_puts(const char *text) {
   }
 }
 
-
-void debug_puts_P(const char *text) {
+void _debug_puts_P(const char *text) {
   uint8_t ch;
 
   while ((ch = pgm_read_byte(text++))) {

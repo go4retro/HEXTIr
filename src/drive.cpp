@@ -17,7 +17,7 @@
 
     drive.cpp: Drive-based device functions.
 */
-#include <string.h>
+#include <string.h> // TODO can we remove these?
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
@@ -225,7 +225,7 @@ static void hex_drv_verify(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t  first_buffer = 1;
 
-  debug_puts_P(PSTR("Verify File\n"));
+  debug_puts_P("Verify File\n");
 
   file = find_lun(pab->lun);
   len = pab->datalen;   // this is the size of the object to verify
@@ -398,6 +398,32 @@ static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len) {
   } while(len2);
   return rc;
 }
+
+
+void drv_open_cmd(pab_t *pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  uint16_t len;
+  uint8_t att;
+
+  debug_puts_P("Open Command\n");
+
+  if(hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att) != HEXSTAT_SUCCESS)
+    return;
+
+  // we should check length, as it should be 0, and att should be WRITE or UPDATE
+  rc = drv_exec_cmds((char *)buffer, pab->datalen);
+
+  if (!hex_is_bav()) { // we can send response
+    if ( rc == HEXSTAT_SUCCESS ) {
+      hex_send_size_response(BUFSIZE, 0);
+    } else {
+      hex_send_final_response( rc );
+    }
+  } else
+    hex_finish();
+}
+
+
 #endif
 
 
@@ -414,7 +440,7 @@ static void drv_write_cmd(pab_t *pab) {
   uint8_t cmd;
 #endif
 
-  debug_puts_P(PSTR("Exec Disk Command\n"));
+  debug_puts_P("Exec Disk Command\n");
 
 #ifdef USE_CMD_LUN
   rc = hex_write_cmd_helper(pab->datalen);
@@ -549,7 +575,7 @@ static void hex_drv_write(pab_t *pab) {
     return;
   }
 #endif
-  debug_puts_P(PSTR("Write File\n"));
+  debug_puts_P("Write File\n");
 
   len = pab->datalen;
   file = find_lun(pab->lun);
@@ -684,7 +710,7 @@ static void hex_drv_read(pab_t *pab) {
   }
 #endif
 
-  debug_puts_P(PSTR("Read File\n"));
+  debug_puts_P("Read File\n");
 
   file = find_lun(pab->lun);
 #ifndef USE_CMD_LUN
@@ -834,13 +860,12 @@ static void hex_drv_open(pab_t *pab) {
   //*******************************************************
   // special LUN = 255
   if(pab->lun == LUN_CMD) {
-  //if (path[0] == 0)  {
-    hex_open_cmd(pab);
+    drv_open_cmd(pab);
     return;
   }
 #endif
 
-  debug_puts_P(PSTR("Open File\n"));
+  debug_puts_P("Open File\n");
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_FILE_NAME_INVALID, &len, &att);
@@ -866,7 +891,7 @@ static void hex_drv_open(pab_t *pab) {
   // file path, trimmed whitespaces
   trim(&path, &pathlen);
 
-  debug_puts_P(PSTR("Filename: "));
+  debug_puts_P("Filename: ");
   debug_puts(path);
   debug_putcrlf();
 
@@ -971,57 +996,51 @@ static void hex_drv_open(pab_t *pab) {
     }
   }
   if (att & OPENMODE_RELATIVE) file->attr |= FILEATTR_RELATIVE;
+
+  if ( rc == HEXSTAT_SUCCESS ) {
+    switch (att & OPENMODE_MASK) {
+
+      // when opening to write, or read/write
+      default:
+        if (!(att & OPENMODE_INTERNAL)) {
+          file->attr |= FILEATTR_DISPLAY;
+        }
+        // if we don't know how big its going to be... we may need multiple writes.
+        if ( len == 0 ) {
+          fsize = BUFSIZE;
+        } else {
+          // otherwise, we know. and do NOT allow fileattr display under any circumstance.
+          fsize = len;
+          //file->attr &= ~FILEATTR_DISPLAY;
+        }
+        break;
+
+      // when opening to read-only
+      case OPENMODE_READ:
+        if (!(att & OPENMODE_INTERNAL)) {
+          file->attr |= FILEATTR_DISPLAY;
+        }
+        // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
+        if (pab->lun != 0 ) {
+          if (len) {
+            fsize = len; // non zero length requested, use it.
+          } else {
+            fsize = BUFSIZE;  // on zero length request, return buffer size we use.
+          }
+        }
+        // for len=0 OR lun=0, return fsize.
+        break;
+    }
+  }
+
   if (!hex_is_bav()) { // we can send response
     if ( rc == HEXSTAT_SUCCESS ) {
-      switch (att & OPENMODE_MASK) {
-
-        // when opening to write, or read/write
-        default:
-          if (!(att & OPENMODE_INTERNAL)) {
-            file->attr |= FILEATTR_DISPLAY;
-          }
-          // if we don't know how big its going to be... we may need multiple writes.
-          if ( len == 0 ) {
-            fsize = BUFSIZE;
-          } else {
-            // otherwise, we know. and do NOT allow fileattr display under any circumstance.
-            fsize = len;
-            //file->attr &= ~FILEATTR_DISPLAY;
-          }
-          break;
-
-        // when opening to read-only
-        case OPENMODE_READ:
-          if (!(att & OPENMODE_INTERNAL)) {
-            file->attr |= FILEATTR_DISPLAY;
-          }
-          // open read-only w LUN=0: just return size of file we're reading; always. this is for verify, etc.
-          if (pab->lun != 0 ) {
-            if (len) {
-              fsize = len; // non zero length requested, use it.
-            } else {
-              fsize = BUFSIZE;  // on zero length request, return buffer size we use.
-            }
-          }
-          // for len=0 OR lun=0, return fsize.
-          break;
-      }
-
-      if ( rc == HEXSTAT_SUCCESS ) {
-        transmit_word( 4 );
-        transmit_word( fsize );
-        transmit_word( 0 );      // position
-        transmit_byte( HEXSTAT_SUCCESS );
-        hex_finish();
-      } else {
-        hex_send_final_response( rc );
-      }
+      hex_send_size_response(fsize, 0);
     } else {
       hex_send_final_response( rc );
     }
-    return;  // TODO see if we can remove this...
-  }
-  hex_finish();
+  } else
+    hex_finish();
 }
 
 
@@ -1045,7 +1064,7 @@ static void hex_drv_close(pab_t *pab) {
   }
 #endif
 
-  debug_puts_P(PSTR("Close File\n"));
+  debug_puts_P("Close File\n");
 
   file = find_lun(pab->lun);
   if (file != NULL) {
@@ -1091,7 +1110,7 @@ static void hex_drv_restore( pab_t *pab ) {
   file_t*  file = NULL;
   //BYTE     res = 0;
 
-  debug_puts_P(PSTR("Drive Restore\n"));
+  debug_puts_P("Drive Restore\n");
 
   drv_start();
 
@@ -1130,7 +1149,7 @@ static void hex_drv_delete(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
 
-  debug_puts_P(PSTR("Delete File\n"));
+  debug_puts_P("Delete File\n");
 
   drv_start();
 
@@ -1178,7 +1197,7 @@ static void hex_drv_status( pab_t *pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
-  debug_puts_P(PSTR("Drive Status\n"));
+  debug_puts_P("Drive Status\n");
   if ( pab->lun == 0 ) {
     st = open_files ? FILE_DEV_IS_OPEN : FILE_REQ_STATUS_NONE;
     st |= FILE_IO_MODE_READWRITE;  // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
@@ -1303,7 +1322,7 @@ void drv_reset( void )
   file_t* file = NULL;
   uint8_t lun;
 
-  debug_puts_P(PSTR("Reset\n"));
+  debug_puts_P("Reset\n");
 
   drv_start();
 

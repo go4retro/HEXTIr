@@ -56,7 +56,7 @@ registry_t  registry;
 */
 static void hex_reset_bus(pab_t *pab) {
 
-  debug_puts_P(PSTR("Reset Bus\n"));
+  debug_puts_P("Reset Bus\n");
 
   // We ONLY do all devices if the command is directed to device 0.
   if ( pab->dev == 0 ) {
@@ -274,7 +274,8 @@ int main(void) {
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-  debug_puts_P(PSTR("\n" TOSTRING(CONFIG_HARDWARE_NAME) " Version: " VERSION "\n"));
+  debug_puts_P("\n" TOSTRING(CONFIG_HARDWARE_NAME) " Version: " VERSION);
+  debug_putcrlf();
 
   while (TRUE) {
 
@@ -306,7 +307,7 @@ int main(void) {
             //change_init();
             //fatops_init(0);
             drv_init();
-            debug_putc('A' + disk_state);
+            debug_putc('D');
             break;
           case DISK_ERROR:
           default:

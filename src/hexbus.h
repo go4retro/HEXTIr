@@ -146,7 +146,7 @@ hexerror_t receive_byte( uint8_t *inout);
 hexerror_t transmit_byte( uint8_t xmit );
 hexerror_t transmit_word( uint16_t value );
 void hex_finish( void );
-void hex_send_size_response( uint16_t len );
+void hex_send_size_response( uint16_t len , uint16_t record);
 void hex_send_final_response( hexstatus_t rc );
 void hex_init(void);
 

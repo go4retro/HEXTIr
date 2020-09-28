@@ -37,6 +37,106 @@
 // Global defines
 volatile uint8_t  prn_open = 0;
 
+#ifdef USE_CMD_LUN
+
+typedef enum _prncmd_t {
+                          PRN_CMD_NONE = 0,
+                          PRN_CMD_CRLF,
+                          PRN_CMD_COMP
+} prncmd_t;
+
+static const action_t cmds[] = {
+                                  {PRN_CMD_CRLF,"c"},
+                                  {PRN_CMD_COMP,"s"},
+                                  {PRN_CMD_NONE,""}
+                                };
+
+static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  prncmd_t cmd;
+
+  // path, trimmed whitespaces
+  trim(&buf, &len);
+
+  cmd = (prncmd_t) parse_equate(cmds, &buf, &len);
+  if(cmd != PRN_CMD_NONE) {
+    //skip spaces
+    trim (&buf, &len);
+  }
+  switch (cmd) {
+  case PRN_CMD_COMP:
+    switch(lower(buf[0])) {
+    case 'y':
+    case '1':
+      // compressed chars
+      break;
+    case 'n':
+    case '0':
+      // uncompressed chars
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  case PRN_CMD_CRLF:
+    switch(lower(buf[0])) {
+    case 'n':
+      // don't send a CRLF
+      break;
+    case 'l':
+      // send a CRLF
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  default:
+    rc = hex_exec_cmd(buf, len);
+  }
+  return rc;
+}
+
+
+static inline hexstatus_t prn_exec_cmds(char* buf, uint8_t len) {
+  char * buf2;
+  uint8_t len2;
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  hexstatus_t rc2;
+
+  buf2 = buf;
+  len2 = len;
+  do {
+    buf = buf2;
+    len = len2;
+    split_cmd(&buf, &len, &buf2, &len2);
+    rc2 = prn_exec_cmd(buf, len);
+    // pick the last error.
+    rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
+  } while(len2);
+  return rc;
+}
+
+static void prn_write_cmd(pab_t *pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Exec Printer Command\n");
+
+  rc = hex_write_cmd_helper(pab->datalen);
+  if(rc != HEXSTAT_SUCCESS) {
+    return;
+  }
+  rc = prn_exec_cmds((char *)buffer, pab->datalen);
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_final_response( rc );
+  } else {
+    hex_finish();
+  }
+}
+#endif
+
+
 
 /*
    hex_prn_open() -
@@ -48,16 +148,14 @@ static void hex_prn_open(pab_t *pab) {
   uint8_t  att = 0;
 
 #ifdef USE_CMD_LUN
-  //*******************************************************
-  // special LUN = 255
   if(pab->lun == LUN_CMD) {
-  //if (path[0] == 0)  {
-    hex_open_cmd(pab);
+    // handle command channel
+    prn_write_cmd(pab);
     return;
   }
 #endif
 
-  debug_puts_P(PSTR("Open Printer\n"));
+  debug_puts_P("Open Printer\n");
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
@@ -85,17 +183,15 @@ static void hex_prn_open(pab_t *pab) {
   } else {
     rc = HEXSTAT_ALREADY_OPEN;
   }
+  if(rc == HEXSTAT_SUCCESS ) {
+    rc = prn_exec_cmds((char *)buffer, pab->datalen);
+    prn_open = 1;  // our printer is NOW officially open.
+    len = len ? len : BUFSIZE;
+  }
   if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXSTAT_SUCCESS )
-    {
-//#ifndef ARDUINO
-      swuart_setrate(0, SB115200);
-//#endif
-      prn_open = 1;  // our printer is NOW officially open.
-      len = len ? len : BUFSIZE;
-      hex_send_size_response( len );
-    }
-    else {
+    if ( rc == HEXSTAT_SUCCESS ) {
+      hex_send_size_response(len, 0);
+    } else {
       hex_send_final_response( rc );
     }
   } else
@@ -147,7 +243,7 @@ static void hex_prn_write(pab_t *pab) {
   }
 #endif
 
-  debug_puts_P(PSTR("Write Printer\n"));
+  debug_puts_P("Write Printer\n");
 
   len = pab->datalen;
 
@@ -286,10 +382,7 @@ void prn_register(void) {
 void prn_init( void ) {
 
   prn_open = 0;
-//#ifndef ARDUINO
-  // TODO not sure where BPS rate is set on Arduino...
-//  swuart_setrate(0, SB9600);
-//#endif
+  swuart_setrate(0, SB115200);
 #ifdef INIT_COMBO
   prn_register();
 #endif

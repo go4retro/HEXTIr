@@ -18,6 +18,7 @@
     hexops.cpp: Foundational Hex Bus functions
 */
 
+#include <avr/pgmspace.h>
 
 #include "config.h"
 #include "debug.h"
@@ -25,7 +26,6 @@
 #include "hexops.h"
 #include "timer.h"
 #include "uart.h"
-
 #include "hexops.h"
 
 // add 1 to buffer size to handle null termination if used as a string
@@ -200,11 +200,10 @@ void trim(char **buf, uint8_t *blen) {
 
 
 uint8_t parse_cmd(const action_t list[], char **buf, uint8_t *blen) {
-  uint8_t i;
-  uint8_t j;
+  uint8_t i = 0;
+  uint8_t j = 0;
+
   trim(buf, blen);
-  j = 0;
-  i = 0;
   while(list[j].action) {
     if(!(list[j].text[i])) { // end of command
       *buf = *buf + i;
@@ -270,21 +269,24 @@ void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2) {
 
 
 void hex_open_cmd(pab_t *pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint8_t att;
 
-  debug_puts_P(PSTR("\n\rOpen Command\n\r"));
+  debug_puts_P("Open Command\n");
 
   if(hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att) != HEXSTAT_SUCCESS)
     return;
 
   // we should check length, as it should be 0, and att should be WRITE or UPDATE
+  // we should exec multiple commands in here
 
-  if(!hex_is_bav()) { // we can send response
-    transmit_word(2);
-    transmit_word(BUFSIZE);
-    transmit_byte(HEXSTAT_SUCCESS);    // status code
-    hex_finish();
+  if (!hex_is_bav()) { // we can send response
+    if ( rc == HEXSTAT_SUCCESS ) {
+      hex_send_size_response(BUFSIZE, 0);
+    } else {
+      hex_send_final_response( rc );
+    }
   } else
     hex_finish();
 }
@@ -320,7 +322,7 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
   uint8_t i = 0;
   uint32_t value = 0;
 
-  debug_puts_P(PSTR("\n\rExec General Command\n\r"));
+  debug_puts_P("Exec General Command\n");
 
   cmd = (execcmd_t)parse_cmd(cmds, &buf, &len);
   // if a cmd, i will point to location after cmd
@@ -404,7 +406,7 @@ void hex_write_cmd(pab_t *pab) {
   uint8_t len;
   char *buf;
 
-  debug_puts_P(PSTR("\n\rHandle Common Command\n\r"));
+  debug_puts_P("Handle Common Command\n");
 
   len = pab->datalen;
   rc = hex_write_cmd_helper(len);

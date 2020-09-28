@@ -206,6 +206,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, serialcfg_t *cfg)
     case 'n':
       cfg->line = LINE_NONE;
       break;
+    case 'c':
       cfg->line = LINE_CR;
       break;
     case 'l':
@@ -294,11 +295,10 @@ static inline hexstatus_t ser_exec_cmds(char* buf, uint8_t len, serialcfg_t *cfg
   return rc;
 }
 
-
 static void ser_write_cmd(pab_t *pab, serialcfg_t *cfg) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P(PSTR("Exec Serial Command\n"));
+  debug_puts_P("Exec Serial Command\n");
 
   rc = hex_write_cmd_helper(pab->datalen);
   if(rc != HEXSTAT_SUCCESS) {
@@ -322,7 +322,7 @@ static void hex_ser_open(pab_t *pab) {
   uint8_t  att;
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P(PSTR("Open Serial\n"));
+  debug_puts_P("Open Serial\n");
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
@@ -356,44 +356,43 @@ static void hex_ser_open(pab_t *pab) {
   // Internal/Display is always 0, other bits not used.
   //
   // work in progress... not ready for prime time.
-  if ( !hex_is_bav() ) {
-    if ( !ser_open ) {
-      if ( att != 0 ) {
-        len = len ? len : BUFSIZE;
-        if ( att & OPENMODE_UPDATE ) {
-          ser_open = att; // 00 attribute = illegal.
+  if ( !ser_open ) {
+    if ( att != 0 ) {
+      len = len ? len : BUFSIZE;
+      if ( att & OPENMODE_UPDATE ) {
+        ser_open = att; // 00 attribute = illegal.
 #ifdef USE_CMD_LUN
-          cfg.bpsrate = _cfg.bpsrate;
-          cfg.echo = _cfg.echo;
-          cfg.length = _cfg.length;
-          cfg.line = _cfg.line;
-          cfg.nulls = _cfg.nulls;
-          cfg.overrun = _cfg.overrun;
-          cfg.parchk = _cfg.parchk;
-          cfg.parity = _cfg.parity;
-          cfg.stopbits = _cfg.stopbits;
-          cfg.xfer = _cfg.xfer;
-          ser_write_cmd(pab, &cfg);
-          uart_config(CALC_BPS(cfg.bpsrate), cfg.length, cfg.parity, cfg.stopbits);
+        cfg.bpsrate = _cfg.bpsrate;
+        cfg.echo = _cfg.echo;
+        cfg.length = _cfg.length;
+        cfg.line = _cfg.line;
+        cfg.nulls = _cfg.nulls;
+        cfg.overrun = _cfg.overrun;
+        cfg.parchk = _cfg.parchk;
+        cfg.parity = _cfg.parity;
+        cfg.stopbits = _cfg.stopbits;
+        cfg.xfer = _cfg.xfer;
+        rc = ser_exec_cmds((char *)buffer, pab->datalen, &cfg);
+        uart_config(CALC_BPS(cfg.bpsrate), cfg.length, cfg.parity, cfg.stopbits);
 #else
-          uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
+        uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
 #endif
-          transmit_word( 4 );
-          transmit_word( len );
-          transmit_word( 0 );
-          transmit_byte( HEXSTAT_SUCCESS );
-          hex_finish();
-          return;
-        } else {
-          rc = HEXSTAT_APPEND_MODE_ERR;
-        }
       } else {
-        rc = HEXSTAT_ATTR_ERR;
+        rc = HEXSTAT_APPEND_MODE_ERR;
       }
     } else {
-      rc = HEXSTAT_ALREADY_OPEN;
+      rc = HEXSTAT_ATTR_ERR;
     }
-    hex_send_final_response( rc );
+  } else {
+    rc = HEXSTAT_ALREADY_OPEN;
+  }
+
+  if (!hex_is_bav()) { // we can send response
+    if ( rc == HEXSTAT_SUCCESS ) {
+      hex_send_size_response(len, 0);
+    } else {
+      hex_send_final_response( rc );
+    }
   } else
     hex_finish();
 }
@@ -431,7 +430,7 @@ static void hex_ser_read(pab_t *pab) {
   uint16_t bcount = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P(PSTR("Read Serial\n"));
+  debug_puts_P("Read Serial\n");
 
   if ( ser_open ) {
     // protect access via ser_open since serial_peripheral is not present
@@ -494,7 +493,7 @@ static void hex_ser_write(pab_t *pab) {
   }
 #endif
 
-  debug_puts_P(PSTR("Write Serial\n"));
+  debug_puts_P("Write Serial\n");
 
   len = pab->datalen;
   if ( ser_open & OPENMODE_WRITE ) {
