@@ -221,8 +221,6 @@ static hexstatus_t fresult2hexstatus(FRESULT fr) {
     case FR_DENIED:
     case FR_IS_DIRECTORY:
     case FR_NO_PATH:
-      rc = HEXSTAT_NOT_FOUND;
-      break;
     case FR_NO_FILE:
       rc = HEXSTAT_NOT_FOUND;
       break;

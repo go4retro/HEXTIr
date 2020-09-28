@@ -187,9 +187,9 @@ static const uint8_t op_table[] PROGMEM = {
 static inline void reg_init(void) {
 #ifdef NEW_REGISTER
 #ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_ALL, DEV_ALL, DEV_MAX, ops);
+  cfg_register(DEV_ALL, DEV_ALL, DEV_ALL, ops);
 #else
-  cfg_register(DEV_ALL, DEV_ALL, DEV_MAX, op_table, fn_table);
+  cfg_register(DEV_ALL, DEV_ALL, DEV_ALL, op_table, fn_table);
 #endif
 #else
   registry.num_devices = 1;
