@@ -856,7 +856,7 @@ static void hex_drv_open(pab_t *pab) {
   debug_puts_P("Open File\r\n");
 
 #ifdef USE_OPEN_HELPER
-  rc = hex_open_helper(pab, HEXSTAT_FILE_NAME_INVALID, &len, &att);
+  rc = hex_open_helper(pab, (pab->lun == LUN_CMD ? HEXSTAT_TOO_LONG : HEXSTAT_FILE_NAME_INVALID), &len, &att);
   if(rc != HEXSTAT_SUCCESS)
     return;
 #else
