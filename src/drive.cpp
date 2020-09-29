@@ -878,17 +878,23 @@ static void hex_drv_open(pab_t *pab) {
   path = (char *)(buffer + 3);
   // file path, trimmed whitespaces
   trim(&path, &pathlen);
-#ifdef USE_CMD_LUN
+
   //*******************************************************
   // special LUN = 255
-  if(pab->lun == LUN_CMD) {
+  if(
+      // special file name "" -> command_mode
+     (path[0] == 0)
+#ifdef USE_CMD_LUN
+     || (pab->lun == LUN_CMD)
+#endif
+    ) {
+      _cmd_lun = pab->lun;
     // we should check att, as it should be WRITE or UPDATE
-    if(pathlen)
+    if(path[0] != 0)
       rc = drv_exec_cmds(path, pathlen, &(_config.drv_dev));
     hex_finish_open(BUFSIZE, rc);
     return;
   }
-#endif
 
   debug_puts_P("Filename: ");
   debug_puts(path);
@@ -899,14 +905,6 @@ static void hex_drv_open(pab_t *pab) {
   if (path[0]=='$') {
     file = reserve_lun(pab->lun);
     hex_open_catalog(file, pab->lun, att, (char*)path);  // check file!= null in there
-    return;
-  }
-  //*******************************************************
-
-  // special file name "" -> command_mode
-  if (path[0] == 0)  {
-    _cmd_lun = pab->lun;
-    hex_finish_open(BUFSIZE, rc);
     return;
   }
   //*******************************************************
