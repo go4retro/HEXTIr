@@ -45,9 +45,9 @@
 #include "timer.h"
 #include "drive.h"
 
-#define FR_EOF     255    // We need an EOF error for hexbus_read.
-
 FATFS fs;
+uint8_t _cmd_lun = LUN_CMD;
+
 
 // Global defines
 uint8_t open_files = 0;
@@ -593,21 +593,17 @@ static void hex_drv_write(pab_t *pab) {
   debug_puts_P("Write File\r\n");
 
   len = pab->datalen;
+  if (pab->lun == _cmd_lun
 #ifdef USE_CMD_LUN
-  if(pab->lun == LUN_CMD) {
+      || pab->lun == LUN_CMD
+#endif
+      ) {
     // handle command channel
     drv_write_cmd(pab, &(_config.drv_dev));
     return;
   }
-#endif
+
   file = find_lun(pab->lun);
-#ifndef USE_CMD_LUN
-  if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
-    // handle command channel
-    drv_write_cmd(pab, &(_config.drv_dev));
-    return;
-  }
-#endif
   res = (file != NULL ? FR_OK : FR_NO_FILE);
   if (res == FR_OK && (file->attr & FILEATTR_RELATIVE)){
     // if we're not at the right record position, reposition
@@ -847,8 +843,6 @@ static void drv_start(void) {
 static void hex_drv_open(pab_t *pab) {
   uint16_t len = 0;
   uint8_t att = 0;
-  char *buf;
-  uint8_t blen;
   hexstatus_t rc;
   BYTE    mode = 0;
   uint16_t fsize = 0;
@@ -867,8 +861,7 @@ static void hex_drv_open(pab_t *pab) {
     return;
 #else
   if(pab->datalen > BUFSIZE) {
-    // TODO change error to TOO_LONG is USE_CMD_LUN is on.
-    hex_eat_it( pab->datalen, HEXSTAT_FILE_NAME_INVALID );
+    hex_eat_it( pab->datalen, (pab->lun == LUN_CMD ? HEXSTAT_TOO_LONG : HEXSTAT_FILE_NAME_INVALID));
     return;
   }
 
@@ -881,25 +874,21 @@ static void hex_drv_open(pab_t *pab) {
   }
 #endif
 
+  pathlen = pab->datalen - 3;
+  path = (char *)(buffer + 3);
+  // file path, trimmed whitespaces
+  trim(&path, &pathlen);
 #ifdef USE_CMD_LUN
   //*******************************************************
   // special LUN = 255
   if(pab->lun == LUN_CMD) {
-    blen = pab->datalen - 3;
-    buf = (char *)(buffer + 3);
-    trim(&buf, &blen);
     // we should check att, as it should be WRITE or UPDATE
-    if(blen)
-      rc = drv_exec_cmds(buf, blen, &(_config.drv_dev));
+    if(pathlen)
+      rc = drv_exec_cmds(path, pathlen, &(_config.drv_dev));
     hex_finish_open(BUFSIZE, rc);
     return;
   }
 #endif
-
-  path = (char *)&(buffer[3]);
-  pathlen = pab->datalen - 3;
-  // file path, trimmed whitespaces
-  trim(&path, &pathlen);
 
   debug_puts_P("Filename: ");
   debug_puts(path);
@@ -913,32 +902,14 @@ static void hex_drv_open(pab_t *pab) {
     return;
   }
   //*******************************************************
-#ifndef USE_CMD_LUN
+
   // special file name "" -> command_mode
   if (path[0] == 0)  {
-    file = reserve_lun(pab->lun);
-    if (file != NULL){
-      file->attr |= FILEATTR_COMMAND;
-      rc = HEXSTAT_SUCCESS;
-    }
-    else
-      rc = HEXSTAT_MAX_LUNS;      
-    if(!hex_is_bav()) { // we can send response
-      if(rc == HEXSTAT_SUCCESS) {
-        transmit_word(2); 
-        transmit_word(255);
-        transmit_byte(HEXSTAT_SUCCESS);    // status code
-        hex_finish();
-        return;
-      } else
-        hex_send_final_response( rc );
-    }
-    hex_finish();
-    debug_putc('E');
+    _cmd_lun = pab->lun;
+    hex_finish_open(BUFSIZE, rc);
     return;
   }
   //*******************************************************
-#endif
   // map attributes to FatFS file access mode
   switch (att & OPENMODE_MASK) {
     case OPENMODE_APPEND:  // append mode
@@ -1036,24 +1007,23 @@ static void hex_drv_close(pab_t *pab) {
   file_t* file = NULL;
   FRESULT res = FR_OK;
 
+  if (
+      pab->lun == _cmd_lun
 #ifdef USE_CMD_LUN
-  if (pab->lun == LUN_CMD) {
+      || pab->lun == LUN_CMD
+#endif
+     ) {
     // handle command channel read
     hex_close_cmd();
+    _cmd_lun = LUN_CMD;
     return;
   }
-#endif
 
   debug_puts_P("Close File\r\n");
 
   file = find_lun(pab->lun);
   if (file != NULL) {
-#ifndef USE_CMD_LUN
-    // Don't need to close the command channel.
-    if(!(file->attr & FILEATTR_CATALOG) && !(file->attr & FILEATTR_COMMAND)) {
-#else
     if(!(file->attr & FILEATTR_CATALOG)) {
-#endif
       res = f_close(&(file->fp));
     }
     free_lun(pab->lun);

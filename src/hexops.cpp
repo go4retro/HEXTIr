@@ -295,27 +295,16 @@ void hex_finish_open(uint16_t len, hexstatus_t rc) {
   return;
 }
 
-typedef enum _set_opt_t {
-  SET_OPT_NONE = 0,
-  SET_OPT_DEVICE,
-} set_opt_t;
-
-static const action_t opts[] MEM_CLASS = {
-                                {SET_OPT_DEVICE,"dev"},
-                                {SET_OPT_DEVICE,"device"},
-                                {SET_OPT_NONE,""}
-                               };
-
-
 typedef enum _execcmd_t {
   EXEC_CMD_NONE = 0,
-  EXEC_CMD_SET,
+  EXEC_CMD_DEV,
   EXEC_CMD_STORE
 } execcmd_t;
 
 static const action_t cmds[] MEM_CLASS = {
-                                        {EXEC_CMD_SET,"set"},
-                                        {EXEC_CMD_STORE,"save"},
+                                        {EXEC_CMD_DEV,"de"},
+                                        {EXEC_CMD_DEV,"dev"},
+                                        {EXEC_CMD_STORE,"st"},
                                         {EXEC_CMD_STORE,"store"},
                                         {EXEC_CMD_NONE,""}
                                        };
@@ -325,7 +314,6 @@ static const action_t cmds[] MEM_CLASS = {
 hexstatus_t hex_exec_cmd(char* buf, uint8_t len, uint8_t *dev) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   execcmd_t cmd;
-  set_opt_t opt;
   uint8_t i = 0;
   uint32_t value = 0;
 
@@ -342,10 +330,10 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len, uint8_t *dev) {
   case EXEC_CMD_STORE:
     ee_set_config();
     break;
-  case EXEC_CMD_SET:
-    opt = (set_opt_t)parse_equate(opts, &buf, &len);
-    switch(opt) {
-    case SET_OPT_DEVICE:
+  default:
+    cmd = (execcmd_t)parse_equate(cmds, &buf, &len);
+    switch(cmd) {
+    case EXEC_CMD_DEV:
       if(dev != NULL) {
         rc = HEXSTAT_DATA_ERR; // value too large or not a number
         if(!parse_number(&buf, &len, 3, &value)) {
@@ -369,13 +357,10 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len, uint8_t *dev) {
       }
       break;
     default:
-      // possible error
+      // error
+      rc = HEXSTAT_OPTION_ERR;
       break;
     }
-    break;
-  default:
-    // error
-    rc = HEXSTAT_OPTION_ERR;
     break;
   }
   return rc;
