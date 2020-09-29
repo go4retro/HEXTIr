@@ -41,8 +41,6 @@
 #include "timer.h"
 #include "uart.h"
 
-config_t *config;
-
 // Our registry of installed devices, built during initialization.
 registry_t  registry;
 
@@ -56,7 +54,7 @@ registry_t  registry;
 */
 static void hex_reset_bus(pab_t *pab) {
 
-  debug_puts_P("Reset Bus\n");
+  debug_puts_P("Reset Bus\r\n");
 
   // We ONLY do all devices if the command is directed to device 0.
   if ( pab->dev == 0 ) {
@@ -231,6 +229,8 @@ void setup(void) {
 
   sei();
 
+  ee_get_config();
+
   disk_init();
   hex_init();
   leds_init();
@@ -245,7 +245,6 @@ void setup(void) {
 #ifdef USE_CFG_DEVICE
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
 #endif
-  config = ee_get_config();
 
   wakeup_pin_init();
 }
@@ -275,7 +274,7 @@ int main(void) {
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-  debug_puts_P("\n" TOSTRING(CONFIG_HARDWARE_NAME) " Version: " VERSION);
+  debug_puts_P("\r\n" TOSTRING(CONFIG_HARDWARE_NAME) " Version: " VERSION);
   debug_putcrlf();
 
   while (TRUE) {

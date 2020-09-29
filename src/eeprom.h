@@ -26,6 +26,11 @@
 
 #ifndef EEPROM_H
 #define EEPROM_H
+#include "config.h"
+#include "clock.h"
+#include "serial.h"
+#include "printer.h"
+
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -36,14 +41,7 @@ extern "C"{
  * @checksum   : Checksum over the EEPROM contents
  * @structsize : size of the eeprom structure
  * @glob_flags : global flags
- * @drv_addr   : drive address
- * @drv_flags  : drive config flags
- * @prn_addr   : printer address
- * @prn_flags  : printer config flags
- * @ser_addr   : serial address
- * @ser_flags  : serial config flags
- * @rtc_addr   : RTC address
- * @rtc_flags  : RTC config flags
+ * @device structures
  *
  * This is the data structure for the contents of the EEPROM.
  *
@@ -51,30 +49,37 @@ extern "C"{
  * Only add fields at the end!
  */
 typedef struct config_s {
-  uint8_t  dummy;
-  uint8_t  checksum;
-  uint16_t structsize;
-  uint8_t  glob_flags;
-  uint8_t  drv_addr;
-  uint8_t  drv_flags;
-  uint8_t  prn_addr;
-  uint8_t  prn_flags;
-  uint8_t  ser_addr;
-  uint8_t  ser_flags;
-  uint8_t  rtc_addr;
-  uint8_t  rtc_flags;
+  uint8_t     valid;
+  uint8_t     checksum;
+  uint16_t    structsize;
+  uint8_t     glob_flags;
+// drive section
+  uint8_t     drv_dev;
+#ifdef INCLUDE_CLOCK
+  uint8_t     clk_dev;
+#endif
+#ifdef INCLUDE_SERIAL
+  uint8_t     ser_dev;
+  serialcfg_t ser;
+#endif
+#ifdef INCLUDE_PRINTER
+  uint8_t     prn_dev;
+  printcfg_t  prn;
+#endif
 } config_t;
 
+extern config_t _config;
 
 /* Set EEPROM address pointer to the dummy entry */
 static inline void eeprom_safety(void) {
   EEAR = 0;
 }
 
-config_t* ee_get_config(void);
+void ee_get_config(void);
 void ee_set_config(void);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 #endif
+

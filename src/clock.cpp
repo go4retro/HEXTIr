@@ -28,6 +28,7 @@
 #include "config.h"
 #include "configure.h"
 #include "debug.h"
+#include "eeprom.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "registry.h"
@@ -52,7 +53,7 @@ static void hex_rtc_open( pab_t *pab ) {
   uint8_t blen;
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P("Open RTC\n");
+  debug_puts_P("Open RTC\r\n");
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
@@ -82,7 +83,7 @@ static void hex_rtc_open( pab_t *pab ) {
     trim(&buf, &blen);
     // we should check att, as it should be WRITE or UPDATE
     if(blen)
-      rc = hex_exec_cmds(buf, blen);
+      rc = hex_exec_cmds(buf, blen, &(_config.clk_dev));
     hex_finish_open(BUFSIZE, rc);
     return;
   }
@@ -106,7 +107,7 @@ static void hex_rtc_open( pab_t *pab ) {
 static void hex_rtc_close(pab_t *pab __attribute__((unused))) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P("Close RTC\n");
+  debug_puts_P("Close RTC\r\n");
 
   if ( rtc_open ) {
     clock_reset();
@@ -125,7 +126,7 @@ static void hex_rtc_read(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
 
-  debug_puts_P("Read RTC\n");
+  debug_puts_P("Read RTC\r\n");
 
   if ( rtc_open & OPENMODE_READ )
   {
@@ -219,14 +220,14 @@ static void hex_rtc_write( pab_t *pab ) {
 #endif
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P("Write RTC\n");
+  debug_puts_P("Write RTC\r\n");
 
   len = pab->datalen;
 
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // handle command channel
-    hex_write_cmd(pab);
+    hex_write_cmd(pab, &(_config.clk_dev));
     return;
   }
 #endif
@@ -376,10 +377,20 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+static uint8_t is_cfg_valid(void) {
+  return (_config.valid && _config.clk_dev >= DEV_RTC_START && _config.clk_dev <= DEV_RTC_END);
+}
+
+
 void clock_register(void) {
 #ifdef NEW_REGISTER
+  uint8_t clk_dev = DEV_RTC_DEFAULT;
+
+  if(is_cfg_valid()) {
+    clk_dev = _config.clk_dev;
+  }
 #ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, ops);
+  cfg_register(DEV_RTC_START, clk_dev, DEV_RTC_END, ops);
 #else
   //cfg1_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
   cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, op_table, fn_table);

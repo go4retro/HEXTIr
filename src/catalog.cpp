@@ -245,7 +245,7 @@ void hex_read_catalog(file_t *file) {
   fno.lfn = lfn;
   #endif
 
-  debug_puts_P("Read PGM Catalog\n");
+  debug_puts_P("Read PGM Catalog\r\n");
   transmit_word(cat_file_length_pgm(file->dirnum));  // send full length of file
   cat_open_pgm(file->dirnum);
   uint16_t i = 1;
@@ -286,7 +286,7 @@ void hex_read_catalog_txt(file_t * file) {
   char attrib;
   uint32_t size;
 
-  debug_puts_P("Read TXT Catalog\n");
+  debug_puts_P("Read TXT Catalog\r\n");
   // the loop is to be able to skip files that shall not be listed in the catalog
   // else we only go through the loop once
   do {
@@ -337,7 +337,7 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
   uint16_t fsize = 0;
   BYTE res = FR_OK;
 
-  debug_puts_P("Open Catalog\n");
+  debug_puts_P("Open Catalog\r\n");
   if (!(att & OPENMODE_READ)) {
     // send back error on anything not OPENMODE_READ
     res =  FR_IS_READONLY;

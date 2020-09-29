@@ -18,10 +18,12 @@
     hexops.cpp: Foundational Hex Bus functions
 */
 
+#include "string.h"
 #include <avr/pgmspace.h>
 
 #include "config.h"
 #include "debug.h"
+#include "eeprom.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "timer.h"
@@ -214,7 +216,7 @@ uint8_t parse_cmd(const action_t list[], char **buf, uint8_t *blen) {
     //debug_puts(": ch = '");
     ch = mem_read_byte(list[j].text[i]);
     //debug_putc(ch);
-    //debug_puts("'\n");
+    //debug_puts("'\r\n");
     if(!ch && (i == *blen || (*buf)[i] == ' ')) { // end of command
       *buf = *buf + i;
       (*blen) -= i;
@@ -308,23 +310,26 @@ static const action_t opts[] MEM_CLASS = {
 typedef enum _execcmd_t {
   EXEC_CMD_NONE = 0,
   EXEC_CMD_SET,
+  EXEC_CMD_STORE
 } execcmd_t;
 
 static const action_t cmds[] MEM_CLASS = {
                                         {EXEC_CMD_SET,"set"},
+                                        {EXEC_CMD_STORE,"save"},
+                                        {EXEC_CMD_STORE,"store"},
                                         {EXEC_CMD_NONE,""}
                                        };
 
 
 // should be of the form "set <parm>=<value>"
-hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
+hexstatus_t hex_exec_cmd(char* buf, uint8_t len, uint8_t *dev) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   execcmd_t cmd;
   set_opt_t opt;
   uint8_t i = 0;
   uint32_t value = 0;
 
-  debug_puts_P("Exec General Command\n");
+  debug_puts_P("Exec General Command\r\n");
 
   cmd = (execcmd_t)parse_cmd(cmds, &buf, &len);
   // if a cmd, i will point to location after cmd
@@ -334,25 +339,33 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
     trim (&buf, &len);
   }
   switch (cmd) {
+  case EXEC_CMD_STORE:
+    ee_set_config();
+    break;
   case EXEC_CMD_SET:
     opt = (set_opt_t)parse_equate(opts, &buf, &len);
     switch(opt) {
     case SET_OPT_DEVICE:
-      rc = HEXSTAT_DATA_ERR; // value too large or not a number
-      if(!parse_number(&buf, &len, 3, &value)) {
-        if(value <= DEV_MAX) {
-          rc = HEXSTAT_DATA_INVALID; // no such device
-          for(i = 0; i < registry.num_devices; i++) {
-            if(
-                (registry.entry[i].dev_low <= (uint8_t)value)
-                && (registry.entry[i].dev_high >= (uint8_t)value)
-              ) {
-              registry.entry[i].dev_cur = (uint8_t)value;
-              rc = HEXSTAT_SUCCESS;
-              break;
+      if(dev != NULL) {
+        rc = HEXSTAT_DATA_ERR; // value too large or not a number
+        if(!parse_number(&buf, &len, 3, &value)) {
+          if(value <= DEV_MAX) {
+            rc = HEXSTAT_DATA_INVALID; // no such device
+            for(i = 0; i < registry.num_devices; i++) {
+              if(
+                  (registry.entry[i].dev_low <= (uint8_t)value)
+                  && (registry.entry[i].dev_high >= (uint8_t)value)
+                ) {
+                registry.entry[i].dev_cur = (uint8_t)value;
+                *dev = (uint8_t)value;
+                rc = HEXSTAT_SUCCESS;
+                break;
+              }
             }
           }
         }
+      } else {
+        rc = HEXSTAT_DATA_INVALID;
       }
       break;
     default:
@@ -368,7 +381,7 @@ hexstatus_t hex_exec_cmd(char* buf, uint8_t len) {
   return rc;
 }
 
-hexstatus_t hex_exec_cmds(char* buf, uint8_t len) {
+hexstatus_t hex_exec_cmds(char* buf, uint8_t len, uint8_t *dev) {
 char *buf2;
 uint8_t len2;
 hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -380,7 +393,7 @@ hexstatus_t rc2;
     buf = buf2;
     len = len2;
     split_cmd(&buf, &len, &buf2, &len2);
-    rc2 = hex_exec_cmd(buf, len);
+    rc2 = hex_exec_cmd(buf, len, dev);
     // pick the last error.
     rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
   } while(len2);
@@ -403,12 +416,12 @@ hexstatus_t hex_write_cmd_helper(uint16_t len) {
 }
 
 
-void hex_write_cmd(pab_t *pab) {
+void hex_write_cmd(pab_t *pab, uint8_t *dev) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t len;
   char *buf;
 
-  debug_puts_P("Handle Common Command\n");
+  debug_puts_P("Handle Common Command\r\n");
 
   len = pab->datalen;
   rc = hex_write_cmd_helper(len);
@@ -418,7 +431,7 @@ void hex_write_cmd(pab_t *pab) {
   buf = (char *)buffer;
   // trim whitespace
   trim(&buf, &len);
-  rc = hex_exec_cmds(buf, len);
+  rc = hex_exec_cmds(buf, len, dev);
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
   } else {

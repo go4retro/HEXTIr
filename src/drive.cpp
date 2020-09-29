@@ -21,7 +21,7 @@
 /*
  * Punch List
  *
- * TODO:  Add in support for Verofy Read/Write operation 0x0c
+ * TODO:  Add in support for Verify Read/Write operation 0x0c
  * TODO:  Read Catalog 0x0e
  * TODO:  Set Options 0x0f
  * TODO:  Protect/Unprotect File 0x11
@@ -36,6 +36,7 @@
 #include "configure.h"
 #include "debug.h"
 #include "diskio.h"
+#include "eeprom.h"
 #include "ff.h"
 #include "hexbus.h"
 #include "hexops.h"
@@ -164,7 +165,7 @@ static uint16_t next_value_size_internal(file_t* file) {
 
 /**
  * Get the size of the next record in DISPLAY format.
- * Search for the trailing LF (\n) and ignore a CR (\r) before the LF.
+ * Search for the trailing LF (\r\n) and ignore a CR (\r) before the LF.
  */
 static uint16_t next_value_size_display(file_t* file) {
   BYTE res;
@@ -270,7 +271,7 @@ static void hex_drv_verify(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t  first_buffer = 1;
 
-  debug_puts_P("Verify File\n");
+  debug_puts_P("Verify File\r\n");
 
   file = find_lun(pab->lun);
   len = pab->datalen;   // this is the size of the object to verify
@@ -361,7 +362,7 @@ static const action_t dcmds[14] MEM_CLASS = {
                                   {DISK_CMD_NONE,     ""}
                                 };
 
-static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len) {
+static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len, uint8_t *dev) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   diskcmd_t cmd;
   FRESULT res = FR_OK;
@@ -410,7 +411,7 @@ static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len) {
   case DISK_CMD_PWD:
     //populate error string with cwd.
   default:
-    rc = hex_exec_cmd(buf, len);
+    rc = hex_exec_cmd(buf, len, dev);
     break;
   }
   switch(res) {
@@ -425,13 +426,13 @@ static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len) {
 }
 
 
-static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len) {
+static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len, uint8_t *dev) {
   char * buf2;
   uint8_t len2;
   hexstatus_t rc = HEXSTAT_SUCCESS;
   hexstatus_t rc2;
 
-  debug_puts_P("Exec Drive Commands\n");
+  debug_puts_P("Exec Drive Commands\r\n");
 
   buf2 = buf;
   len2 = len;
@@ -439,7 +440,7 @@ static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len) {
     buf = buf2;
     len = len2;
     split_cmd(&buf, &len, &buf2, &len2);
-    rc2 = drv_exec_cmd(buf, len);
+    rc2 = drv_exec_cmd(buf, len, dev);
     // pick the last error.
     rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
   } while(len2);
@@ -448,7 +449,7 @@ static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len) {
 #endif
 
 
-static void drv_write_cmd(pab_t *pab) {
+static void drv_write_cmd(pab_t *pab, uint8_t *dev) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 #ifndef USE_CMD_LUN
   BYTE res = FR_OK;
@@ -461,14 +462,14 @@ static void drv_write_cmd(pab_t *pab) {
   uint8_t cmd;
 #endif
 
-  debug_puts_P("Exec Disk Command\n");
+  debug_puts_P("Exec Disk Command\r\n");
 
 #ifdef USE_CMD_LUN
   rc = hex_write_cmd_helper(pab->datalen);
   if(rc != HEXSTAT_SUCCESS) {
     return;
   }
-  rc = drv_exec_cmds((char *)buffer, pab->datalen);
+  rc = drv_exec_cmds((char *)buffer, pab->datalen, dev);
 #else
   len = pab->datalen;
   if (len < BUFSIZE){
@@ -589,13 +590,13 @@ static void hex_drv_write(pab_t *pab) {
   file_t* file = NULL;
   FRESULT res = FR_OK;
   
-  debug_puts_P("Write File\n");
+  debug_puts_P("Write File\r\n");
 
   len = pab->datalen;
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // handle command channel
-    drv_write_cmd(pab);
+    drv_write_cmd(pab, &(_config.drv_dev));
     return;
   }
 #endif
@@ -603,7 +604,7 @@ static void hex_drv_write(pab_t *pab) {
 #ifndef USE_CMD_LUN
   if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
     // handle command channel
-    drv_write_cmd(pab);
+    drv_write_cmd(pab, &(_config.drv_dev));
     return;
   }
 #endif
@@ -724,7 +725,7 @@ static void hex_drv_read(pab_t *pab) {
   }
 #endif
 
-  debug_puts_P("Read File\n");
+  debug_puts_P("Read File\r\n");
 
   file = find_lun(pab->lun);
 #ifndef USE_CMD_LUN
@@ -858,7 +859,7 @@ static void hex_drv_open(pab_t *pab) {
 
   drv_start();
 
-  debug_puts_P("Open File\n");
+  debug_puts_P("Open File\r\n");
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_FILE_NAME_INVALID, &len, &att);
@@ -889,7 +890,7 @@ static void hex_drv_open(pab_t *pab) {
     trim(&buf, &blen);
     // we should check att, as it should be WRITE or UPDATE
     if(blen)
-      rc = drv_exec_cmds(buf, blen);
+      rc = drv_exec_cmds(buf, blen, &(_config.drv_dev));
     hex_finish_open(BUFSIZE, rc);
     return;
   }
@@ -1043,7 +1044,7 @@ static void hex_drv_close(pab_t *pab) {
   }
 #endif
 
-  debug_puts_P("Close File\n");
+  debug_puts_P("Close File\r\n");
 
   file = find_lun(pab->lun);
   if (file != NULL) {
@@ -1079,7 +1080,7 @@ static void hex_drv_restore( pab_t *pab ) {
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   file_t*  file = NULL;
 
-  debug_puts_P("Drive Restore\n");
+  debug_puts_P("Drive Restore\r\n");
 
   drv_start();
 
@@ -1118,7 +1119,7 @@ static void hex_drv_delete(pab_t *pab) {
   uint8_t len;
   char *buf;
 
-  debug_puts_P("Delete File\n");
+  debug_puts_P("Delete File\r\n");
 
   drv_start();
 
@@ -1156,7 +1157,7 @@ static void hex_drv_status( pab_t *pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
-  debug_puts_P("Drive Status\n");
+  debug_puts_P("Drive Status\r\n");
   if ( pab->lun == 0 ) {
     st = open_files ? FILE_DEV_IS_OPEN : FILE_REQ_STATUS_NONE;
     st |= FILE_IO_MODE_READWRITE;  // if SD is write-protected, then FILE_IO_MODE_READONLY should be here.
@@ -1254,10 +1255,15 @@ static const uint8_t op_table[] PROGMEM = {
 
 void drv_register(void) {
 #ifdef NEW_REGISTER
+  uint8_t drv_dev = DEV_DRV_DEFAULT;
+
+  if(_config.valid) {
+    drv_dev = _config.drv_dev;
+  }
+  cfg_register(DEV_DRV_START, drv_dev, DEV_DRV_END, ops);
 #ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, ops);
 #else
-  cfg_register(DEV_DRV_START, DEV_DRV_DEFAULT, DEV_DRV_END, op_table, fn_table);
+  cfg_register(DEV_DRV_START, drv_dev, DEV_DRV_END, op_table, fn_table);
 #endif
   disk_init();
 #else
@@ -1281,7 +1287,7 @@ void drv_reset( void )
   file_t* file = NULL;
   uint8_t lun;
 
-  debug_puts_P("Reset\n");
+  debug_puts_P("Reset\r\n");
 
   drv_start();
 

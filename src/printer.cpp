@@ -25,6 +25,7 @@
 #include "config.h"
 #include "configure.h"
 #include "debug.h"
+#include "eeprom.h"
 #include "hexbus.h"
 #include "hexops.h"
 #include "registry.h"
@@ -43,7 +44,6 @@
 
 // Global defines
 static volatile uint8_t  prn_open = 0;
-static printcfg_t _defaultcfg;
 static printcfg_t _cfg;
 
 #ifdef USE_CMD_LUN
@@ -63,7 +63,7 @@ static const action_t cmds[] PROGMEM = {
                                         {PRN_CMD_NONE,      ""}
                                        };
 
-static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, printcfg_t *cfg) {
+static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, uint8_t *dev, printcfg_t *cfg) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   prncmd_t cmd;
 
@@ -121,13 +121,13 @@ static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, printcfg_t *cfg) 
     }
     break;
   default:
-    rc = hex_exec_cmd(buf, len);
+    rc = hex_exec_cmd(buf, len, dev);
   }
   return rc;
 }
 
 
-static inline hexstatus_t prn_exec_cmds(char* buf, uint8_t len, printcfg_t *cfg) {
+static inline hexstatus_t prn_exec_cmds(char* buf, uint8_t len, uint8_t *dev, printcfg_t *cfg) {
   char * buf2;
   uint8_t len2;
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -139,23 +139,23 @@ static inline hexstatus_t prn_exec_cmds(char* buf, uint8_t len, printcfg_t *cfg)
     buf = buf2;
     len = len2;
     split_cmd(&buf, &len, &buf2, &len2);
-    rc2 = prn_exec_cmd(buf, len, cfg);
+    rc2 = prn_exec_cmd(buf, len, dev, cfg);
     // pick the last error.
     rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
   } while(len2);
   return rc;
 }
 
-static inline void prn_write_cmd(pab_t *pab, printcfg_t *cfg) {
+static inline void prn_write_cmd(pab_t *pab, uint8_t *dev, printcfg_t *cfg) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P("Exec Printer Command\n");
+  debug_puts_P("Exec Printer Command\r\n");
 
   rc = hex_write_cmd_helper(pab->datalen);
   if(rc != HEXSTAT_SUCCESS) {
     return;
   }
-  rc = prn_exec_cmds((char *)buffer, pab->datalen, cfg);
+  rc = prn_exec_cmds((char *)buffer, pab->datalen, dev, cfg);
   if (!hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
   } else {
@@ -177,7 +177,7 @@ static void hex_prn_open(pab_t *pab) {
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   uint8_t  att = 0;
 
-  debug_puts_P("Open Printer\n");
+  debug_puts_P("Open Printer\r\n");
 
 #ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
@@ -206,7 +206,7 @@ static void hex_prn_open(pab_t *pab) {
   if(pab->lun == LUN_CMD) {
     // we should check att, as it should be WRITE or UPDATE
     if(blen)
-      rc = prn_exec_cmds(buf, blen, &_defaultcfg);
+      rc = prn_exec_cmds(buf, blen, &(_config.prn_dev), &(_config.prn));
     hex_finish_open(BUFSIZE, rc);
     return;
   }
@@ -220,10 +220,10 @@ static void hex_prn_open(pab_t *pab) {
     rc = HEXSTAT_ALREADY_OPEN;
   }
   if(rc == HEXSTAT_SUCCESS ) {
-    _cfg.line = _defaultcfg.line;
-    _cfg.spacing = _defaultcfg.spacing;
+    _cfg.line = _config.prn.line;
+    _cfg.spacing = _config.prn.spacing;
     if(blen)
-      rc = prn_exec_cmds(buf, blen, &_cfg);
+      rc = prn_exec_cmds(buf, blen, NULL, &_cfg);
     prn_open = 1;  // our printer is NOW officially open.
     len = len ? len : BUFSIZE;
   }
@@ -238,7 +238,7 @@ static void hex_prn_open(pab_t *pab) {
 static void hex_prn_close(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P("Close Printer\n");
+  debug_puts_P("Close Printer\r\n");
 
 #ifdef USE_CMD_LUN
   if (pab->lun == LUN_CMD) {
@@ -269,14 +269,14 @@ static void hex_prn_write(pab_t *pab) {
   uint8_t  written = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
 
-  debug_puts_P("Write Printer\n");
+  debug_puts_P("Write Printer\r\n");
 
   len = pab->datalen;
 
 #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // handle command channel
-    prn_write_cmd(pab, &_defaultcfg);
+    prn_write_cmd(pab, &(_config.prn_dev), &(_config.prn));
     return;
   }
 #endif
@@ -388,12 +388,22 @@ static const uint8_t op_table[] PROGMEM = {
 };
 #endif
 
+static uint8_t is_cfg_valid(void) {
+  return (_config.valid && _config.clk_dev >= DEV_PRN_START && _config.clk_dev <= DEV_PRN_END);
+}
+
+
 void prn_register(void) {
 #ifdef NEW_REGISTER
+  uint8_t prn_dev = DEV_PRN_DEFAULT;
+
+  if(is_cfg_valid()) {
+    prn_dev = _config.prn_dev;
+  }
 #ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, ops);
+  cfg_register(DEV_PRN_START, prn_dev, DEV_PRN_END, ops);
 #else
-  cfg_register(DEV_PRN_START, DEV_PRN_DEFAULT, DEV_PRN_END, op_table, fn_table);
+  cfg_register(DEV_PRN_START, prn_dev, DEV_PRN_END, op_table, fn_table);
 #endif
 #else
   uint8_t i = registry.num_devices;
@@ -418,7 +428,9 @@ void prn_init( void ) {
 #ifdef INIT_COMBO
   prn_register();
 #endif
-  _defaultcfg.line = TRUE;
-  _defaultcfg.spacing = 1;
+  if(!is_cfg_valid()) {
+    _config.prn.line = TRUE;
+    _config.prn.spacing = 1;
+  }
 }
 #endif
