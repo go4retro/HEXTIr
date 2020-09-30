@@ -128,6 +128,11 @@ static void hex_rtc_read(pab_t *pab) {
 
   debug_puts_P("Read RTC\r\n");
 
+  if(pab->lun == LUN_CMD) {
+    hex_read_status();
+    return;
+  }
+
   if ( rtc_open & OPENMODE_READ )
   {
     struct tm t;
