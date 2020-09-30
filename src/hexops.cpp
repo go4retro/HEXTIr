@@ -431,4 +431,22 @@ void hex_close_cmd(void) {
   } else
     hex_finish();
 }
+
+
+#define STRLEN(s) ( (sizeof(s)/sizeof(s[0])) - sizeof(s[0]))
+const char _version[] PROGMEM = "" VERSION " [" TOSTRING(CONFIG_HARDWARE_NAME) "]";
+
+void hex_read_status(void) {
+  hexstatus_t rc;
+  uint8_t i;
+
+  rc = (transmit_word( STRLEN(_version) ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+  for (i = 0; rc == HEXSTAT_SUCCESS && i < STRLEN(_version); i++) {
+    rc = (transmit_byte(pgm_read_byte(&_version[i])) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+  }
+  transmit_byte(rc);
+  hex_finish();
+}
 #endif
+
+

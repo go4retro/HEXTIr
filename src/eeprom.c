@@ -45,7 +45,6 @@ void ee_get_config(void) {
   /* done setting defaults */
 
   size = eeprom_read_word(&_eeconfig.structsize);
-  debug_puthex(size);
 
   /* Calculate checksum of EEPROM contents */
   checksum = 0;
@@ -82,7 +81,7 @@ void ee_set_config(void) {
   _config.structsize = sizeof(config_t);
   _config.checksum = checksum;
   eeprom_write_block(&_config, &_eeconfig, _config.structsize);
-  debug_trace(&_config,0,sizeof(config_t));
+  //debug_trace(&_config,0,sizeof(config_t));
 
   /* Prevent problems due to accidental writes */
   eeprom_safety();

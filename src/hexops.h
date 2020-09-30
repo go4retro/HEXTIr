@@ -88,6 +88,7 @@ void hex_finish_open(uint16_t len, hexstatus_t rc);
 void hex_write_cmd(pab_t *pab, uint8_t *dev);
 void hex_close_cmd(void);
 hexstatus_t hex_write_cmd_helper(uint16_t len);
+void hex_read_status(void);
 #endif
 #ifdef USE_OPEN_HELPER
 hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att);

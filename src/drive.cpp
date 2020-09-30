@@ -669,19 +669,6 @@ static void hex_drv_write(pab_t *pab) {
   }
 }
 
-static void hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
-  hexstatus_t rc;
-  // This really should always succeed
-  transmit_word(0);      // null file
-  rc = HEXSTAT_NOT_FOUND;
-  if ( !fs_initialized ) {
-    rc = HEXSTAT_DEVICE_ERR;
-  }
-  transmit_byte( rc ); // status byte transmit
-  hex_finish();
-}
-
-
 /*
    hex_drv_read() -
    read data from currently open file associated with the LUN
@@ -703,6 +690,7 @@ static void hex_drv_read_cmd(pab_t *pab __attribute__((unused))) {
     file length    
 */
 // TODO replace 255 above with 254 if we use LUN CMD
+
 static void hex_drv_read(pab_t *pab) {
   hexstatus_t rc;
   uint8_t i;
@@ -713,15 +701,12 @@ static void hex_drv_read(pab_t *pab) {
   FRESULT res = FR_OK;
   file_t* file;
 
-#ifdef USE_CMD_LUN
-  if (pab->lun == LUN_CMD) {
-    // handle command channel read
-    hex_drv_read_cmd(pab);
+  debug_puts_P("Read File\r\n");
+
+  if(pab->lun == LUN_CMD || pab->lun == _cmd_lun) {
+    hex_read_status();
     return;
   }
-#endif
-
-  debug_puts_P("Read File\r\n");
 
   file = find_lun(pab->lun);
 #ifndef USE_CMD_LUN
@@ -746,7 +731,7 @@ static void hex_drv_read(pab_t *pab) {
     f_lseek(&(file->fp), pab->buflen * pab->record);
   if (file != NULL) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 255) send data value by value
+    if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
       // amount of data for next value to be sent
       if (file->attr & FILEATTR_RELATIVE) 
         fsize = pab->buflen;

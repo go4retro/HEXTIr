@@ -259,6 +259,27 @@ static void hex_prn_close(pab_t *pab) {
 }
 
 
+static void hex_prn_read(pab_t *pab) {
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Read Printer Status\r\n");
+
+  if(pab->lun == LUN_CMD) {
+    hex_read_status();
+    return;
+  }
+
+  // normally you cannot get here, but just in case.
+  if ( !hex_is_bav() ) {
+    rc = (transmit_word( 0 ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+    if(rc == HEXSTAT_SUCCESS) {
+      hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
+    }
+  }
+  hex_finish();
+}
+
+
 /*
     hex_prn_write() -
     write data to serial port when printer is open.
@@ -367,6 +388,7 @@ static const cmd_op_t ops[] PROGMEM = {
                                         {HEXCMD_OPEN,            hex_prn_open},
                                         {HEXCMD_CLOSE,           hex_prn_close},
                                         {HEXCMD_WRITE,           hex_prn_write},
+                                        {HEXCMD_READ,            hex_prn_read},
                                         {HEXCMD_RESET_BUS,       hex_prn_reset},
                                         {HEXCMD_INVALID_MARKER,  NULL}
                                       };
@@ -375,6 +397,7 @@ static const cmd_proc fn_table[] PROGMEM = {
   hex_prn_open,
   hex_prn_close,
   hex_prn_write,
+  hex_prn_read,
   hex_prn_reset,
   NULL // end of table.
 };
@@ -383,6 +406,7 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_OPEN,
   HEXCMD_CLOSE,
   HEXCMD_WRITE,
+  HEXCMD_READ,
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };

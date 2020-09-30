@@ -445,6 +445,11 @@ static void hex_ser_read(pab_t *pab) {
 
   debug_puts_P("Read Serial\r\n");
 
+  if(pab->lun == LUN_CMD) {
+    hex_read_status();
+    return;
+  }
+
   if ( ser_open ) {
     // protect access via ser_open since serial_peripheral is not present
     // if ser_open = 0.
