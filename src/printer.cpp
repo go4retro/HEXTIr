@@ -128,10 +128,9 @@ static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, uint8_t *dev, pri
 
 
 static inline hexstatus_t prn_exec_cmds(char* buf, uint8_t len, uint8_t *dev, printcfg_t *cfg) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   char * buf2;
   uint8_t len2;
-  hexstatus_t rc = HEXSTAT_SUCCESS;
-  hexstatus_t rc2;
 
   buf2 = buf;
   len2 = len;
@@ -139,10 +138,8 @@ static inline hexstatus_t prn_exec_cmds(char* buf, uint8_t len, uint8_t *dev, pr
     buf = buf2;
     len = len2;
     split_cmd(&buf, &len, &buf2, &len2);
-    rc2 = prn_exec_cmd(buf, len, dev, cfg);
-    // pick the last error.
-    rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
-  } while(len2);
+    rc = prn_exec_cmd(buf, len, dev, cfg);
+  } while(rc == HEXSTAT_SUCCESS && len2);
   return rc;
 }
 
@@ -448,6 +445,7 @@ void prn_register(void) {
 void prn_init( void ) {
 
   prn_open = 0;
+  swuart_init();
   swuart_setrate(0, SB115200);
 #ifdef INIT_COMBO
   prn_register();

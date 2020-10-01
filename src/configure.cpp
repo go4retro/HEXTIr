@@ -556,11 +556,6 @@ void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const uint8_t op_table
 #endif
   uint8_t i;
 
-  debug_puts_P("Registering :");
-  debug_puthex(low);
-  debug_puthex(cur);
-  debug_puthex(high);
-  debug_putcrlf();
   for (i = 0; i < registry.num_devices; i++) {
     if(registry.entry[i].dev_low == low && registry.entry[i].dev_high == high)
       return; // don't re-register.

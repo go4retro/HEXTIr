@@ -15,7 +15,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    debug.c: simple abnstracted debug functionality, which can be piped to serial
+    debug.c: simple abstracted debug functionality, which can be piped to serial
              or other output mechanism
 
 */

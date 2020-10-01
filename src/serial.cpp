@@ -15,7 +15,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    serial.cpp: simple SoftwareSerial device functions.
+    serial.cpp: simple RS232 device functions.
 */
 
 #include <stdlib.h>
@@ -36,7 +36,7 @@
 #ifdef INCLUDE_SERIAL
 
 // Global defines
-volatile uint8_t  ser_open = 0;
+volatile uint8_t  ser_open = FALSE;
 static serialcfg_t _cfg;
 
 #ifdef USE_CMD_LUN
@@ -105,8 +105,9 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, uint8_t *dev, ser
     if(!parse_number(&buf, &len, 6, &value)) {
       cfg->bpsrate = value;
       // set bps rate
-    } else
+    } else {
       rc = HEXSTAT_DATA_ERR;
+    }
     break;
   case SER_CMD_LEN:
     if(!parse_number(&buf, &len, 1, &value)) {
@@ -127,8 +128,9 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, uint8_t *dev, ser
         rc = HEXSTAT_DATA_ERR;
         break;
       }
-    } else
+    } else {
       rc = HEXSTAT_DATA_ERR;
+    }
     break;
   case SER_CMD_PARITY:
     switch(lower(buf[0])) {
@@ -278,10 +280,9 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, uint8_t *dev, ser
 }
 
 static inline hexstatus_t ser_exec_cmds(char* buf, uint8_t len, uint8_t *dev, serialcfg_t *cfg) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   char * buf2;
   uint8_t len2;
-  hexstatus_t rc = HEXSTAT_SUCCESS;
-  hexstatus_t rc2;
 
   buf2 = buf;
   len2 = len;
@@ -289,10 +290,8 @@ static inline hexstatus_t ser_exec_cmds(char* buf, uint8_t len, uint8_t *dev, se
     buf = buf2;
     len = len2;
     split_cmd(&buf, &len, &buf2, &len2);
-    rc2 = ser_exec_cmd(buf, len, dev, cfg);
-    // pick the last error.
-    rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
-  } while(len2);
+    rc = ser_exec_cmd(buf, len, dev, cfg);
+  } while(rc == HEXSTAT_SUCCESS && len2);
   return rc;
 }
 
@@ -373,36 +372,33 @@ static void hex_ser_open(pab_t *pab) {
   }
 #endif
 
-  if ( !ser_open ) {
-    if ( att != 0 ) {
-      len = len ? len : BUFSIZE;
-      if ( att & OPENMODE_UPDATE ) {
-        ser_open = att; // 00 attribute = illegal.
+  // we used to quit if serial was open, but that's not a valid error from open.
+  if ( att != 0 ) {
+    len = len ? len : BUFSIZE;
+    if ( att & OPENMODE_UPDATE ) {
+      ser_open = att; // 00 attribute = illegal.
 #ifdef USE_CMD_LUN
-        _cfg.bpsrate = _config.ser.bpsrate;
-        _cfg.echo = _config.ser.echo;
-        _cfg.length = _config.ser.length;
-        _cfg.line = _config.ser.line;
-        _cfg.nulls = _config.ser.nulls;
-        _cfg.overrun = _config.ser.overrun;
-        _cfg.parchk = _config.ser.parchk;
-        _cfg.parity = _config.ser.parity;
-        _cfg.stopbits = _config.ser.stopbits;
-        _cfg.xfer = _config.ser.xfer;
-        if(blen)
-          rc = ser_exec_cmds(buf, blen, NULL, &_cfg);
-        uart_config(CALC_BPS(_cfg.bpsrate), _cfg.length, _cfg.parity, _cfg.stopbits);
+      _cfg.bpsrate = _config.ser.bpsrate;
+      _cfg.echo = _config.ser.echo;
+      _cfg.length = _config.ser.length;
+      _cfg.line = _config.ser.line;
+      _cfg.nulls = _config.ser.nulls;
+      _cfg.overrun = _config.ser.overrun;
+      _cfg.parchk = _config.ser.parchk;
+      _cfg.parity = _config.ser.parity;
+      _cfg.stopbits = _config.ser.stopbits;
+      _cfg.xfer = _config.ser.xfer;
+      if(blen)
+        rc = ser_exec_cmds(buf, blen, NULL, &_cfg);
+      uart_config(CALC_BPS(_cfg.bpsrate), _cfg.length, _cfg.parity, _cfg.stopbits);
 #else
-        uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
+      uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
 #endif
-      } else {
-        rc = HEXSTAT_APPEND_MODE_ERR;
-      }
     } else {
-      rc = HEXSTAT_ATTR_ERR;
+      rc = HEXSTAT_APPEND_MODE_ERR;
     }
   } else {
-    rc = HEXSTAT_ALREADY_OPEN;
+    rc = HEXSTAT_ATTR_ERR;
   }
 
   hex_finish_open(len, rc);
@@ -650,6 +646,7 @@ void ser_register(void) {
 
 
 void ser_init(void) {
+  uart_init();
   ser_open = FALSE;
 #ifdef INIT_COMBO
   ser_register();

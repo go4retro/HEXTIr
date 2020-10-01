@@ -231,7 +231,7 @@ static inline void pwr_irq_disable(void) {
 // This needs to be moved somewhere else...
 //--------------------------
 #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
-#define VERSION "0.9.2.0"
+#define VERSION "0.9.2.1"
 #define CONFIG_RTC_DSRTC
 //#define CONFIG_RTC_SOFTWARE
 #define CONFIG_SD_AUTO_RETRIES 10
@@ -482,6 +482,7 @@ static inline void leds_sleep(void) {
 
 #if defined INCLUDE_SERIAL || defined CONFIG_UART_DEBUG
 #  define UART0_ENABLE
+#  define DYNAMIC_UART
 #endif
 
 #if defined (INCLUDE_PARALLEL) || defined (CONFIG_UART_DEBUG_SW)

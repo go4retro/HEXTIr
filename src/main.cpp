@@ -222,10 +222,6 @@ static inline void reg_init(void) {
 void setup(void) {
   board_init();
   debug_init();
-#  if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
-  uart_init();
-  swuart_init();
-#  endif
 
   sei();
 

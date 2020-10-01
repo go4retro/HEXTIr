@@ -427,10 +427,9 @@ static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len, uint8_t *dev) {
 
 
 static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len, uint8_t *dev) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   char * buf2;
   uint8_t len2;
-  hexstatus_t rc = HEXSTAT_SUCCESS;
-  hexstatus_t rc2;
 
   debug_puts_P("Exec Drive Commands\r\n");
 
@@ -440,10 +439,8 @@ static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len, uint8_t *dev) {
     buf = buf2;
     len = len2;
     split_cmd(&buf, &len, &buf2, &len2);
-    rc2 = drv_exec_cmd(buf, len, dev);
-    // pick the last error.
-    rc = (rc2 != HEXSTAT_SUCCESS ? rc2 : rc);
-  } while(len2);
+    rc = drv_exec_cmd(buf, len, dev);
+  } while(rc == HEXSTAT_SUCCESS && len2);
   return rc;
 }
 #endif
