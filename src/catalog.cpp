@@ -110,11 +110,13 @@ void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char 
   char buf[width + 1];
   char* file_size = format_file_size(fsize, buf, width);
 
-  int len = strlen(file_size) + 1 + strlen(filename) + 1 + 1; // length of data transmitted
-  transmit_word(len);                         // length
+  int len = 1 + strlen(file_size) + 1 + 1 + strlen(filename) + 1 + 1; // length of data transmitted
+  transmit_word(len);  // length
+  transmit_byte('\"'); // because we have leading whitespaces
   for (i = 0; i < strlen(file_size)  ; i++) { // file size in kilo bytes, 4 byte
     transmit_byte(file_size[i]);              //
   }                                           //
+  transmit_byte('\"');
   transmit_byte(',');                         // "," separator, 1 byte
   for (i = 0; i < strlen(filename); i++) {    // file name , max. _MAX_LFN_LENGTH bytes
     transmit_byte(filename[i]);               //
