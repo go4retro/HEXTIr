@@ -23,72 +23,208 @@
 #include <util/delay.h>
 
 #include "config.h"
+#include "configure.h"
+#include "debug.h"
+#include "eeprom.h"
 #include "hexbus.h"
 #include "hexops.h"
+#include "registry.h"
+#include "swuart.h"
 #include "timer.h"
+#include "printer.h"
+
+/*
+ * Punch List
+ *
+ * TODO: Add Status command
+ *
+ */
 
 #ifdef INCLUDE_PRINTER
 
-//#ifdef ARDUINO
-//#include <Arduino.h>
-//#else
-#include "swuart.h"
-//#endif
-
-#include "printer.h"
-
-
-// Global references
-extern uint8_t buffer[BUFSIZE];
-
 // Global defines
-volatile uint8_t  prn_open = 0;
+static volatile uint8_t  prn_open = 0;
+static printcfg_t _cfg;
+
+#ifdef USE_CMD_LUN
+
+typedef enum _prncmd_t {
+                          PRN_CMD_NONE = 0,
+                          PRN_CMD_CRLF,
+                          PRN_CMD_SPACING,
+                          PRN_CMD_COMP
+} prncmd_t;
+
+static const action_t cmds[] PROGMEM = {
+                                        {PRN_CMD_CRLF,      "c"},   // ALC printer/plotter
+                                        {PRN_CMD_CRLF,      "r"},   // 80 column printer
+                                        {PRN_CMD_COMP,      "s"},   // alc printer/plotter
+                                        {PRN_CMD_SPACING,   "l"},   // 80 column printer
+                                        {PRN_CMD_NONE,      ""}
+                                       };
+
+static inline hexstatus_t prn_exec_cmd(char* buf, uint8_t len, uint8_t *dev, printcfg_t *cfg) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  prncmd_t cmd;
+
+  // path, trimmed whitespaces
+  trim(&buf, &len);
+
+  cmd = (prncmd_t) parse_equate(cmds, &buf, &len);
+  if(cmd != PRN_CMD_NONE) {
+    //skip spaces
+    trim (&buf, &len);
+  }
+  switch (cmd) {
+  case PRN_CMD_COMP:
+    switch(lower(buf[0])) {
+    case 'l':
+    case '1':
+      // compressed chars
+      break;
+    case 'n':
+    case '0':
+      // uncompressed chars
+      break;
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  case PRN_CMD_CRLF:
+    switch(lower(buf[0])) {
+    case 'n':
+      // don't send a CRLF
+      cfg->line = FALSE;
+      break;
+    case 'l':
+      cfg->line = TRUE;
+      // send a CRLF
+      break;
+    case PRN_CMD_SPACING:
+      switch(lower(buf[0])) {
+      case 's':
+        // single cr/lf
+        cfg->spacing = 1;
+        break;
+      case 'd':
+        // double cr/lf
+        cfg->spacing = 1;
+        break;
+      default:
+        // hanmdle 3+ lines per lf.
+        break;
+      }
+    default:
+      rc = HEXSTAT_DATA_ERR;
+      break;
+    }
+    break;
+  default:
+    rc = hex_exec_cmd(buf, len, dev);
+  }
+  return rc;
+}
+
+
+static inline hexstatus_t prn_exec_cmds(char* buf, uint8_t len, uint8_t *dev, printcfg_t *cfg) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  char * buf2;
+  uint8_t len2;
+
+  buf2 = buf;
+  len2 = len;
+  do {
+    buf = buf2;
+    len = len2;
+    split_cmd(&buf, &len, &buf2, &len2);
+    rc = prn_exec_cmd(buf, len, dev, cfg);
+  } while(rc == HEXSTAT_SUCCESS && len2);
+  return rc;
+}
+
+static inline void prn_write_cmd(pab_t *pab, uint8_t *dev, printcfg_t *cfg) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Exec Printer Command\r\n");
+
+  rc = hex_write_cmd_helper(pab->datalen);
+  if(rc != HEXSTAT_SUCCESS) {
+    return;
+  }
+  rc = prn_exec_cmds((char *)buffer, pab->datalen, dev, cfg);
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_final_response( rc );
+  } else {
+    hex_finish();
+  }
+}
+#endif
+
 
 
 /*
    hex_prn_open() -
    "opens" the Serial.object for use as a printer at device code 12 (default PC-324 printer).
 */
-static uint8_t hex_prn_open(pab_t pab) {
+static void hex_prn_open(pab_t *pab) {
   uint16_t len = 0;
-  uint8_t  rc = HEXSTAT_SUCCESS;
+  char *buf;
+  uint8_t blen;
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
   uint8_t  att = 0;
-  BYTE     res = HEXSTAT_SUCCESS;
 
-  len = 0;
-  memset( buffer, 0, BUFSIZE );
-  if ( hex_get_data( buffer, pab.datalen ) == HEXSTAT_SUCCESS ) {
+  debug_puts_P("Open Printer\r\n");
+
+#ifdef USE_OPEN_HELPER
+  rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
+  if(rc != HEXSTAT_SUCCESS)
+    return;
+#else
+  if(pab->datalen > BUFSIZE) {
+    hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
+    return;
+  }
+
+  if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];
+  } else {
+    hex_release_bus();
+    return;
   }
+#endif
+
+  blen = pab->datalen - 3;
+  buf = (char *)(buffer + 3);
+  trim(&buf, &blen);
+
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    // we should check att, as it should be WRITE or UPDATE
+    if(blen)
+      rc = prn_exec_cmds(buf, blen, &(_config.prn_dev), &(_config.prn));
+    hex_finish_open(BUFSIZE, rc);
+    return;
+  }
+#endif
+
   if ( !prn_open ) {
-    if ( (res == HEXSTAT_SUCCESS) && ( att != OPENMODE_WRITE ) ) {
+    if ( att != OPENMODE_WRITE ) {
       rc = HEXSTAT_OPTION_ERR;
-    }
-    if ( res != HEXSTAT_SUCCESS ) {
-      rc = res;
     }
   } else {
     rc = HEXSTAT_ALREADY_OPEN;
   }
-  if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXSTAT_SUCCESS )
-    {
-//#ifndef ARDUINO
-      swuart_setrate(0, SB115200);
-//#endif
-      prn_open = 1;  // our printer is NOW officially open.
-      len = len ? len : BUFSIZE;
-      hex_send_size_response( len );
-    }
-    else
-    {
-      hex_send_final_response( rc );
-    }
-    return HEXERR_SUCCESS;
+  if(rc == HEXSTAT_SUCCESS ) {
+    _cfg.line = _config.prn.line;
+    _cfg.spacing = _config.prn.spacing;
+    if(blen)
+      rc = prn_exec_cmds(buf, blen, NULL, &_cfg);
+    prn_open = 1;  // our printer is NOW officially open.
+    len = len ? len : BUFSIZE;
   }
-  hex_finish();
-  return HEXERR_BAV;
+  hex_finish_open(len, rc);
 }
 
 
@@ -96,8 +232,18 @@ static uint8_t hex_prn_open(pab_t pab) {
    hex_prn_close() -
    closes printer at device 12 for use from host.
 */
-static uint8_t hex_prn_close(__attribute__((unused)) pab_t pab) {
-  uint8_t rc = HEXSTAT_SUCCESS;
+static void hex_prn_close(pab_t *pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Close Printer\r\n");
+
+#ifdef USE_CMD_LUN
+  if (pab->lun == LUN_CMD) {
+    // handle command channel close
+    hex_close_cmd();
+    return;
+  }
+#endif
 
   if ( !prn_open ) {
     rc = HEXSTAT_NOT_OPEN;
@@ -107,7 +253,27 @@ static uint8_t hex_prn_close(__attribute__((unused)) pab_t pab) {
     // send 0000 response with appropriate status code.
     hex_send_final_response( rc );
   }
-  return HEXERR_SUCCESS;
+}
+
+
+static void hex_prn_read(pab_t *pab) {
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Read Printer Status\r\n");
+
+  if(pab->lun == LUN_CMD) {
+    hex_read_status();
+    return;
+  }
+
+  // normally you cannot get here, but just in case.
+  if ( !hex_is_bav() ) {
+    rc = (transmit_word( 0 ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+    if(rc == HEXSTAT_SUCCESS) {
+      hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
+    }
+  }
+  hex_finish();
 }
 
 
@@ -115,65 +281,73 @@ static uint8_t hex_prn_close(__attribute__((unused)) pab_t pab) {
     hex_prn_write() -
     write data to serial port when printer is open.
 */
-static uint8_t hex_prn_write(pab_t pab) {
+static void hex_prn_write(pab_t *pab) {
   uint16_t len;
   uint16_t i;
-  UINT     written = 0;
-  uint8_t  rc = HEXERR_SUCCESS;
+  uint8_t  written = 0;
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
 
-  len = pab.datalen;
+  debug_puts_P("Write Printer\r\n");
 
-  while ( len && rc == HEXERR_SUCCESS ) {
-    i = (len >= BUFSIZE ? BUFSIZE : len);
-    rc = hex_get_data(buffer, i);
-    /*
-        printer open? print a buffer of data.  We hold off
-        on continuation until we've actually got the data
-        flushed from the serial buffers before we continue.
-        Digital logic analyzer shows some "glitchy" behavior
-        on our HSK signal that may be due (somehow) to serial
-        port use.  Rather than take the chance, ensure that
-        serial data is flushed before proceeding to make sure
-        that HexBus operations are not compromised.
-    */
-    if ( rc == HEXSTAT_SUCCESS && prn_open ) {
-//#ifdef ARDUINO
-//      Serial.write(buffer, i);
-//      delayMicroseconds( i*72 );
-//      /* use 72 us per character sent delay.
-//         digital logic analyzer confirms that @ 115200 baud, the data is
-//         flushed over the wire BEFORE we continue HexBus operations.
-//      */
-//#else
-      for(uint8_t j = 0; j < i; j++) {
-        swuart_putc(0, buffer[j]);
+  len = pab->datalen;
+
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    // handle command channel
+    prn_write_cmd(pab, &(_config.prn_dev), &(_config.prn));
+    return;
+  }
+#endif
+
+  if(prn_open) {
+    while ( len && rc == HEXSTAT_SUCCESS ) {
+      i = (len >= BUFSIZE ? BUFSIZE : len);
+      rc = hex_get_data(buffer, i);
+      /*
+          printer open? print a buffer of data.  We hold off
+          on continuation until we've actually got the data
+          flushed from the serial buffers before we continue.
+          Digital logic analyzer shows some "glitchy" behavior
+          on our HSK signal that may be due (somehow) to serial
+          port use.  Rather than take the chance, ensure that
+          serial data is flushed before proceeding to make sure
+          that HexBus operations are not compromised.
+      */
+      if ( rc == HEXSTAT_SUCCESS && prn_open ) {
+  //#ifdef ARDUINO
+  //      Serial.write(buffer, i);
+  //      delayMicroseconds( i*72 );
+  //      /* use 72 us per character sent delay.
+  //         digital logic analyzer confirms that @ 115200 baud, the data is
+  //         flushed over the wire BEFORE we continue HexBus operations.
+  //      */
+  //#else
+        for(uint8_t j = 0; j < i; j++) {
+          swuart_putc(0, buffer[j]);
+        }
+        swuart_flush();
+  //#endif
+        written = 1; // indicate we actually wrote some data
       }
-      swuart_flush();
-//#endif
-      written = 1; // indicate we actually wrote some data
+      len -= i;
     }
-    len -= i;
+  } else {
+    rc = HEXSTAT_NOT_OPEN;
+  }
+
+  if ( len ) {
+    hex_eat_it( len, rc );
+    return;
   }
 
   /* if we've written data and our printer is open, finish the line out with
       a CR/LF.
   */
-  if ( written && prn_open ) {
-//#ifdef ARDUINO
-//    buffer[0] = 13;
-//    buffer[1] = 10;
-//    Serial.write(buffer, 2);
-//    delayMicroseconds(176);
-//#else
-    swuart_putcrlf(0);
+  if ( written && prn_open && _cfg.line) {
+    for(uint8_t n = 0; n < _cfg.spacing; n++) {
+      swuart_putcrlf();
+    }
     swuart_flush();
-//#endif
-  }
-  /*
-     if printer is NOT open, report such status back
-  */
-  if ( !prn_open ) {
-    rc = HEXSTAT_NOT_OPEN;   // if printer is NOT open, report such status
   }
 
   /*
@@ -184,11 +358,10 @@ static uint8_t hex_prn_write(pab_t pab) {
   } else {
     hex_finish();
   }
-  return HEXERR_SUCCESS;
 }
 
 
-static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
+static void hex_prn_reset( __attribute__((unused)) pab_t *pab) {
   
   prn_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -197,17 +370,31 @@ static uint8_t hex_prn_reset( __attribute__((unused)) pab_t pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXERR_SUCCESS;
 }
 
+
+void prn_reset( void ) {
+  prn_open = 0; // make sure our printer is closed.
+}
 
 /*
  * Command handling registry for device
  */
+#ifdef USE_NEW_OPTABLE
+static const cmd_op_t ops[] PROGMEM = {
+                                        {HEXCMD_OPEN,            hex_prn_open},
+                                        {HEXCMD_CLOSE,           hex_prn_close},
+                                        {HEXCMD_WRITE,           hex_prn_write},
+                                        {HEXCMD_READ,            hex_prn_read},
+                                        {HEXCMD_RESET_BUS,       hex_prn_reset},
+                                        {HEXCMD_INVALID_MARKER,  NULL}
+                                      };
+#else
 static const cmd_proc fn_table[] PROGMEM = {
   hex_prn_open,
   hex_prn_close,
   hex_prn_write,
+  hex_prn_read,
   hex_prn_reset,
   NULL // end of table.
 };
@@ -216,35 +403,56 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_OPEN,
   HEXCMD_CLOSE,
   HEXCMD_WRITE,
+  HEXCMD_READ,
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
+#endif
 
-
-void prn_register(registry_t *registry) {
-  uint8_t i = registry->num_devices;
-  
-  registry->num_devices++;
-  registry->entry[ i ].device_code_start = PRN_DEV;
-  registry->entry[ i ].device_code_end = PRN_DEV+9; // support 10 thru 19 as device codes.
-  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry->entry[ i ].command = (uint8_t *)&op_table;
-  return;
+static uint8_t is_cfg_valid(void) {
+  return (_config.valid && _config.clk_dev >= DEV_PRN_START && _config.clk_dev <= DEV_PRN_END);
 }
 
-void prn_reset( void ) {
-  prn_open = 0; // make sure our printer is closed.
-  return;
+
+void prn_register(void) {
+#ifdef NEW_REGISTER
+  uint8_t prn_dev = DEV_PRN_DEFAULT;
+
+  if(is_cfg_valid()) {
+    prn_dev = _config.prn_dev;
+  }
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_PRN_START, prn_dev, DEV_PRN_END, ops);
+#else
+  cfg_register(DEV_PRN_START, prn_dev, DEV_PRN_END, op_table, fn_table);
+#endif
+#else
+  uint8_t i = registry.num_devices;
+  
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_PRN_START;
+  registry.entry[ i ].dev_cur = DEV_PRN_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_PRN_END; // support 10 thru 19 as device codes.
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ i ].oplist = (cmd_op_t *)ops;
+#else
+  registry.entry[ i ].operation = (cmd_proc *)fn_table;
+  registry.entry[ i ].command = (uint8_t *)op_table;
+#endif
+#endif
 }
 
 void prn_init( void ) {
 
   prn_open = 0;
-//#ifndef ARDUINO
-  // TODO not sure where BPS rate is set on Arduino...
-//  swuart_setrate(0, SB9600);
-//#endif
-  return;
+  swuart_init();
+  swuart_setrate(0, SB115200);
+#ifdef INIT_COMBO
+  prn_register();
+#endif
+  if(!is_cfg_valid()) {
+    _config.prn.line = TRUE;
+    _config.prn.spacing = 1;
+  }
 }
-
 #endif

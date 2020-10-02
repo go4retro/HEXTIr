@@ -21,6 +21,27 @@
 #ifndef HEXOPS_H
 #define HEXOPS_H
 
+#define LUN_CMD       255
+#ifdef USE_CMD_LUN
+#define LUN_RAW       254
+#else
+#define LUN_RAW       255
+#endif
+
+// add 1 to buffer size to handle null termination if used as a string
+extern uint8_t buffer[BUFSIZE + 1];
+
+
+#define upper(x) ((x >= 'a') && (x <= 'z') ? x - ('a' - 'A') : x)
+#define lower(x) ((x >= 'A') && (x <= 'Z') ? x + ('a' - 'A') : x)
+
+typedef struct _action_t {
+  uint8_t action;
+  char text[8];
+} action_t;
+
+
+
 /*
     PAB (Peripheral Access Block) data structure
 */
@@ -40,15 +61,38 @@ typedef struct _pab_raw_t {
   };
 } pab_raw_t;
 
-#define FILEATTR_READ     1
-#define FILEATTR_WRITE    2
-#define FILEATTR_PROTECT  4
-#define FILEATTR_DISPLAY  8
+#define FILEATTR_READ      1
+#define FILEATTR_WRITE     2
+#define FILEATTR_PROTECT   4
+#define FILEATTR_DISPLAY   8
 #define FILEATTR_CATALOG  16
+#define FILEATTR_RELATIVE 32
+#ifndef USE_CMD_LUN
+#define FILEATTR_COMMAND  64
+#endif
 
-uint8_t hex_get_data(uint8_t buf[256], uint16_t len);
-void hex_eat_it(uint16_t length, uint8_t status );
-uint8_t hex_unsupported(pab_t pab);
-uint8_t hex_null( __attribute__((unused)) pab_t pab );
+hexstatus_t hex_get_data(uint8_t buf[256], uint16_t len);
+void hex_eat_it(uint16_t length, hexstatus_t rc);
+void hex_unsupported(pab_t *pab);
+void hex_null(pab_t *pab __attribute__((unused)));
+
+uint8_t parse_number(char** buf, uint8_t *len, uint8_t digits, uint32_t* value);
+#ifdef USE_CMD_LUN
+void trim(char **buf, uint8_t *blen);
+void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2);
+uint8_t parse_equate(const action_t list[], char **buf, uint8_t *len);
+uint8_t parse_cmd(const action_t actions[], char **buf, uint8_t *blen);
+hexstatus_t hex_exec_cmd(char* buf, uint8_t len, uint8_t *dev);
+hexstatus_t hex_exec_cmds(char* buf, uint8_t len, uint8_t *dev);
+void hex_finish_open(uint16_t len, hexstatus_t rc);
+void hex_write_cmd(pab_t *pab, uint8_t *dev);
+void hex_close_cmd(void);
+hexstatus_t hex_write_cmd_helper(uint16_t len);
+void hex_read_status(void);
+#endif
+#ifdef USE_OPEN_HELPER
+hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att);
+#endif
+
 
 #endif  // hexops_h

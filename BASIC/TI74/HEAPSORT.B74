@@ -1,0 +1,77 @@
+  100 ON BREAK ERROR:ON ERROR 110:GOTO 130
+  110 CLOSE #1:STOP
+  120 ! Demo for use of internal/relative files with TIIF/HEXTIr
+  130 IMAGE #### ###### ###.###### ###%
+  140 ! 20 values, a record contains 3 dates of maximum 9 Byte each
+  150 RANDOMIZE:N=20:BUF=3*9:A$="100.heapsort.int"
+  160 ! set the requiered attributes. The extension .int is added automatically
+  170 OPEN #1,A$,OUTPUT,INTERNAL,VARIABLE BUF,RELATIVE
+  180 ! save the number of datasets and recordsize in the file as the first record
+  190 PRINT #1,REC 0,BUF,N
+  200 FOR I=1 TO N
+  210 ! now generate the data-record ...
+  220 X=INT(RND*1000):Y=X^2:Z=SQR(X)
+  230 ! and write it to the file
+  240 PRINT #1,X,Y,Z
+  250 PRINT USING 130,X,Y,Z,INT(I/N*100)
+  260 NEXT
+  270 ! the file is created
+  280 CLOSE #1
+  290 ! setup new attributes in order to get the real used attributes
+  300 OPEN #1,A$,INPUT,INTERNAL,VARIABLE 2*9
+  310 ! Get the parameters!
+  320 INPUT #1,BUF,N
+  330 ! ... and close the file
+  340 CLOSE #1
+  350 ! and reopen it again with the new attributes
+  360 OPEN #1,A$,UPDATE,INTERNAL,VARIABLE BUF,RELATIVE
+  370 K=0:GOTO 560
+  380 ! Subroutine SiftDown. A SUB SiftDown would be possible too,
+  390 ! but is not necessary. Therefore a simple GOSUB will do the job.
+  400 I=L:J=2*I
+  410 INPUT #1,REC I,X,Y,Z
+  420 IF J>R THEN 530
+  430 INPUT #1,REC J,HX
+  440 IF J=R THEN 480
+  450 INPUT #1,KX
+  460 ! The increment of the record-pointer was done by the TI74 automatically
+  470 IF KX>HX THEN J=J+1:HX=KX
+  480 PRINT "*";:K=K+1:IF K=31 THEN K=0:PRINT
+  490 IF X>=HX THEN 530
+  500 INPUT #1,REC J,HX,HY,HZ
+  510 PRINT #1,REC I,HX,HY,HZ
+  520 I=J:J=2*I:GOTO 420
+  530 PRINT #1,REC I,X,Y,Z
+  540 RETURN! ends here
+  550 ! Do a Heapsort on the file in O(N*ld(N))-time...
+  560 PRINT "BuildHeap: ";
+  570 L=INT(N/2)+1:R=N
+  580 IF L=1 THEN 590 ELSE L=L-1:GOSUB 400:GOTO 580
+  590 PRINT:PRINT "Sorting: ";
+  600 IF R<=1 THEN 680
+  610 INPUT #1,REC L,X,Y,Z
+  620 INPUT #1,REC R,HX,HY,HZ
+  630 PRINT #1,REC R,X,Y,Z
+  640 PRINT #1,REC L,HX,HY,HZ
+  650 R=R-1
+  660 GOSUB 400!Call SiftDown
+  670 GOTO 600
+  680 PRINT
+  690 CLOSE #1
+  700 ! The file is sorted. OK to show the results...
+  710 ! setup new attributes in order to get the parameters
+  720 OPEN #1,A$,INPUT,INTERNAL
+  730 ! Get the parameter! We don't need N here, only the recordsize!
+  740 INPUT #1,BUF
+  750 CLOSE #1
+  760 ! Open the file with new attributes
+  770 OPEN #1,A$,INPUT,INTERNAL,VARIABLE BUF,RELATIVE
+  780 ! The first record (#0) contains the parameters, We are not interested in!
+  790 RESTORE #1,REC 1
+  800 ! Since we are reading sequential, we do need to know N and can use EOF
+  810 IF EOF(1) THEN 850! Replacement for WHILE NOT EOF...
+  820 INPUT #1,X,Y,Z
+  830 PRINT USING 130,X,Y,Z:PAUSE .5
+  840 GOTO 810
+  850 CLOSE #1
+  860 PAUSE 1:GOTO 170! repeat forever

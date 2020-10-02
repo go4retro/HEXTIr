@@ -40,8 +40,10 @@
 #include "debug.h"
 #include "i2c.h"
 #include "time.h"
-#include "pcf8583.h"
 #include "rtc.h"
+#include "pcf8583.h"
+
+#ifdef CONFIG_RTC_PCF8583   // hide file from Arduino if not enabled
 
 #if defined(I2C_EEPROM_ADDRESS) && I2C_EEPROM_ADDRESS == 0xa0
 #  define PCF8583_ADDR 0xa2
@@ -135,25 +137,26 @@ void pcf8583_init(void) {
 
   i2c_init();
   rtc_state = RTC_NOT_FOUND;
-  debug_puts_P(PSTR("PCF8583 "));
+  debug_puts_P("PCF8583 ");
   if (i2c_write_register(PCF8583_ADDR, REG_CONTROL, CTL_START_CLOCK) ||
       i2c_read_registers(PCF8583_ADDR, REG_YEAR1, 4, tmp)) {
-    debug_puts_P(PSTR("not found"));
+    debug_puts_P("not found");
   } else {
     if (tmp[0] == (tmp[2] ^ 0xff) &&
         tmp[1] == (tmp[3] ^ 0xff)) {
       rtc_state = RTC_OK;
-      debug_puts_P(PSTR("ok"));
+      debug_puts_P("ok");
 
       /* Dummy RTC read to update the year if required */
       struct tm time;
       rtc_get(&time);
     } else {
       rtc_state = RTC_INVALID;
-      debug_puts_P(PSTR("invalid"));
+      debug_puts_P("invalid");
     }
   }
 
   debug_putcrlf();
 }
 void rtc_init(void) __attribute__ ((weak, alias("pcf8583_init")));
+#endif

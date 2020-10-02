@@ -1,0 +1,89 @@
+  100 !=====================================================!
+  100 ! 8/32K RAM IMAGE TO PC TRANSFER PROGRAM (RWRAM)      !
+  100 ! AUTHOR:STEPHEN L REID                               !
+  100 ! COMPANY:TEXAS INSTRUMENTS                           !
+  100 ! DATE: 10 NOV 88                                     !
+  100 ! CHANGED BY: PETER ENGELS                            !
+  100 ! REASON: SAVE/LOAD/VERIFY TIIF & HEXTIr              !
+  100 ! DATE: 14 SEP 2020                                   !
+  100 !-----------------------------------------------------!
+  100 ! REQUIRES IOX SUBPROGRAM LOADED INTO TI-74 BEFORE    !
+  100 ! RUNNING THIS PROGRAM.                               !
+  100 ! SYNTAX FOR USE:                                     !
+  100 ! 1) TIIF SOFTWARE RUNNING ON PC                      !
+  100 ! 2) LOAD AND RUN THIS PROGRAM                        !
+  100 ! 3) SUPPLY PC FILENAME (SUGGEST A '.BIN' EXTENSION)  !
+  100 !-----------------------------------------------------!
+  100 ! THE UPLOADED 8/32K IMAGE WILL BE IN "BUILD" BINARY  !
+  100 ! FORMAT, AND CAN BE LOADED INTO A 8/32K RAM WITH THE !
+  100 ! WITH THE SAME PROGRAM, OR REVERSED AND CONVERTED    !
+  100 ! INTO INTEL HEX FORMAT FOR PROGRAMMING MORE          !
+  100 ! CARTRIDGES.                                         !
+  100 !=====================================================!
+  100 !GET FILENAME FOR PC FILE
+  110 PRINT "L)oad, S)ave, V)erify or Q)uit?"
+  120 B$=KEY$
+  130 IF ASC(B$)>96 THEN B$=CHR$(ASC(B$)-32)
+  131 IF B$="Q" THEN STOP
+  140 IF B$<>"L" AND B$<>"S" AND B$<>"V" THEN PRINT:GOTO 110
+  150 PRINT "8)kB or 3)2kb RAM-Size:"
+  160 C$=KEY$:IF C$<>"8" AND C$<>"3" THEN 160
+  170 SZ=VAL(C$)*4:IF SZ=12 THEN SZ=128
+  180 IF B$="L" THEN CMD=3 ELSE IF B$="S" THEN CMD=4 ELSE CMD=12
+  190 INPUT "PC Filename.bin:";PC$:IF PC$="" THEN 190
+  191 DC=100:LUN=254:IF POS(PC$,".",1)=0 THEN PC$=pc$&".bin"
+  192 DLL=0:IF CMD=3 THEN DLM=0 ELSE DLM=SZ
+  193 BAL=255:IF SZ=32 THEN BAM=111 ELSE BAM=207
+  100 !
+  100 !OPEN FILE ON PC
+  100 !LUN MUST BE 254!
+  100 !
+  200 Z$=CHR$(0):IF B$="L" or B$="V" THEN 202
+  201 OPEN #LUN,STR$(DC)&"."&PC$,OUTPUT, INTERNAL:GOTO 210
+  202 OPEN #LUN,STR$(DC)&"."&PC$,INPUT, INTERNAL
+  100 !
+  100 !SETUP PERIPHERAL ACCESS BLOCK FOR 8/32K DATA READ, WRITE, VERIFY
+  100 !PAB:     DEV            (DC)
+  100 !         COMMAND        (3=READ|4=WRITE|12=VERIFY)
+  100 !         LUNO           (LUN MUST BE 254)
+  100 !         REC# LSB       (0)
+  100 !         REC# MSB       (0)
+  100 !         BUFSIZ LSB     (0)
+  100 !         BUFSIZ MSB     (>80) (BUFSIZ = >8000 for 32k, >2000 for 8k)
+  100 !         DATLEN LSB     (0)
+  100 !         DATLEN MSB     (0)   (DATLEN = >0000 on read, BUFSIZE else)
+  100 !
+  210 P$=CHR$(DC)&CHR$(CMD)&CHR$(LUN)&Z$&Z$&Z$&CHR$(SZ)&CHR$(DLL)&CHR$(DLM)
+  100 !
+  100 !         STATUS         (0)   (RETURNED BY TIIF)
+  100 !         BUFADR LSB     (>FF)
+  100 !         BUFADR MSB     (>BF) (BUFADR = >BFFF (TI74) >CFFF (CC40))
+  100 !
+  220 P$=P$&Z$&CHR$(BAL)&CHR$(BAM)
+  100 !
+  100 !PERFORM IO OPERATION
+  100 !
+  230 CALL IO(P$,S)
+  100 !
+  100 ! CHECK RETURN STATUS FOR ERRORS, PRINT OK IF NONE
+  100 !
+  240 IF S<>0 THEN 270
+  241 IF S=0 AND B$<>"V" THEN PRINT STR$(SZ/4)&"K Image Transferred OK":GOTO 260
+  250 IF S=0 THEN PRINT STR$(SZ/4)&"K Image Verify OK"
+  260 PAUSE 3:CLOSE #LUN:GOTO 110
+  100 !
+  100 ! IF ERRORS, INFORM USER AND WAIT...
+  100 !
+  270 IF S<>0 THEN PRINT "*** I/O ERROR #";S;" OCCURRED":PAUSE
+  100 !
+  100 ! CLOSE OPEN FILE ON DISK
+  100 !
+  280 CLOSE #LUN
+  100 !
+  100 !TERMINATE PC-IF SOFTWARE OPERATION ON PC
+  100 !
+  290 !CALL IO(253,1,S)
+  100 !
+  100 ! STOP PROGRAM
+  100 !
+  300 STOP

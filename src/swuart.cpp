@@ -11,7 +11,10 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 
+#include "config.h"
 #include "swuart.h"
+
+#ifdef SWUART_ENABLE
 
 static volatile uint16_t tx_shift_reg[SWUART_PORTS];
 static volatile uint16_t count[SWUART_PORTS];
@@ -112,3 +115,4 @@ void swuart_init(void) {
   }
 #endif
 }
+#endif

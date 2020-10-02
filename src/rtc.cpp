@@ -36,8 +36,9 @@
 #include "pcf8583.h"
 #include "softrtc.h"
 #include "time.h"
-
 #include "rtc.h"
+
+#ifdef HAVE_RTC     // hide file from Arduino if not enabled
 
 rtcstate_t rtc_state;
 
@@ -82,28 +83,28 @@ typedef enum { RTC_NONE, RTC_SOFTWARE, RTC_PCF8583,
 static rtc_type_t current_rtc = RTC_NONE;
 
 void rtc_init(void) {
-#ifdef CONFIG_RTC_DSRTC
+  #ifdef CONFIG_RTC_DSRTC
   dsrtc_init();
   if (rtc_state != RTC_NOT_FOUND) {
     current_rtc = RTC_DSRTC;
     return;
   }
-#endif
+  #endif
 
-#ifdef CONFIG_RTC_PCF8583
+  #ifdef CONFIG_RTC_PCF8583
   pcf8583_init();
   if (rtc_state != RTC_NOT_FOUND) {
     current_rtc = RTC_PCF8583;
     return;
   }
-#endif
+  #endif
 
-#ifdef CONFIG_RTC_SOFTWARE
+  #ifdef CONFIG_RTC_SOFTWARE
   softrtc_init();
   current_rtc = RTC_SOFTWARE;
   /* This is the fallback RTC that will always work */
   return;
-#endif
+  #endif
 
   /* none of the enabled RTCs were found */
   rtc_state = RTC_NOT_FOUND;
@@ -112,23 +113,23 @@ void rtc_init(void) {
 void rtc_get(struct tm *time) {
   switch (current_rtc) {
 
-#ifdef CONFIG_RTC_DSRTC
+  #ifdef CONFIG_RTC_DSRTC
   case RTC_DSRTC:
     dsrtc_get(time);
     break;
-#endif
+  #endif
 
-#ifdef CONFIG_RTC_PCF8583
+  #ifdef CONFIG_RTC_PCF8583
   case RTC_PCF8583:
     pcf8583_get(time);
     break;
-#endif
+  #endif
 
-#ifdef CONFIG_RTC_SOFTWARE
+  #ifdef CONFIG_RTC_SOFTWARE
   case RTC_SOFTWARE:
     softrtc_get(time);
     break;
-#endif
+  #endif
 
   case RTC_NONE:
   default:
@@ -139,23 +140,23 @@ void rtc_get(struct tm *time) {
 void rtc_set(struct tm *time) {
   switch (current_rtc) {
 
-#ifdef CONFIG_RTC_DSRTC
+  #ifdef CONFIG_RTC_DSRTC
   case RTC_DSRTC:
     dsrtc_set(time);
     break;
-#endif
+  #endif
 
-#ifdef CONFIG_RTC_PCF8583
+  #ifdef CONFIG_RTC_PCF8583
   case RTC_PCF8583:
     pcf8583_set(time);
     break;
-#endif
+  #endif
 
-#ifdef CONFIG_RTC_SOFTWARE
+  #ifdef CONFIG_RTC_SOFTWARE
   case RTC_SOFTWARE:
     softrtc_set(time);
     break;
-#endif
+  #endif
 
   case RTC_NONE:
   default:
@@ -163,4 +164,5 @@ void rtc_set(struct tm *time) {
   }
 }
 
+  #endif
 #endif

@@ -34,12 +34,15 @@
 #include <stdint.h>
 #include <string.h>
 #include <avr/pgmspace.h>
+
 #include "config.h"
 #include "debug.h"
 #include "i2c.h"
 #include "time.h"
-#include "ds1307-3231.h"
 #include "rtc.h"
+#include "ds1307-3231.h"
+
+#ifdef CONFIG_RTC_DSRTC     // hide file from Arduino if not enabled
 
 #define RTC_ADDR 0xd0
 
@@ -131,10 +134,10 @@ void dsrtc_init(void) {
   i2c_init();
   rtc_state = RTC_NOT_FOUND;
 
-  debug_puts_P(PSTR("DSrtc "));
+  debug_puts_P("DSrtc ");
   tmp = i2c_read_register(RTC_ADDR, 0);
   if (tmp < 0) {
-    debug_puts_P(PSTR("not found"));
+    debug_puts_P("not found");
     goto fail;
   }
 
@@ -146,27 +149,28 @@ void dsrtc_init(void) {
   if (tmp == 0x55) {
     /* "register" is writeable (actually RAM), RTC is DS1307 */
     dsrtc_type = RTC_1307;
-    debug_puts_P(PSTR("1307 "));
+    debug_puts_P("1307 ");
 
     tmp = i2c_read_register(RTC_ADDR, REG_SECOND);
 
   } else {
     /* register is read-only, RTC is DS3231 */
     dsrtc_type = RTC_3231;
-    debug_puts_P(PSTR("3231 "));
+    debug_puts_P("3231 ");
 
     tmp = i2c_read_register(RTC_ADDR, REG_CTLSTATUS);
   }
 
   if (tmp & STATUS_OSF) {
     rtc_state = RTC_INVALID;
-    debug_puts_P(PSTR("invalid"));
+    debug_puts_P("invalid");
   } else {
     rtc_state = RTC_OK;
-    debug_puts_P(PSTR("ok"));
+    debug_puts_P("ok");
   }
 
 fail:
   debug_putcrlf();
 }
 void rtc_init(void) __attribute__ ((weak, alias("dsrtc_init")));
+#endif

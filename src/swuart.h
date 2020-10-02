@@ -10,6 +10,8 @@
 
 #include <avr/io.h>
 
+  #ifdef SWUART_ENABLE
+
 //TODO move these to config.h
 #define SWUART0_TX_OUT     PORTD
 #define SWUART0_TX_PIN     _BV(PIN5)
@@ -89,4 +91,13 @@ void swuart_setrate(uint8_t port, uint16_t bpsrate);
 void swuart_flush(void);
 void swuart_init(void);
 
+  #else
+#define swuart_putc(x, y)     do {} while(0)
+#define swuart_puts(x, y)     do {} while(0)
+#define swuart_puts_P(x, y)   do {} while(0)
+#define swuart_putcrlf(x)     do {} while(0)
+#define swuart_setrate(x, y)  do {} while(0)
+#define swuart_flush()        do {} while(0)
+#define swuart_init()         do {} while(0)
+  #endif
 #endif /* SRC_SWUART_H_ */

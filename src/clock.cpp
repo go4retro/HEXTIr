@@ -18,25 +18,26 @@
     rtc.cpp: Clock device functions.
 */
 
-// uncoming to use older RTC write functionality
+// uncomment to use older RTC write functionality
 //#define HEX_WRITE_OLD
 
 #include <string.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
+
 #include "config.h"
+#include "configure.h"
 #include "debug.h"
+#include "eeprom.h"
 #include "hexbus.h"
 #include "hexops.h"
+#include "registry.h"
 #include "rtc.h"
 #include "time.h"
-
 #include "clock.h"
 
 #ifdef INCLUDE_CLOCK
 
-// Global references
-extern uint8_t buffer[BUFSIZE];
 // Global defines
 volatile uint8_t  rtc_open = 0;
 
@@ -45,66 +46,92 @@ volatile uint8_t  rtc_open = 0;
    WORK IN MAJOR PROGRESS.
    These routines will currently flag an unused parameter 'pab' warning...
 */
-static uint8_t hex_rtc_open( pab_t pab ) {
+static void hex_rtc_open( pab_t *pab ) {
   uint16_t len;
   uint8_t  att;
+  char *buf;
+  uint8_t blen;
+  hexstatus_t rc = HEXSTAT_SUCCESS;
 
-  len = 0;
-  if ( hex_get_data(buffer, pab.datalen) == HEXSTAT_SUCCESS )
-  {
+  debug_puts_P("Open RTC\r\n");
+
+#ifdef USE_OPEN_HELPER
+  rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
+  if(rc != HEXSTAT_SUCCESS)
+    return;
+#else
+  if(pab->datalen > BUFSIZE) {
+    hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
+    return;
+  }
+
+  if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
     len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
     att = buffer[ 2 ];    // tells us open for read, write or both.
   } else {
     hex_release_bus();
-    return HEXERR_BAV; // BAV ERR.
+    return;
+  }
+#endif
+
+#ifdef USE_CMD_LUN
+  //*******************************************************
+  // special LUN = 255
+  if(pab->lun == LUN_CMD) {
+    blen = pab->datalen - 3;
+    buf = (char *)(buffer + 3);
+    trim(&buf, &blen);
+    // we should check att, as it should be WRITE or UPDATE
+    if(blen)
+      rc = hex_exec_cmds(buf, blen, &(_config.clk_dev));
+    hex_finish_open(BUFSIZE, rc);
+    return;
+  }
+#endif
+  if ( rtc_open ) {
+    rc = HEXSTAT_ALREADY_OPEN;
+  } else if(!(att & OPENMODE_MASK)) {
+    rc = HEXSTAT_ATTR_ERR; // append not allowed on RTC.  INPUT|OUTPUT|UPDATE is OK.
   }
 
-  if ( !hex_is_bav() ) {
-    if ( !rtc_open ) {
-      if ( att & OPENMODE_MASK ) {
-        len = len ? len : BUFSIZE;
-        rtc_open = att;
-        transmit_word( 4 );
-        transmit_word( len );
-        transmit_word( 0 );
-        transmit_byte( HEXSTAT_SUCCESS );
-        hex_finish();
-        return HEXERR_SUCCESS;
-      } else {
-        att = HEXSTAT_ATTR_ERR; // append not allowed on RTC.  INPUT|OUTPUT|UPDATE is OK.
-      }
-    } else {
-      att = HEXSTAT_ALREADY_OPEN;
-    }
-    hex_send_final_response( att );
-    return HEXERR_SUCCESS;
+  if ( rc == HEXSTAT_SUCCESS ) {
+    len = len ? len : BUFSIZE;
+    rtc_open = att;
   }
-  hex_finish();
-  return HEXERR_BAV;
+  hex_finish_open(len, rc);
 }
 
 /*
    Close access to RTC module. Shuts down Wire.
 */
-static uint8_t hex_rtc_close(pab_t pab) {
-  uint8_t rc = HEXSTAT_SUCCESS;
+static void hex_rtc_close(pab_t *pab __attribute__((unused))) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+
+  debug_puts_P("Close RTC\r\n");
+
   if ( rtc_open ) {
     clock_reset();
   } else {
     rc = HEXSTAT_NOT_OPEN;
   }
   hex_send_final_response(rc);
-  return HEXERR_SUCCESS;
 }
 
 /*
    Return time in format YYYY,MM,DD,HH,MM,SS in 24h form.
    When RTC opened in INPUT or UPDATE mode.
 */
-static uint8_t hex_rtc_read(pab_t pab) {
+static void hex_rtc_read(pab_t *pab) {
   uint16_t len = 0;
-  uint8_t rc = HEXSTAT_SUCCESS;
+  hexstatus_t rc = HEXSTAT_SUCCESS;
   uint8_t i;
+
+  debug_puts_P("Read RTC\r\n");
+
+  if(pab->lun == LUN_CMD) {
+    hex_read_status();
+    return;
+  }
 
   if ( rtc_open & OPENMODE_READ )
   {
@@ -133,7 +160,6 @@ static uint8_t hex_rtc_read(pab_t pab) {
     buffer[18] = '0' + t.tm_sec % 10;
     buffer[19] = 0;
     len = 19;
-    debug_putcrlf();
     debug_trace(buffer, 0, len);
   } else if ( rtc_open ) { // not open for INPUT?
     rc = HEXSTAT_ATTR_ERR;
@@ -142,7 +168,7 @@ static uint8_t hex_rtc_read(pab_t pab) {
   }
   if ( !hex_is_bav() ) {
     if ( rc == HEXSTAT_SUCCESS ) {
-      len = (len > pab.buflen) ? pab.buflen : len;
+      len = (len > pab->buflen) ? pab->buflen : len;
       transmit_word( len );
       for ( i = 0; i < len; i++ ) {
         transmit_byte( buffer[ i ] );
@@ -152,10 +178,8 @@ static uint8_t hex_rtc_read(pab_t pab) {
     } else {
       hex_send_final_response( rc );
     }
-    return HEXSTAT_SUCCESS;
-  }
-  hex_finish();
-  return HEXERR_SUCCESS;
+  } else
+    hex_finish();
 }
 
 
@@ -176,33 +200,6 @@ static char *skip_blanks( char *inbuf ) {
   *ebuf = 0;
   return inbuf;
 }
-#else
-uint8_t parse_num(uint16_t* value, uint8_t digits, uint8_t *cur, uint8_t len) {
-  uint8_t digits_found = 0;
-  uint8_t err = 0;
-
-  while(!err && *cur < len) {
-    if(buffer[*cur] == ' ') {
-      (*cur)++;
-      if(digits_found) {
-        break;
-      }
-    } else if(buffer[*cur] >= '0' && buffer[*cur] <= '9') {
-      if(digits_found < digits) {
-        *value = *value  * 10 + (buffer[(*cur)++] - '0');
-        digits_found++;
-      } else // too many digits
-        err = 1;
-    } else if(buffer[*cur] == ',') {
-      (*cur)++;
-      break;
-    }
-    else {
-      err = 1;
-    }
-  }
-  return (!digits_found || err);
-}
 #endif
 
 
@@ -210,24 +207,37 @@ uint8_t parse_num(uint16_t* value, uint8_t digits, uint8_t *cur, uint8_t len) {
    Set time when we receive time in format YY,MM,DD,HH,MM,SS
    When RTC opened in OUTPUT or UPDATE mode.
 */
-static uint8_t hex_rtc_write( pab_t pab ) {
+static void hex_rtc_write( pab_t *pab ) {
 #ifdef HEX_WRITE_OLD
   uint16_t len;
   char     *token;
   int16_t   t_array[6];
-#else
-  uint8_t len;
-  uint16_t yr = 0;
-  uint16_t mon = 0;
-  uint16_t day = 0;
-  uint16_t hour = 0;
-  uint16_t min = 0;
-  uint16_t sec = 0;
-#endif
   uint8_t  i = 0;
-  uint8_t  rc = HEXSTAT_SUCCESS;
+#else
+  char* buf;
+  uint8_t len;
+  uint32_t yr = 0;
+  uint32_t mon = 0;
+  uint32_t day = 0;
+  uint32_t hour = 0;
+  uint32_t min = 0;
+  uint32_t sec = 0;
+#endif
+  hexstatus_t  rc = HEXSTAT_SUCCESS;
 
-  len = pab.datalen;
+  debug_puts_P("Write RTC\r\n");
+
+  len = pab->datalen;
+
+#ifdef USE_CMD_LUN
+  if(pab->lun == LUN_CMD) {
+    // handle command channel
+    hex_write_cmd(pab, &(_config.clk_dev));
+    return;
+  }
+#endif
+
+  buf = (char *)buffer;
   if ( rtc_open & OPENMODE_WRITE ) {
     rc = (len < BUFSIZE ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR );
     if ( rc == HEXSTAT_SUCCESS ) {
@@ -283,12 +293,12 @@ static uint8_t hex_rtc_write( pab_t pab ) {
         // process data in buffer and set clock.
         // incoming data should be formatted as YYYY,MM,DD,hh,mm,ss
         rc = HEXSTAT_DATA_INVALID; // assume data is bad.
-        if(!parse_num(&yr, 4, &i, len) && (yr < 100 || yr > 1999))  // year between 00 and 255 or 1900+
-          if(!parse_num(&mon, 2, &i, len) && mon > 0 && mon < 13)   // month between 01 and 12
-            if(!parse_num(&day, 2, &i, len) && day > 0 && day < 32) // day between 1 and 31 (I know, some months are less; room for improvement here.)
-              if(!parse_num(&hour, 2, &i, len) && hour < 24)        // hour between 0 and 23
-                if(!parse_num(&min, 2, &i, len) && min < 60)        // minutes between 00 and 59
-                  if(!parse_num(&sec, 2, &i, len) && sec < 60) {    // seconds between 00 and 59
+        if(!parse_number(&buf, &len, 4, &yr) && (yr < 100 || yr > 1999))  // year between 00 and 255 or 1900+
+          if(!parse_number(&buf, &len, 2, &mon) && mon > 0 && mon < 13)   // month between 01 and 12
+            if(!parse_number(&buf, &len, 2, &day) && day > 0 && day < 32) // day between 1 and 31 (I know, some months are less; room for improvement here.)
+              if(!parse_number(&buf, &len, 2, &hour) && hour < 24)        // hour between 0 and 23
+                if(!parse_number(&buf, &len, 2, &min) && min < 60)        // minutes between 00 and 59
+                  if(!parse_number(&buf, &len, 2, &sec) && sec < 60) {    // seconds between 00 and 59
                     rc = HEXSTAT_SUCCESS;
                     struct tm t;
                     if(yr < 100)
@@ -312,18 +322,16 @@ static uint8_t hex_rtc_write( pab_t pab ) {
   }
   if ( rc == HEXSTAT_DATA_ERR ) {
     hex_eat_it( len, rc );
-    return HEXERR_BAV;
+    return;
   }
   if ( !hex_is_bav() ) { // we can send response
     hex_send_final_response( rc );
-    return HEXERR_SUCCESS;
-  }
-  hex_finish();
-  return HEXERR_BAV;
+  } else
+    hex_finish();
 }
 
 
-static uint8_t hex_rtc_reset( pab_t pab ) {
+static void hex_rtc_reset( pab_t *pab __attribute__((unused))) {
   clock_reset();
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
@@ -331,7 +339,13 @@ static uint8_t hex_rtc_reset( pab_t pab ) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXERR_SUCCESS;
+}
+
+
+void clock_reset() {
+  if ( rtc_open ) {
+    rtc_open = 0;
+  }
 }
 
 
@@ -339,6 +353,16 @@ static uint8_t hex_rtc_reset( pab_t pab ) {
    Command handling registry for device
 */
 
+#ifdef USE_NEW_OPTABLE
+static const cmd_op_t ops[] PROGMEM = {
+                                        {HEXCMD_OPEN,            hex_rtc_open},
+                                        {HEXCMD_CLOSE,           hex_rtc_close},
+                                        {HEXCMD_READ,            hex_rtc_read},
+                                        {HEXCMD_WRITE,           hex_rtc_write},
+                                        {HEXCMD_RESET_BUS,       hex_rtc_reset},
+                                        {(hexcmdtype_t)HEXCMD_INVALID_MARKER,  NULL}
+                                      };
+#else
 static const cmd_proc fn_table[] PROGMEM = {
   hex_rtc_open,
   hex_rtc_close,
@@ -356,23 +380,40 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_RESET_BUS,
   HEXCMD_INVALID_MARKER
 };
+#endif
 
-void clock_reset() {
-  if ( rtc_open ) {
-    rtc_open = 0;
-  }
-  return;
+static uint8_t is_cfg_valid(void) {
+  return (_config.valid && _config.clk_dev >= DEV_RTC_START && _config.clk_dev <= DEV_RTC_END);
 }
 
-void clock_register(registry_t *registry) {
-  uint8_t i = registry->num_devices;
 
-  registry->num_devices++;
-  registry->entry[ i ].device_code_start = RTC_DEV;
-  registry->entry[ i ].device_code_end = MAX_RTC; // support 230-239 as device codes
-  registry->entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry->entry[ i ].command = (uint8_t *)&op_table;
-  return;
+void clock_register(void) {
+#ifdef NEW_REGISTER
+  uint8_t clk_dev = DEV_RTC_DEFAULT;
+
+  if(is_cfg_valid()) {
+    clk_dev = _config.clk_dev;
+  }
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_RTC_START, clk_dev, DEV_RTC_END, ops);
+#else
+  //cfg1_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, (const uint8_t**)&op_table, (const cmd_proc **)&fn_table);
+  cfg_register(DEV_RTC_START, DEV_RTC_DEFAULT, DEV_RTC_END, op_table, fn_table);
+#endif
+#else
+  uint8_t i = registry.num_devices;
+
+  registry.num_devices++;
+  registry.entry[ i ].dev_low = DEV_RTC_START;
+  registry.entry[ i ].dev_cur = DEV_RTC_DEFAULT;
+  registry.entry[ i ].dev_high = DEV_RTC_END; // support 230-239 as device codes
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ i ].oplist = (cmd_op_t *)ops;
+#else
+  registry.entry[ i ].operation = (cmd_proc *)fn_table;
+  registry.entry[ i ].command = (uint8_t *)op_table;
+#endif
+#endif
 }
 
 
@@ -381,6 +422,9 @@ void clock_init() {
 
   rtc_init();
 
+#ifdef INIT_COMBO
+  clock_register();
+#endif
   // if RTC has been stopped, store default date in it.
   if(rtc_get_state() == RTC_INVALID) {
     t.tm_year = __YEAR__ - 1900;
@@ -391,6 +435,5 @@ void clock_init() {
     t.tm_sec = __SEC__;
     rtc_set(&t);
   }
-  return;
 }
 #endif

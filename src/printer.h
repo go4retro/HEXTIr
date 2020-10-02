@@ -25,13 +25,24 @@
 #include "hexops.h"
 #include "registry.h"
 
+#define DEV_PRN_START   10            // Device code to support a printer on HW serial (rx/tx) @115200,N,8,1
+#define DEV_PRN_DEFAULT 12
+#define DEV_PRN_END     19            // Printers are allowed from 10-19 for device codes.
+
 #ifdef INCLUDE_PRINTER
+
+typedef struct _printcfg_t {
+  uint8_t line;
+  uint8_t spacing;
+  //uint8_t comp;
+} printcfg_t;
+
 void prn_reset(void);
-void prn_register(registry_t *registry);
+void prn_register(void);
 void prn_init(void);
 #else
 #define prn_reset()     do {} while(0)
-#define prn_register(x) do {} while(0)
+#define prn_register()	do {} while(0)
 #define prn_init()      do {} while(0)
 #endif
 #endif /* PRINTER_H */

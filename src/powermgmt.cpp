@@ -21,13 +21,9 @@
 #include <avr/interrupt.h>
 #include <avr/power.h>
 #include <avr/sleep.h>
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
 
 #include "config.h"
 #include "hexbus.h"
-
 #include "powermgmt.h"
 
 #ifdef INCLUDE_POWERMGMT

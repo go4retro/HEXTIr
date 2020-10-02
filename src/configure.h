@@ -23,12 +23,20 @@
 #define CONFIGURE_H_
 
 #include "config.h"
+#include "hexbus.h"
 #include "hexops.h"
 #include "ff.h"
 #include "registry.h"
 
+#ifndef NEW_DEV_CHK
 extern uint8_t device_address[MAX_REGISTRY];
+#endif
 
+#define DEV_CFG_START   222
+#define DEV_CFG_DEFAULT DEV_CFG_START
+#define DEV_CFG_END     DEV_CFG_START
+
+#ifdef USE_CFG_DEVICE
 /* ----- Common definitions  ------ */
 // BASE Device Numbers for peripheral groups (this is the low-end address for a particular group).
 // TODO these 5 should move to a standard hexdev.h or something, since they are defaults, and they should be the same for all
@@ -89,9 +97,14 @@ extern uint8_t device_address[MAX_REGISTRY];
  #define SUPPORT_SER       0
 #endif
 
-void cfg_start(void);
 void cfg_reset(void);
-void cfg_register(registry_t *registry);
+void cfg_register1(void);
 void cfg_init(void);
 
+#endif
+#ifdef USE_NEW_OPTABLE
+void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const cmd_op_t ops[]);
+#else
+void cfg_register(uint8_t low, uint8_t cur, uint8_t high, const uint8_t op_table[], const cmd_proc fn_table[]);
+#endif
 #endif /* CONFIGURE_H_ */

@@ -15,7 +15,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    debug.c: simple abnstracted debug functionality, which can be piped to serial
+    debug.c: simple abstracted debug functionality, which can be piped to serial
              or other output mechanism
 
 */
@@ -68,8 +68,7 @@ void debug_puts(const char *text) {
   }
 }
 
-
-void debug_puts_P(const char *text) {
+void _debug_puts_P(const char *text) {
   uint8_t ch;
 
   while ((ch = pgm_read_byte(text++))) {
@@ -82,7 +81,7 @@ void debug_trace(void *ptr, uint16_t start, uint16_t len) {
   uint16_t i;
   uint8_t j;
   uint8_t ch;
-  uint8_t *data = ptr;
+  uint8_t *data = (uint8_t*)ptr;
 
   data+=start;
   for(i=0;i<len;i+=16) {

@@ -26,6 +26,10 @@ extern "C"{
 
 #include "integer.h"
 
+#define DEV_NONE      0
+#define DEV_ALL       DEV_NONE  // Device Code 0 addresses all devices
+#define DEV_MAX       255       // our highest device code
+
 typedef enum _hexcmdtype_t {
                HEXCMD_OPEN = 0,
                HEXCMD_CLOSE,
@@ -136,15 +140,14 @@ typedef enum _openmode_t {
 
 
 uint8_t hex_is_bav(void);
-//void hex_release_data( void );
 void hex_release_bus(void);
-uint8_t hex_capture_hsk( void );
-uint8_t receive_byte( uint8_t *inout);
-uint8_t transmit_byte( uint8_t xmit );
-uint8_t transmit_word( uint16_t value );
+hexerror_t hex_capture_hsk( void );
+hexerror_t receive_byte( uint8_t *inout);
+hexerror_t transmit_byte( uint8_t xmit );
+hexerror_t transmit_word( uint16_t value );
 void hex_finish( void );
-void hex_send_size_response( uint16_t len );
-void hex_send_final_response( uint8_t rc );
+void hex_send_size_response( uint16_t len , uint16_t record);
+void hex_send_final_response( hexstatus_t rc );
 void hex_init(void);
 
 #ifdef __cplusplus
