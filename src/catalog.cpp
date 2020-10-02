@@ -14,6 +14,7 @@
 
 #include "catalog.h"
 
+#ifdef INCLUDE_DRIVE
 // Global references
 extern FATFS fs;
 
@@ -406,3 +407,4 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
   hex_finish();
   debug_putc('E');
 }
+#endif

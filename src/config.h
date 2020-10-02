@@ -61,6 +61,7 @@
 #if CONFIG_HARDWARE_VARIANT == 1
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
 
+#define INCLUDE_DRIVE
 //#define INCLUDE_CLOCK
 //#define INCLUDE_SERIAL
 //#define INCLUDE_PRINTER
@@ -144,6 +145,7 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 2
 /* ---------- Hardware configuration: HEXTIr Arduino ---------- */
 
+#define INCLUDE_DRIVE
 #define INCLUDE_CLOCK
 #define INCLUDE_SERIAL
 #define INCLUDE_PRINTER
@@ -224,6 +226,7 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 3
 /* ---------- Hardware configuration: Arduino with low power sleep---------- */
 
+#define INCLUDE_DRIVE
 #define INCLUDE_CLOCK
 #define INCLUDE_SERIAL
 #define INCLUDE_PRINTER
@@ -322,6 +325,7 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 4
 /* ---------- Hardware configuration: Old HEXTIr Arduino ---------- */
 
+#define INCLUDE_DRIVE
 //#define INCLUDE_CLOCK
 //#define INCLUDE_SERIAL
 //#define INCLUDE_PRINTER

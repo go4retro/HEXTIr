@@ -45,6 +45,8 @@
 #include "timer.h"
 #include "drive.h"
 
+#ifdef INCLUDE_DRIVE
+
 FATFS fs;
 uint8_t _cmd_lun = LUN_CMD;
 
@@ -1274,3 +1276,4 @@ void drv_init(void) {
 
 
 }
+#endif

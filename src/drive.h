@@ -48,8 +48,14 @@ typedef struct _luntbl_t {
 } luntbl_t;
 
 
+#ifdef INCLUDE_DRIVE
 void drv_reset(void);
 void drv_register(void);
 void drv_init(void);
+#else
+#define drv_reset()     do {} while(0)
+#define drv_register()  do {} while(0)
+#define drv_init()      do {} while(0)
+#endif
 
 #endif /* DRIVE_H */
