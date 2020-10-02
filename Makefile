@@ -3,12 +3,12 @@
 # Define version number
 MAJOR = 0
 MINOR = 9
-PATCHLEVEL = 2
+PATCHLEVEL = 3
 FIX = 
 
 # Forces bootloader version to 0, comment out or leave empty for release
 #PRERELEASE = atentdead0
-PRERELEASE = .1
+PRERELEASE = .0
 
 #----------------------------------------------------------------------------
 # WinAVR Makefile Template written by Eric B. Weddington, Joerg Wunsch, et al.
