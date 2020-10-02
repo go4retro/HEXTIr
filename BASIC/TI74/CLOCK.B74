@@ -6,7 +6,7 @@
   150 INPUT #1,Y$,MO$,D$,H$,M$,S$
   160 CALL DOW(VAL(D$),VAL(MO$),VAL(Y$),WD)
   170 PRINT A$(WD)&". "&D$&"."&MO$&"."&Y$&"  "&H$&":"&M$&":"&S$
-  180 PAUSE .3
+  180 PAUSE .5
   190 GOTO 150
   200 CLOSE #1:END
   210 SUB DOW(D,M,Y,WD)

@@ -22,6 +22,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define USE_NEW_OPTABLE 1
+#define NEW_REGISTER    1
+#define INIT_COMBO      1
+#define NEW_DEV_CHK     1
+#define NEW_REG_CNT     1
+#define USE_OPEN_HELPER 1
+#define USE_CMD_LUN     1
+//#ifdef USE_CFG_DEVICE 1
+#define FLASH_MEM_DATA  1
+
 #include <avr/io.h>
 
 #if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
@@ -51,8 +61,9 @@
 #if CONFIG_HARDWARE_VARIANT == 1
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
 
-//#define INCLUDE_PRINTER
+//#define INCLUDE_CLOCK
 //#define INCLUDE_SERIAL
+//#define INCLUDE_PRINTER
 
 #  define HEX_HSK_DDR         DDRC
 #  define HEX_HSK_OUT         PORTC
@@ -133,8 +144,9 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 2
 /* ---------- Hardware configuration: HEXTIr Arduino ---------- */
 
-#define INCLUDE_PRINTER
+#define INCLUDE_CLOCK
 #define INCLUDE_SERIAL
+#define INCLUDE_PRINTER
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -165,24 +177,24 @@ static inline void pwr_irq_disable(void) {
 
 
 static inline void sdcard_interface_init(void) {
-  DDRB  &= ~_BV(PB0);  // wp
+  DDRB  &= ~_BV(PB0);  // detect
   PORTB |=  _BV(PB0);
-  DDRB  &= ~_BV(PB1);  // detect
+  DDRB  &= ~_BV(PB1);  // wp
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
-  PCMSK0 |= _BV(PCINT1);
+  PCMSK0 |= _BV(PCINT0);
   //EIMSK |=  _BV(INT6);
 }
 
 
 static inline uint8_t sdcard_detect(void) {
-  return !(PINB & _BV(PIN1));
+  return !(PINB & _BV(PIN0));
 }
 
 
 static inline uint8_t sdcard_wp(void) {
-  return PINB & _BV(PIN0);
+  return PINB & _BV(PIN1);
 }
 
 
@@ -212,15 +224,18 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 3
 /* ---------- Hardware configuration: Arduino with low power sleep---------- */
 
-#define INCLUDE_PRINTER
+#define INCLUDE_CLOCK
 #define INCLUDE_SERIAL
+#define INCLUDE_PRINTER
 
 // This needs to be moved somewhere else...
+//--------------------------
 #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
-#define VERSION "0.9.1.3"
+#define VERSION "0.9.2.1"
 #define CONFIG_RTC_DSRTC
 //#define CONFIG_RTC_SOFTWARE
 #define CONFIG_SD_AUTO_RETRIES 10
+//--------------------------
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -241,6 +256,10 @@ static inline void pwr_irq_disable(void) {
 #  define LED_BUSY_OUT        PORTD
 #  define LED_BUSY_PIN        _BV(PIN7)
 
+#  define HAVE_SD
+#  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
+#  define SD_SUPPLY_VOLTAGE     (1L<<21)
+
 /* 250kHz slow, 2MHz fast */
 #  define SPI_DIVISOR_SLOW 64
 #  define SPI_DIVISOR_FAST 8
@@ -251,9 +270,9 @@ static inline void pwr_irq_disable(void) {
 
 static inline void sdcard_interface_init(void) {
 #ifdef ARDUINO_AVR_UNO
-  DDRB  &= ~_BV(PB0);  // wp
+  DDRB  &= ~_BV(PB0);  // detect
   PORTB |=  _BV(PB0);
-  DDRB  &= ~_BV(PB1);  // detect
+  DDRB  &= ~_BV(PB1);  // wp
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
@@ -264,7 +283,7 @@ static inline void sdcard_interface_init(void) {
 
 static inline uint8_t sdcard_detect(void) {
 #ifdef ARDUINO_AVR_UNO
-  return !(PINB & _BV(PIN1));
+  return !(PINB & _BV(PIN0));
 #else
   return 1;
 #endif
@@ -272,7 +291,7 @@ static inline uint8_t sdcard_detect(void) {
 
 static inline uint8_t sdcard_wp(void) {
 #ifdef ARDUINO_AVR_UNO
-  return PINB & _BV(PIN0);
+  return PINB & _BV(PIN1);
 #else
   return 0;
 #endif
@@ -303,8 +322,9 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 4
 /* ---------- Hardware configuration: Old HEXTIr Arduino ---------- */
 
-//#define INCLUDE_PRINTER
+//#define INCLUDE_CLOCK
 //#define INCLUDE_SERIAL
+//#define INCLUDE_PRINTER
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -335,9 +355,9 @@ static inline void pwr_irq_disable(void) {
 #  define SPI_DIVISOR_FAST 8
 
 static inline void sdcard_interface_init(void) {
-  DDRB  &= ~_BV(PB0);  // wp
+  DDRB  &= ~_BV(PB0);  // detect
   PORTB |=  _BV(PB0);
-  DDRB  &= ~_BV(PB1);  // detect
+  DDRB  &= ~_BV(PB1);  // wp
   PORTB |=  _BV(PB1);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
@@ -346,11 +366,11 @@ static inline void sdcard_interface_init(void) {
 }
 
 static inline uint8_t sdcard_detect(void) {
-  return !(PINB & _BV(PIN1));
+  return !(PINB & _BV(PIN0));
 }
 
 static inline uint8_t sdcard_wp(void) {
-  return PINB & _BV(PIN0);
+  return PINB & _BV(PIN1);
 }
 
 
@@ -436,26 +456,37 @@ static inline void leds_sleep(void) {
 #define TOSTRING(x) STRINGIFY(x)
 
 /* ----- Translate CONFIG_RTC_* symbols to HAVE_RTC symbol ----- */
-#if defined(CONFIG_RTC_SOFTWARE) || \
-    defined(CONFIG_RTC_PCF8583)  || \
-    defined(CONFIG_RTC_DSRTC)
-#  define HAVE_RTC
-#  define HAVE_I2C
+#if defined(INCLUDE_CLOCK)
+  #if defined(CONFIG_RTC_DSRTC) || \
+      defined(CONFIG_RTC_PCF8583)
+    #define HAVE_I2C
+  #endif
+
+  #if defined(CONFIG_RTC_SOFTWARE) || \
+      defined(CONFIG_RTC_PCF8583)  || \
+      defined(CONFIG_RTC_DSRTC)
+    #define HAVE_RTC
 
 /* calculate the number of enabled RTCs */
-#  if defined(CONFIG_RTC_SOFTWARE) + \
-      defined(CONFIG_RTC_PCF8583)  + \
-      defined(CONFIG_RTC_DSRTC)  > 1
-#    define NEED_RTCMUX
-#  endif
-#endif
-
-#if defined HAVE_RTC || CONFIG_HARDWARE_VARIANT == 3
-#  define INCLUDE_CLOCK
+    #if defined(CONFIG_RTC_SOFTWARE) + \
+        defined(CONFIG_RTC_PCF8583)  + \
+        defined(CONFIG_RTC_DSRTC)  > 1
+      #define NEED_RTCMUX
+    #endif
+  #endif
+#else
+  #undef CONFIG_RTC_SOFTWARE
+  #undef CONFIG_RTC_PCF8583
+  #undef CONFIG_RTC_DSRTC
 #endif
 
 #if defined INCLUDE_SERIAL || defined CONFIG_UART_DEBUG
 #  define UART0_ENABLE
+#  define DYNAMIC_UART
+#endif
+
+#if defined (INCLUDE_PARALLEL) || defined (CONFIG_UART_DEBUG_SW)
+  #define SWUART_ENABLE
 #endif
 
 #ifdef CONFIG_UART_DEBUG
@@ -474,6 +505,16 @@ static inline void leds_sleep(void) {
 
 #ifdef CONFIG_UART_BUF_SHIFT
  #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
+#endif
+
+#ifdef FLASH_MEM_DATA
+#define MEM_CLASS PROGMEM
+#define mem_read_byte(x) pgm_read_byte(&(x))
+#define mem_read_word(x) pgm_read_word(&(x))
+#else
+#define MEM_CLASS
+#define mem_read_byte(x) (x)
+#define mem_read_word(x) (x)
 #endif
 
 #include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?

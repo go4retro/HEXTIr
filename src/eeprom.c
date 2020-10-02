@@ -22,10 +22,12 @@
 #include <string.h>
 #include <avr/eeprom.h>
 #include "config.h"
-
+#include "debug.h"
 #include "eeprom.h"
 
-static EEMEM config_t eeconfig;
+static EEMEM config_t _eeconfig;
+
+config_t _config;
 
 /**
  * ee_get_config - reads configuration from EEPROM
@@ -34,7 +36,7 @@ static EEMEM config_t eeconfig;
  * If the stored checksum doesn't match the calculated one defaults
  * will be returned
  */
-config_t* ee_get_config(void) {
+void ee_get_config(void) {
   uint_fast16_t i, size;
   uint8_t checksum;
 
@@ -42,28 +44,24 @@ config_t* ee_get_config(void) {
 
   /* done setting defaults */
 
-  size = eeprom_read_word((void *)offsetof(config_t, structsize));
+  size = eeprom_read_word(&_eeconfig.structsize);
 
   /* Calculate checksum of EEPROM contents */
   checksum = 0;
-  for (i=2; i < eeconfig.structsize; i++)
-    checksum += eeprom_read_byte((uint8_t *)i);
+  for (i = 2; i < size; i++)
+    checksum += eeprom_read_byte((uint8_t *)(&_eeconfig) + i);
 
   /* Abort if the checksum doesn't match */
-  if (checksum != eeprom_read_byte((void *)offsetof(config_t, checksum))) {
+  if (checksum != eeprom_read_byte(&_eeconfig.checksum)) {
     eeprom_safety();
-    return &eeconfig;
+    _config.valid = FALSE;
+  } else {
+    /* Read data from EEPROM */
+    eeprom_read_block(&_config, &_eeconfig, size);
+    _config.valid = TRUE;
   }
-
-  /* Read data from EEPROM */
-  eeconfig.glob_flags = eeprom_read_byte((void *)offsetof(config_t, glob_flags));
-  eeprom_read_block(&eeconfig, (void *)0, size);
-
-
   /* Prevent problems due to accidental writes */
   eeprom_safety();
-
-  return &eeconfig;
 }
 
 /**
@@ -78,12 +76,12 @@ void ee_set_config(void) {
   /* Calculate checksum over EEPROM contents */
   checksum = 0;
   for (i = 2; i < sizeof(config_t); i++)
-    checksum += *((uint8_t *) &eeconfig + i);
-
+    checksum += *((uint8_t *) &_config + i);
   /* Write configuration to EEPROM */
-  eeconfig.structsize = sizeof(config_t);
-  eeconfig.checksum = checksum;
-  eeprom_write_block(&eeconfig, (void *)0, eeconfig.structsize);
+  _config.structsize = sizeof(config_t);
+  _config.checksum = checksum;
+  eeprom_write_block(&_config, &_eeconfig, _config.structsize);
+  //debug_trace(&_config,0,sizeof(config_t));
 
   /* Prevent problems due to accidental writes */
   eeprom_safety();

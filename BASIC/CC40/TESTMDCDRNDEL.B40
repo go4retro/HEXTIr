@@ -1,0 +1,19 @@
+  100 D=1
+  101 ! for TIIF2 use a volume like j:/ instead of a simple /
+  110 OPEN #D,"100"
+  120 PRINT #D,"mkdir /test,cd /test,md test1, rn test1=test2"
+  130 PRINT #D,"CHDIR test2"
+  140 ! because of the redirection-system of TIIF2 you must use an
+  150 ! extension which is not part of the redirection file. Otherwise
+  160 ! the redirection-system will redirect the file to a path
+  170 ! defined there for this extension. We use .xyz
+  180 OPEN #2,"100.test.xyz",OUTPUT
+  190 PRINT #2,"Test"
+  200 CLOSE #2
+  210 PRINT #D,"del test.xyz"
+  220 OPEN #2,"100.test.xyz",OUTPUT
+  230 PRINT #2,"Test"
+  240 CLOSE #2
+  250 DELETE "100.test.xyz"
+  260 PRINT #D,"cd ../,del test2,chdir /,del test"
+  270 CLOSE #D

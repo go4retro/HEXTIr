@@ -85,7 +85,7 @@ DRESULT disk_getinfo(BYTE drv, BYTE page, void *buffer);
 void disk_init(void);
 
 /* Will be set to DISK_ERROR if any access on the card fails */
-enum diskstates { DISK_CHANGED = 0, DISK_REMOVED, DISK_OK, DISK_ERROR };
+enum diskstates { DISK_OK = 0, DISK_CHANGED, DISK_REMOVED, DISK_ERROR };
 
 extern volatile enum diskstates disk_state;
 

@@ -22,14 +22,15 @@
 #define DRIVE_H
 
 #include "config.h"
+#include "diskio.h"
 #include "hexops.h"
 #include "ff.h"
 #include "registry.h"
 
-
-#define F_ISDIRECTORY        1
-
-#include "diskio.h"
+#define DEV_DRV_START   100           // Base disk device code we support
+#define DEV_DRV_DEFAULT DEV_DRV_START
+#define DEV_DRV_END     117           // Device codes 100-109 were originally for hexbus 5.25" disk drives.
+                                      // Device codes 110-117 were later allocated for hexbu 3.5" disk drives.
 
 typedef struct _file_t {
   FIL fp;
@@ -47,9 +48,8 @@ typedef struct _luntbl_t {
 } luntbl_t;
 
 
-void drv_start(void);
 void drv_reset(void);
-void drv_register(registry_t *registry);
+void drv_register(void);
 void drv_init(void);
 
 #endif /* DRIVE_H */

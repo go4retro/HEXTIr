@@ -41,8 +41,6 @@
 #include "timer.h"
 #include "uart.h"
 
-config_t *config;
-
 // Our registry of installed devices, built during initialization.
 registry_t  registry;
 
@@ -54,18 +52,19 @@ registry_t  registry;
    open, and ensure our file lun tables are reset.
    There is NO response to this command.
 */
-static uint8_t hex_reset_bus(pab_t pab) {
+static void hex_reset_bus(pab_t *pab) {
 
-  debug_puts_P(PSTR("Reset Bus"));
-  debug_putcrlf();
+  debug_puts_P("Reset Bus\r\n");
 
   // We ONLY do all devices if the command is directed to device 0.
-  if ( pab.dev == 0 ) {
+  if ( pab->dev == 0 ) {
     drv_reset();
     prn_reset();
     ser_reset();
     clock_reset();
+#ifdef USE_CFG_DEVICE
     cfg_reset();
+#endif
   }
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
@@ -73,18 +72,21 @@ static uint8_t hex_reset_bus(pab_t pab) {
   while ( !hex_is_bav() ) {
     ;
   }
-  return HEXERR_SUCCESS;
 }
 
 
-static void execute_command(pab_t pab)
-{
+static void execute_command(pab_t *pab) {
   cmd_proc  handler;
+#ifdef USE_NEW_OPTABLE
+  cmd_op_t  *op;
+#else
   uint8_t   *op;
+#endif
   uint8_t   i = 0;
   uint8_t   j;
   uint8_t   cmd;
 
+#ifndef NEW_REGISTER
   // Parse the registry.  If incoming PAB has device code 0, start
   // at index 0 in the registry as those are the handlers for that
   // device code.
@@ -95,32 +97,48 @@ static void execute_command(pab_t pab)
   // device code within the PAB IS found to be in our registry.
   // If it is found, then we'll use the "unsupported" command
   // default handler.
-  if ( pab.dev != 0 ) {
+  if ( pab->dev != 0 ) {
     i++;
   }
+#endif
 
   while ( i < registry.num_devices ) {
     // does the incoming PAB have a device in this group in the registry?
-    if ( ( registry.entry[ i ].device_code_start <= pab.dev ) &&
-         ( registry.entry[ i ].device_code_end >= pab.dev ) )
+#ifdef USE_NEW_OPTABLE
+    if ( registry.entry[ i ].dev_cur == pab->dev ) {
+#else
+    if ( ( registry.entry[ i ].dev_low <= pab->dev ) &&
+         ( registry.entry[ i ].dev_high >= pab->dev ) )
     {
+#endif
       // If so...
       // this entry will handle our device code.
       // Search for a matching command index now.
+#ifdef USE_NEW_OPTABLE
+      op = registry.entry[ i ].oplist;
+#else
       op = registry.entry[ i ].command;
+#endif
       j = 0;
       // Find a matching command code in this device's table, if present
-      do
-      {
+      do {
+#ifdef USE_NEW_OPTABLE
+        cmd = pgm_read_byte( &op[j].command );
+#else
         cmd = pgm_read_byte( &op[j] );
+#endif
         j++;
-      } while ( ( cmd != HEXCMD_INVALID_MARKER ) && cmd != pab.cmd );
+      } while ( ( cmd != HEXCMD_INVALID_MARKER ) && cmd != pab->cmd );
       // If we found the command, we have the index to the operations routine
-      if ( cmd == pab.cmd ) {
+      if ( cmd == pab->cmd ) {
         // found it!
         j--;  // here's the cmd index
         // fetch the handler for this command for this device group.
+#ifdef USE_NEW_OPTABLE
+        handler = (cmd_proc)pgm_read_word( &op[j].operation );
+#else
         handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );
+#endif
         (handler)( pab );
         // and exit the command processor
         return;
@@ -137,13 +155,19 @@ static void execute_command(pab_t pab)
   // Release the HSK line and simply wait for BAV to go high indicating end of message.
   // This is the best we can do, as someone else may be acting on this message.
   hex_null(pab);
-  return;
 }
 
 
 //
 // Default registry for global bus support (device 0).
 //
+#ifdef USE_NEW_OPTABLE
+static const cmd_op_t ops[] PROGMEM = {
+                                       {HEXCMD_RESET_BUS, hex_reset_bus},
+                                       {HEXCMD_NULL, hex_null},
+                                       {HEXCMD_INVALID_MARKER, NULL}
+                                      };
+#else
 static const cmd_proc fn_table[] PROGMEM = {
   hex_reset_bus,
   hex_null,
@@ -155,23 +179,37 @@ static const uint8_t op_table[] PROGMEM = {
   HEXCMD_NULL,
   HEXCMD_INVALID_MARKER // mark end of this table.
 };
+#endif
 
 
-void setup_registry(void)
-{
+static inline void reg_init(void) {
+#ifdef NEW_REGISTER
+#ifdef USE_NEW_OPTABLE
+  cfg_register(DEV_ALL, DEV_ALL, DEV_ALL, ops);
+#else
+  cfg_register(DEV_ALL, DEV_ALL, DEV_ALL, op_table, fn_table);
+#endif
+#else
   registry.num_devices = 1;
-  registry.entry[ 0 ].device_code_start = ALL_DEV;
-  registry.entry[ 0 ].device_code_end = MAX_DEV;
+  registry.entry[ 0 ].dev_low = DEV_ALL;
+  registry.entry[ 0 ].dev_cur = DEV_ALL;
+  registry.entry[ 0 ].dev_high = DEV_MAX;
+#ifdef USE_NEW_OPTABLE
+  registry.entry[ 0 ].oplist = (cmd_op_t *)&ops;
+#else
   registry.entry[ 0 ].operation = (cmd_proc *)&fn_table;
   registry.entry[ 0 ].command = (uint8_t *)&op_table;
-
-  // Register any configured peripherals.  if the peripheral type is not included, the call is to an empty routine.
-  cfg_register(&registry);
-  drv_register(&registry);
-  prn_register(&registry);
-  ser_register(&registry);
-  clock_register(&registry);
-  return;
+#endif
+#endif
+#ifndef INIT_COMBO
+#ifdef USE_CFG_DEVICE
+  cfg_register1();
+#endif
+  drv_register();
+  prn_register();
+  ser_register();
+  clock_register();
+#endif
 }
 
 
@@ -184,24 +222,25 @@ void setup_registry(void)
 void setup(void) {
   board_init();
   debug_init();
+
+  sei();
+
+  ee_get_config();
+
   disk_init();
   hex_init();
   leds_init();
   timer_init();
+#ifdef INIT_COMBO
+  reg_init();
+#endif
+  clock_init();
   drv_init();
   ser_init();
   prn_init();
+#ifdef USE_CFG_DEVICE
   cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
-#  if defined INCLUDE_PRINTER || defined INCLUDE_SERIAL
-  uart_init();
-  swuart_init();
-#  endif
-
-  config = ee_get_config();
-
-  sei();
-
-  clock_init();
+#endif
 
   wakeup_pin_init();
 }
@@ -216,9 +255,14 @@ int main(void) {
   uint8_t ignore_cmd = FALSE;
   pab_raw_t pabdata;
   BYTE res;
+#ifdef HAVE_HOTPLUG
+  uint8_t disk_state_old = 0;
+#endif
 
   setup();
-  setup_registry();
+#ifndef INIT_COMBO
+  reg_init(); // this must be done first.
+#endif
 
   pabdata.pab.cmd = 0;
   pabdata.pab.lun = 0;
@@ -226,10 +270,7 @@ int main(void) {
   pabdata.pab.buflen = 0;
   pabdata.pab.datalen = 0;
 
-  debug_putcrlf();
-  debug_puts_P(PSTR(TOSTRING(CONFIG_HARDWARE_NAME)));
-  debug_puts_P(PSTR(" Version: "));
-  debug_puts_P(PSTR(VERSION));
+  debug_puts_P("\r\n" TOSTRING(CONFIG_HARDWARE_NAME) " Version: " VERSION);
   debug_putcrlf();
 
   while (TRUE) {
@@ -249,22 +290,26 @@ int main(void) {
         pabdata.raw[ i ] = i;
         res = receive_byte( &pabdata.raw[ i ] );
 #ifdef HAVE_HOTPLUG
-        /* This seems to be a nice point to handle card changes */
-        switch(disk_state) {
-        case DISK_CHANGED:
-        case DISK_REMOVED:
-          /* If the disk was changed the buffer contents are useless */
-          // we need to clean out all disk buffers
-          //free_multiple_buffers(FMB_ALL);
-          //change_init();
-          //fatops_init(0);
-          drv_init();
-          debug_putc('D');
-          break;
-        case DISK_ERROR:
-        default:
-          break;
-        }
+        // Since we defer mounting the drive until a file is requested,
+        // this state may exist for some time.
+        if(disk_state_old != disk_state)
+          /* This seems to be a nice point to handle card changes */
+          switch(disk_state) {
+          case DISK_CHANGED:
+          case DISK_REMOVED:
+            /* If the disk was changed the buffer contents are useless */
+            // we need to clean out all disk buffers
+            //free_multiple_buffers(FMB_ALL);
+            //change_init();
+            //fatops_init(0);
+            drv_init();
+            debug_putc('D');
+            break;
+          case DISK_ERROR:
+          default:
+            break;
+          }
+        disk_state_old = disk_state;
 #endif
 
 
@@ -277,21 +322,33 @@ int main(void) {
         }
       }
 
+#ifdef NEW_DEV_CHK
       if ( !ignore_cmd ) {
-        if ( !( ( pabdata.pab.dev == 0 ) ||
-                ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] )
-                || ( pabdata.pab.dev == device_address[ CONFIG_GROUP ] )
+        ignore_cmd = TRUE;
+        for (uint8_t j = 0; j < registry.num_devices; j++) {
+          if(registry.entry[j].dev_cur == pabdata.pab.dev) {
+            // we should cache the index...
+            ignore_cmd = FALSE;
+            break;
+          }
+        }
+      }
+#else
+      if ( !ignore_cmd ) {
+       if ( !( ( pabdata.pab.dev == 0 ) ||
+                ( pabdata.pab.dev DEV_DRV_START )
+                || ( pabdata.pab.dev == DEV_CFG_START )
 #ifdef INCLUDE_PRINTER
                 ||
-                (( pabdata.pab.dev == device_address[ PRINTER_GROUP ] ) )
+                (( pabdata.pab.dev == DEV_PRN_DEFAULT ) )
 #endif
 #ifdef INCLUDE_CLOCK
                 ||
-                (( pabdata.pab.dev == device_address[ CLOCK_GROUP ] ) )
+                (( pabdata.pab.dev == DEV_RTC_START ) )
 #endif
 #ifdef INCLUDE_SERIAL
                 ||
-                (( pabdata.pab.dev == device_address[ SERIAL_GROUP ] ) )
+                (( pabdata.pab.dev == DEV_SER_START ) )
 #endif
               )
            )
@@ -299,26 +356,15 @@ int main(void) {
           ignore_cmd = TRUE;
         }
       }
-
+#endif
       if ( !ignore_cmd ) {
         if (i == 9) {
           // exec command
           debug_putcrlf();
-          /*
-             If we are attempting to use the SD card, we
-             initialize it NOW.  If it fails (no card present)
-             or other reasons, the various SD file usage commands
-             will be failed with a device-error, simply by
-             testing the sd_initialized flag as needed.
-          */
-          if ( pabdata.pab.dev == device_address[ DRIVE_GROUP ] ) {
-            drv_start();
-          }
-
           if ( pabdata.pab.dev == 0 && pabdata.pab.cmd != HEXCMD_RESET_BUS ) {
             pabdata.pab.cmd = HEXCMD_NULL; // change out to NULL operation and let bus float.
           }
-          execute_command( pabdata.pab );
+          execute_command( &(pabdata.pab) );
           ignore_cmd = TRUE;  // in case someone sends more data, ignore it.
         }
       } else {
