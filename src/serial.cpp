@@ -78,12 +78,12 @@ static const action_t cmds[] PROGMEM = {
                                         {SER_CMD_NONE,      ""}
                                        };
 static const action_t ti_cmds[] PROGMEM = {
-                                            {SER_CMD_TW,    "tw"},
-                                            {SER_CMD_NU,    "nu"},
-                                            {SER_CMD_CH,    "ch"},
-                                            {SER_CMD_EC,    "ec"},
-                                            {SER_CMD_CR,    "cr"},
-                                            {SER_CMD_LF,    "lf"},
+                                            {SER_CMD_TW,    ".tw"},
+                                            {SER_CMD_NU,    ".nu"},
+                                            {SER_CMD_CH,    ".ch"},
+                                            {SER_CMD_EC,    ".ec"},
+                                            {SER_CMD_CR,    ".cr"},
+                                            {SER_CMD_LF,    ".lf"},
                                             {SER_CMD_NONE,  ""}
                                           };
 

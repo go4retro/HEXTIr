@@ -347,7 +347,7 @@ typedef enum _diskcmd_t {
   DISK_CMD_PWD
 } diskcmd_t;
 
-static const action_t dcmds[14] MEM_CLASS = {
+static const action_t dcmds[] MEM_CLASS = {
                                   {DISK_CMD_CHDIR,    "cd"},
                                   {DISK_CMD_CHDIR,    "chdir"},
                                   {DISK_CMD_MKDIR,    "md"},
