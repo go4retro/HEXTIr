@@ -345,7 +345,7 @@ static void hex_prn_write(pab_t *pab) {
   */
   if ( written && prn_open && _cfg.line) {
     for(uint8_t n = 0; n < _cfg.spacing; n++) {
-      swuart_putcrlf();
+      swuart_putcrlf(0);
     }
     swuart_flush();
   }

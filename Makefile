@@ -3,12 +3,12 @@
 # Define version number
 MAJOR = 0
 MINOR = 9
-PATCHLEVEL = 1
+PATCHLEVEL = 3
 FIX = 
 
 # Forces bootloader version to 0, comment out or leave empty for release
 #PRERELEASE = atentdead0
-PRERELEASE = .3
+PRERELEASE = .0
 
 #----------------------------------------------------------------------------
 # WinAVR Makefile Template written by Eric B. Weddington, Joerg Wunsch, et al.
@@ -96,10 +96,9 @@ ifeq ($(CONFIG_UART_DEBUG_SW),y)
 endif
 
 ifeq ($(CONFIG_RTC_SOFTWARE),y)
-  SRC += ds1307-3231.c
+  SRC += softrtc.c
   SRC += rtc.c
   SRC += clock.c
-  SRC += softi2c.c
 endif
 
 ifeq ($(CONFIG_RTC_DSRTC),y)
@@ -205,6 +204,8 @@ CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT) 
 CFLAGS += -fno-strict-aliasing
 CFLAGS += -Wall 
+CFLAGS += -Wsign-compare
+CFLAGS += -Wunused-parameter
 CFLAGS += -Wstrict-prototypes 
 # Add this if you want all warnings output as errors.
 #CFLAGS += -Werror

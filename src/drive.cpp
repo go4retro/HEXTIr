@@ -45,6 +45,8 @@
 #include "timer.h"
 #include "drive.h"
 
+#ifdef INCLUDE_DRIVE
+
 FATFS fs;
 uint8_t _cmd_lun = LUN_CMD;
 
@@ -339,24 +341,24 @@ typedef enum _diskcmd_t {
   DISK_CMD_NONE = 0,
   DISK_CMD_CHDIR,
   DISK_CMD_MKDIR,
-  DISK_CMD_DEL,
+  DISK_CMD_RMDIR,
   DISK_CMD_RENAME,
-  DISK_CMD_MOVE,
   DISK_CMD_COPY,
   DISK_CMD_PWD
 } diskcmd_t;
 
-static const action_t dcmds[14] MEM_CLASS = {
+static const action_t dcmds[] MEM_CLASS = {
                                   {DISK_CMD_CHDIR,    "cd"},
                                   {DISK_CMD_CHDIR,    "chdir"},
                                   {DISK_CMD_MKDIR,    "md"},
                                   {DISK_CMD_MKDIR,    "mkdir"},
-                                  {DISK_CMD_DEL,      "del"},
-                                  {DISK_CMD_DEL,      "delete"},
+                                  {DISK_CMD_RMDIR,    "del"},
+                                  {DISK_CMD_RMDIR,    "delete"},
+                                  {DISK_CMD_RMDIR,    "rmdir"},
                                   {DISK_CMD_RENAME,   "rn"},
                                   {DISK_CMD_RENAME,   "rename"},
-                                  {DISK_CMD_MOVE,     "mv"},
-                                  {DISK_CMD_MOVE,     "move"},
+                                  {DISK_CMD_RENAME,   "mv"},
+                                  {DISK_CMD_RENAME,   "move"},
                                   {DISK_CMD_COPY,     "cp"},
                                   {DISK_CMD_COPY,     "copy"},
                                   {DISK_CMD_PWD,      "pwd"},
@@ -386,7 +388,7 @@ static inline hexstatus_t drv_exec_cmd(char* buf, uint8_t len, uint8_t *dev) {
   case DISK_CMD_MKDIR:
     res = f_mkdir(&fs,(UCHAR*)buf);
     break;
-  case DISK_CMD_DEL:
+  case DISK_CMD_RMDIR:
   res = f_unlink(&fs,(UCHAR*)buf);
   break;
   case DISK_CMD_RENAME:
@@ -1275,3 +1277,4 @@ void drv_init(void) {
 
 
 }
+#endif
