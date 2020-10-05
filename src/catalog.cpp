@@ -338,6 +338,7 @@ void hex_read_catalog_txt(file_t * file) {
 void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t fsize = 0;
+  uint8_t len;
   BYTE res = FR_OK;
 
   debug_puts_P("Open Catalog\r\n");
@@ -361,6 +362,8 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
         string[0] = '*';
         string[1] = '\0';
       }
+      len = strlen(string);
+      trim(&string, &len);
       // separate into directory path and pattern
       char* dirpath = string;
       char* pattern = (char*)NULL;
