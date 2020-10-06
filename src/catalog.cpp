@@ -338,6 +338,7 @@ void hex_read_catalog_txt(file_t * file) {
 void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t fsize = 0;
+  uint8_t len;
   BYTE res = FR_OK;
 
   debug_puts_P("Open Catalog\r\n");
@@ -357,6 +358,12 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
       }
       */
       string = (char*)&path[1]; // $subdir... -> subdir...
+      if (string[0] == '\0') { // empty path, add a pattern
+        string[0] = '*';
+        string[1] = '\0';
+      }
+      len = strlen(string);
+      trim(&string, &len);
       // separate into directory path and pattern
       char* dirpath = string;
       char* pattern = (char*)NULL;
@@ -365,6 +372,10 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
         pattern = strdup(s + 1); // copy pattern to store it, will be freed in free_lun
         *(s + 1) = '\0';         // set new terminating zero for dirpath
         debug_trace(pattern, 0, strlen(pattern));
+      }
+      else if (s==NULL){ // no directory, dirpath is the pattern
+        pattern = strdup(dirpath);
+        dirpath[0] = '\0';
       }
       // if not the root slash, remove slash from dirpath
       if (strlen(dirpath) > 1 && dirpath[strlen(dirpath) - 1] == '/')
