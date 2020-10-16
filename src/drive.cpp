@@ -557,30 +557,6 @@ static void drv_write_cmd(pab_t *pab, uint8_t *dev) {
    writes data to the open file associated with the LUN number
    in the PAB.
 
-   TODO: for files opened in RELATIVE (not VARIABLE) mode, the
-   file should be in READ/WRITE mode.  RELATIVE mode is considered
-   to be like a 'database' file with FIXED length records of 'x'
-   bytes per record.  The record number field of the PAB informs
-   the file-write operation of which record is to be written.  If
-   the file needs to be increased in size to reach that record,
-   then zero-filled records should be written to reach the desired
-   position (i.e. you can get the current size of the file, divide
-   by the record size to determine the current number of records.
-   if the record being written exists beyond the end of the file,
-   write empty records until the desired size is reached, then
-   write the new record to the file.  If the record number in the
-   PAB points to a location within the file, seek to that offset
-   from the beginning of the file and overwrite the data that
-   currently exists in that location.  This all assumes that the
-   underlying file system supports this behavior and feature.
-
-   If it does not, then the hex_open operation, when it detects
-   a RELATIVE file open, should always report an error of
-   HEXSTAT_FILE_TYPE_ERR. (And, currently, the Arduino SD file
-   library does NOT handle opening files for both read AND write
-   of a selective nature such as required for this feature; from
-   what I can tell of the implementation.
-
 */
 static void hex_drv_write(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
@@ -630,9 +606,26 @@ static void hex_drv_write(pab_t *pab) {
     }
     len -= i;
   }
+
+  // if in DISPLAY mode
+  buffer[2] = 0;
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
+	// add CRLF to data (for DISPLAY mode)
+    buffer[0] = 13;
+    buffer[1] = 10;
+    buffer[2] =  2;
+
+    res = f_write(&(file->fp), buffer, 2, &written);
+    if (!res) {
+      debug_trace(buffer, 0, written);
+    }
+    if (written != 2) {
+      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    }
+  }
   if (file != NULL && (file->attr & FILEATTR_RELATIVE)){
     buffer[0] = 0;
-    for (i=pab->datalen + 1; i <= pab->buflen; i++)
+    for (i=pab->datalen + 1 + buffer[2]; i <= pab->buflen; i++)
       res = f_write(&(file->fp), buffer, 1, &written);
   }
   if ( len ) {
@@ -642,21 +635,6 @@ static void hex_drv_write(pab_t *pab) {
     // TODO what error should we return to caller?
     hex_eat_it( len, rc );
     return;
-  }
-
-  // if in DISPLAY mode
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
-	// add CRLF to data (for DISPLAY mode)
-    buffer[0] = 13;
-    buffer[1] = 10;
-
-    res = f_write(&(file->fp), buffer, 2, &written);
-    if (!res) {
-      debug_trace(buffer, 0, written);
-    }
-    if (written != 2) {
-      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
-    }
   }
   if (rc == HEXSTAT_SUCCESS) {
     rc = fresult2hexstatus(res);
@@ -733,8 +711,12 @@ static void hex_drv_read(pab_t *pab) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
     if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
       // amount of data for next value to be sent
-      if (file->attr & FILEATTR_RELATIVE) 
-        fsize = pab->buflen;
+      if (file->attr & FILEATTR_RELATIVE){ 
+        if (file->attr & FILEATTR_DISPLAY) 
+          fsize = next_value_size(file);
+        else
+          fsize = pab->buflen;
+      }  
       else  
         fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
@@ -785,6 +767,8 @@ static void hex_drv_read(pab_t *pab) {
         res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
         if (token == '\r')
           res = f_read(&(file->fp), &token, 1, &read);
+        if (file->attr & FILEATTR_RELATIVE)
+          f_lseek(&(file->fp), pab->buflen * (pab->record + 1));
       }
     }
   } else {
