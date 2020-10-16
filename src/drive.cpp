@@ -767,6 +767,8 @@ static void hex_drv_read(pab_t *pab) {
         res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
         if (token == '\r')
           res = f_read(&(file->fp), &token, 1, &read);
+        if (file->attr & FILEATTR_RELATIVE)
+          f_lseek(&(file->fp), pab->buflen * (pab->record + 1));
       }
     }
   } else {
