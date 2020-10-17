@@ -927,7 +927,7 @@ static void hex_drv_open(pab_t *pab) {
 
       // when opening to write, or read/write
       default:
-        if (!(att & OPENMODE_INTERNAL) && pab->lun != 0) {
+        if (!(att & OPENMODE_INTERNAL) /*&& pab->lun != 0*/) {
           file->attr |= FILEATTR_DISPLAY;
         }
         // if we don't know how big its going to be... we may need multiple writes.
