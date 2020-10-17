@@ -720,7 +720,13 @@ static void hex_drv_read(pab_t *pab) {
       else  
         fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
-
+    else if (pab->lun == 0 && fsize >= 2){ // skip evtl. trailing CRLF
+      f_lseek(&(file->fp), file->fp.fsize - 2);      
+      res = f_read(&(file->fp), buffer, 2, &read);    
+      if (buffer[0] == 13 && buffer[1] == 10)
+        fsize = fsize - 2;
+      f_lseek(&(file->fp), 0);      
+    }
     if (res == FR_OK) {
       if ( fsize == 0 ) {
         rc = HEXSTAT_EOF;
