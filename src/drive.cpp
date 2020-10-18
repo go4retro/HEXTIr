@@ -711,7 +711,10 @@ static void hex_drv_read(pab_t *pab) {
     if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
       // amount of data for next value to be sent
       if (file->attr & FILEATTR_RELATIVE) 
-        fsize = pab->buflen;
+        if (file->attr & FILEATTR_DISPLAY) 
+          fsize = next_value_size(file);
+        else
+          fsize = pab->buflen;
       else  
         fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
