@@ -606,15 +606,13 @@ static void hex_drv_write(pab_t *pab) {
     }
     len -= i;
   }
-
-  // if in DISPLAY mode
   buffer[2] = 0;
+  // if in DISPLAY mode
   if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
 	// add CRLF to data (for DISPLAY mode)
     buffer[0] = 13;
     buffer[1] = 10;
     buffer[2] =  2;
-
     res = f_write(&(file->fp), buffer, 2, &written);
     if (!res) {
       debug_trace(buffer, 0, written);
@@ -636,6 +634,7 @@ static void hex_drv_write(pab_t *pab) {
     hex_eat_it( len, rc );
     return;
   }
+
   if (rc == HEXSTAT_SUCCESS) {
     rc = fresult2hexstatus(res);
   }
@@ -711,22 +710,13 @@ static void hex_drv_read(pab_t *pab) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
     if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
       // amount of data for next value to be sent
-      if (file->attr & FILEATTR_RELATIVE){ 
-        if (file->attr & FILEATTR_DISPLAY) 
-          fsize = next_value_size(file);
-        else
-          fsize = pab->buflen;
-      }  
+      if (file->attr & FILEATTR_RELATIVE) 
+        fsize = pab->buflen;
       else  
         fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
-    else if (pab->lun == 0 && fsize >= 2){ // skip evtl. trailing CRLF
-      f_lseek(&(file->fp), file->fp.fsize - 2);      
-      res = f_read(&(file->fp), buffer, 2, &read);    
-      if (buffer[0] == 13 && buffer[1] == 10)
-        fsize = fsize - 2;
-      f_lseek(&(file->fp), 0);      
-    }
+    else if (pab->lun == 0)
+      fsize = pab->buflen;
     if (res == FR_OK) {
       if ( fsize == 0 ) {
         rc = HEXSTAT_EOF;
@@ -773,8 +763,6 @@ static void hex_drv_read(pab_t *pab) {
         res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
         if (token == '\r')
           res = f_read(&(file->fp), &token, 1, &read);
-        if (file->attr & FILEATTR_RELATIVE)
-          f_lseek(&(file->fp), pab->buflen * (pab->record + 1));
       }
     }
   } else {
@@ -817,6 +805,7 @@ static void drv_start(void) {
 */
 static void hex_drv_open(pab_t *pab) {
   uint16_t len = 0;
+  uint16_t read;    // how many bytes are read
   uint8_t att = 0;
   hexstatus_t rc;
   BYTE    mode = 0;
@@ -960,6 +949,15 @@ static void hex_drv_open(pab_t *pab) {
           }
         }
         // for len=0 OR lun=0, return fsize.
+        // workaround for trailing CRLF
+        else if (file->fp.fsize >= 2){ // skip evtl. trailing CRLF
+            f_lseek(&(file->fp), file->fp.fsize - 2);      
+            res = f_read(&(file->fp), buffer, 2, &read);    
+            if (buffer[0] == 13 && buffer[1] == 10)
+              fsize = fsize - 2;
+            f_lseek(&(file->fp), 0);  
+        }      
+        // ends here
         break;
     }
   }
