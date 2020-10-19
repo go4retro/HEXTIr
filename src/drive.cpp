@@ -562,6 +562,8 @@ static void hex_drv_write(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint16_t i;
+  uint16_t header = 0;
+  uint8_t  first_buffer = 1;
   UINT written;
   file_t* file = NULL;
   FRESULT res = FR_OK;
@@ -597,6 +599,14 @@ static void hex_drv_write(pab_t *pab) {
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
+    if ((pab->lun == 0) && (first_buffer == 1)) {
+      header = buffer[0] | ( buffer[1] << 8 );
+      if (((header & 0xffdf) == 0x380) || ((header & 0xffdf) == 0x10f))
+        header = 1;
+      else
+        header = 0;
+      first_buffer = 0;
+    }
     if (file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
 
       res = f_write(&(file->fp), buffer, i, &written);
@@ -608,7 +618,7 @@ static void hex_drv_write(pab_t *pab) {
   }
   buffer[2] = 0;
   // if in DISPLAY mode
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && (header == 0)) {
 	// add CRLF to data (for DISPLAY mode)
     buffer[0] = 13;
     buffer[1] = 10;
@@ -954,15 +964,6 @@ static void hex_drv_open(pab_t *pab) {
           }
         }
         // for len=0 OR lun=0, return fsize.
-        // workaround for trailing CRLF
-        else if (file->fp.fsize >= 2){ // skip evtl. trailing CRLF
-            f_lseek(&(file->fp), file->fp.fsize - 2);      
-            res = f_read(&(file->fp), buffer, 2, &read);    
-            if (buffer[0] == 13 && buffer[1] == 10)
-              fsize = fsize - 2;
-            f_lseek(&(file->fp), 0);  
-        }      
-        // ends here
         break;
     }
   }
