@@ -250,19 +250,28 @@ static hexstatus_t fresult2hexstatus(FRESULT fr) {
    close command.
    The expectation was that IO error 12 was issued by the calculator in case
    the length of the stored program (returned in the open response) is greater
-   then the length of the program in memory. But this is not the case. Instead
+   then the length of the program in memory. But this is not the case. 
+   
+   The following is not true:
+   Instead
    the calculator starts to send (step 2) its memory content up to the length
    it got in the open response no matter if this exceeds the actual length of
    the program stored in memory! By staring at the debug output I found out
    that the bytes 2 and 3 (start counting at 0) is the actual length of the
    program. So one can compare the sizes and, in case they differ, return IO
-   error 12. And although if a comparison error occured, one has read the data
+   error 12.
+   
+   Correct:
+   
+   The calculator always sends the complete program in memory, regardless of
+   the size of the stored file. Therefore if pab->datalen is different from
+   file size, we have an error 12.
+
+   And although if a comparison error occured, one has read the data
    transmitted in the verify command until sending stops.
 */
 
 static void hex_drv_verify(pab_t *pab) {
-  uint16_t len_prog_mem = 0;
-  uint16_t len_prog_stored = 0;
   uint8_t  *data = &buffer[ BUFSIZE / 2 ]; // split our buffer in half
   // so we do not use all of our limited amount of RAM on buffers...
   UINT     read;
@@ -271,7 +280,6 @@ static void hex_drv_verify(pab_t *pab) {
   file_t*  file;
   BYTE     res = FR_OK;
   hexstatus_t rc = HEXSTAT_SUCCESS;
-  uint8_t  first_buffer = 1;
 
   debug_puts_P("Verify File\r\n");
 
@@ -279,47 +287,27 @@ static void hex_drv_verify(pab_t *pab) {
   len = pab->datalen;   // this is the size of the object to verify
 
   res = (file != NULL ? FR_OK : FR_NO_FILE);
+  if (res == FR_OK) {
+    if (len != file->fp.fsize) {
+      rc = HEXSTAT_BUF_SIZE_ERR;
+    }  
 
-  while (len && res == FR_OK) {
+    while ((len>0) && (rc == HEXSTAT_SUCCESS)) {
 
-    // figure out how much will fit...
-    i = ( len >= ( BUFSIZE / 2 ))  ? ( BUFSIZE / 2 ) : len;
+      // figure out how much will fit...
+      i = ( len >= ( BUFSIZE / 2 ))  ? ( BUFSIZE / 2 ) : len;
 
-    if ( hex_get_data(buffer, i) ) { // use front half of buffer for incoming data from the host.
-      hex_release_bus();
-      return;
-    }
-
-    if (res == FR_OK) {
-      // length of program in memory
-      if (first_buffer) {
-        len_prog_mem = buffer[2] | ( buffer[3] << 8 );
-      }
-
-      res = f_read(&(file->fp), data, i, &read);
-
-      if (res == FR_OK) {
-        debug_trace(buffer, 0, read);
-      }
-      // TODO should convert res to rc value
-      // length of program on storage device
-      if (first_buffer) {
-        len_prog_stored = data[2] | ( data[3] << 8);
-      }
-
-      if (len_prog_stored != len_prog_mem) {
-        // program on disk not same length as one in memory
-        rc = HEXSTAT_BUF_SIZE_ERR;
-      }
-      else {
+      rc = hex_get_data(buffer, i);  // use front half of buffer for incoming data from the host.
+      if (rc==HEXSTAT_SUCCESS) {
+        res = f_read(&(file->fp), data, i, &read);
+        rc = fresult2hexstatus(res);
         if ( memcmp(data, buffer, read) != 0 ) {
           rc = HEXSTAT_VERIFY_ERR;
         }
       }
-    }
 
-    first_buffer = 0;
-    len -= read;
+      len -= read;
+    }
   }
   // If we haven't read the entire incoming message yet, flush it.
   if ( len ) {
@@ -562,6 +550,8 @@ static void hex_drv_write(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint16_t i;
+  uint16_t header = 0;
+  uint8_t  first_buffer = 1;
   UINT written;
   file_t* file = NULL;
   FRESULT res = FR_OK;
@@ -597,6 +587,14 @@ static void hex_drv_write(pab_t *pab) {
   while (len && rc == HEXSTAT_SUCCESS && res == FR_OK ) {
     i = (len >= BUFSIZE ? BUFSIZE : len);
     rc = hex_get_data(buffer, i);
+    if ((pab->lun == 0) && (first_buffer == 1)) {
+      header = (buffer[0] | ( buffer[1] << 8 )) & 0xffdf;
+      if ((header == 0x380) || (header  == 0x10f))
+        header = 1;
+      else
+        header = 0;
+      first_buffer = 0;
+    }
     if (file != NULL && res == FR_OK && rc == HEXSTAT_SUCCESS) {
 
       res = f_write(&(file->fp), buffer, i, &written);
@@ -606,15 +604,13 @@ static void hex_drv_write(pab_t *pab) {
     }
     len -= i;
   }
-
-  // if in DISPLAY mode
   buffer[2] = 0;
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY)) {
+  // if in DISPLAY mode
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && (header == 0)) {
 	// add CRLF to data (for DISPLAY mode)
     buffer[0] = 13;
     buffer[1] = 10;
     buffer[2] =  2;
-
     res = f_write(&(file->fp), buffer, 2, &written);
     if (!res) {
       debug_trace(buffer, 0, written);
@@ -636,6 +632,7 @@ static void hex_drv_write(pab_t *pab) {
     hex_eat_it( len, rc );
     return;
   }
+
   if (rc == HEXSTAT_SUCCESS) {
     rc = fresult2hexstatus(res);
   }
@@ -711,16 +708,16 @@ static void hex_drv_read(pab_t *pab) {
     fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
     if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
       // amount of data for next value to be sent
-      if (file->attr & FILEATTR_RELATIVE){ 
+      if (file->attr & FILEATTR_RELATIVE) 
         if (file->attr & FILEATTR_DISPLAY) 
           fsize = next_value_size(file);
         else
           fsize = pab->buflen;
-      }  
       else  
         fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
     }
-
+    else if (pab->lun == 0)
+      fsize = pab->buflen;
     if (res == FR_OK) {
       if ( fsize == 0 ) {
         rc = HEXSTAT_EOF;
@@ -811,6 +808,7 @@ static void drv_start(void) {
 */
 static void hex_drv_open(pab_t *pab) {
   uint16_t len = 0;
+  uint16_t read;    // how many bytes are read
   uint8_t att = 0;
   hexstatus_t rc;
   BYTE    mode = 0;
@@ -927,7 +925,7 @@ static void hex_drv_open(pab_t *pab) {
 
       // when opening to write, or read/write
       default:
-        if (!(att & OPENMODE_INTERNAL) && pab->lun != 0) {
+        if (!(att & OPENMODE_INTERNAL) /*&& pab->lun != 0*/) {
           file->attr |= FILEATTR_DISPLAY;
         }
         // if we don't know how big its going to be... we may need multiple writes.
@@ -953,7 +951,9 @@ static void hex_drv_open(pab_t *pab) {
             fsize = BUFSIZE;  // on zero length request, return buffer size we use.
           }
         }
-        // for len=0 OR lun=0, return fsize.
+        else if (len)
+          fsize = len; // accept the requested buffer size for verify
+        // for len=0 return fsize.
         break;
     }
   }
