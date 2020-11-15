@@ -410,7 +410,7 @@ static const uint8_t op_table[] PROGMEM = {
 #endif
 
 static uint8_t is_cfg_valid(void) {
-  return (_config.valid && _config.clk_dev >= DEV_PRN_START && _config.clk_dev <= DEV_PRN_END);
+  return (_config.valid && _config.prn_dev >= DEV_PRN_START && _config.prn_dev <= DEV_PRN_END);
 }
 
 
