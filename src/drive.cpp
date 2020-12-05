@@ -728,46 +728,52 @@ static void hex_drv_read(pab_t *pab) {
         }
       }
     }
-    // send how much we are going to send
-    rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+    if ( file->fp.fptr < file->fp.fsize ) {
+      // send how much we are going to send
+      rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 
-    // while we have data remaining to send.
-    while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
+      // while we have data remaining to send.
+      while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
 
-      len = fsize;    // remaining amount to read from file
-      // while it fit into buffer or not?  Only read as much
-      // as we can hold in our buffer.
-      len = ( len > BUFSIZE ) ? BUFSIZE : len;
+        len = fsize;    // remaining amount to read from file
+        // while it fit into buffer or not?  Only read as much
+        // as we can hold in our buffer.
+        len = ( len > BUFSIZE ) ? BUFSIZE : len;
 
-      if ( !(file->attr & FILEATTR_CATALOG )) {
-        res = f_read(&(file->fp), buffer, len, &read);
-        if (!res) {
-          debug_trace(buffer, 0, read);
+        if ( !(file->attr & FILEATTR_CATALOG )) {
+          res = f_read(&(file->fp), buffer, len, &read);
+          if (!res) {
+            debug_trace(buffer, 0, read);
+          }
+        } else {
+          // catalog entry, if that's what we're reading, is already in buffer.
+          read = fsize; // 0 if no entry, else size of entry in buffer.
         }
-      } else {
-        // catalog entry, if that's what we're reading, is already in buffer.
-        read = fsize; // 0 if no entry, else size of entry in buffer.
+
+        if (FR_OK == res) {
+          for (i = 0; i < read; i++) {
+            rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+          }
+        }
+        fsize -= read;
       }
 
-      if (FR_OK == res) {
-        for (i = 0; i < read; i++) {
-          rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+      if(rc == HEXSTAT_SUCCESS)
+        rc = fresult2hexstatus(res);
+      if(rc == HEXSTAT_SUCCESS) {
+        if (file->attr & FILEATTR_DISPLAY) {
+          res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
+          if (token == '\r')
+            res = f_read(&(file->fp), &token, 1, &read);
+          if (file->attr & FILEATTR_RELATIVE)
+            f_lseek(&(file->fp), pab->buflen * (pab->record + 1));
         }
       }
-      fsize -= read;
     }
-
-    if(rc == HEXSTAT_SUCCESS)
-      rc = fresult2hexstatus(res);
-    if(rc == HEXSTAT_SUCCESS) {
-      if (file->attr & FILEATTR_DISPLAY) {
-        res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
-        if (token == '\r')
-          res = f_read(&(file->fp), &token, 1, &read);
-        if (file->attr & FILEATTR_RELATIVE)
-          f_lseek(&(file->fp), pab->buflen * (pab->record + 1));
-      }
-    }
+    else {
+      transmit_word(0);
+      rc = HEXSTAT_EOF;
+    }  
   } else {
     transmit_word(0);      // null file
     rc = HEXSTAT_NOT_FOUND;
