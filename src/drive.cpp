@@ -1093,6 +1093,32 @@ static void hex_drv_delete(pab_t *pab) {
 }
 
 /*
+   hex_drv_delete_open() -
+   delete a open file from the SD card.
+*/
+static void hex_drv_delete_open(pab_t *pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  FRESULT res;
+  file_t*  file = NULL;
+
+  debug_puts_P("Delete Open File\r\n");
+
+  drv_start();
+
+  file = find_lun(pab->lun);
+  if (file != NULL){
+    res = f_close(&(file->fp));
+    free_lun(pab->lun);
+  }
+  else
+    rc = HEXSTAT_NOT_OPEN;
+  if (!hex_is_bav()) { // we can send response
+    hex_send_final_response( rc );
+  } else
+    hex_finish();
+}
+
+/*
     hex_drv_status() -
     initial simplistic implementation
 */
@@ -1158,6 +1184,7 @@ static void hex_drv_reset( __attribute__((unused)) pab_t *pab) {
 static const cmd_op_t ops[] PROGMEM = {
                                         {HEXCMD_OPEN, hex_drv_open},
                                         {HEXCMD_CLOSE, hex_drv_close},
+                                        {HEXCMD_DELETE_OPEN, hex_drv_delete_open},
                                         {HEXCMD_READ, hex_drv_read},
                                         {HEXCMD_WRITE, hex_drv_write},
                                         {HEXCMD_RESTORE, hex_drv_restore},
@@ -1171,6 +1198,7 @@ static const cmd_op_t ops[] PROGMEM = {
 static const cmd_proc fn_table[] PROGMEM = {
   hex_drv_open,
   hex_drv_close,
+  hex_drv_delete_open,
   hex_drv_read,
   hex_drv_write,
   hex_drv_restore,
@@ -1185,6 +1213,7 @@ static const cmd_proc fn_table[] PROGMEM = {
 static const uint8_t op_table[] PROGMEM = {
   HEXCMD_OPEN,
   HEXCMD_CLOSE,
+  HEXCMD_DELETE_OPEN,
   HEXCMD_READ,
   HEXCMD_WRITE,
   HEXCMD_RESTORE,
