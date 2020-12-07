@@ -902,6 +902,7 @@ static void hex_drv_open(pab_t *pab) {
   } else {
     if ( fs_initialized ) {
       file = reserve_lun(pab->lun);
+      file->pattern = strdup(path);
     }
     if (file != NULL) {
       res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
@@ -1108,6 +1109,7 @@ static void hex_drv_delete_open(pab_t *pab) {
   file = find_lun(pab->lun);
   if (file != NULL){
     res = f_close(&(file->fp));
+    res = f_unlink(&fs, (UCHAR *)file->pattern);
     free_lun(pab->lun);
   }
   else
