@@ -705,30 +705,32 @@ static void hex_drv_read(pab_t *pab) {
   if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
     f_lseek(&(file->fp), pab->buflen * pab->record);
   if (file != NULL) {
-    fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
-      // amount of data for next value to be sent
-      if (file->attr & FILEATTR_RELATIVE) 
-        if (file->attr & FILEATTR_DISPLAY) 
-          fsize = next_value_size(file);
-        else
-          fsize = pab->buflen;
-      else  
-        fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
-    }
-    else if (pab->lun == 0)
-      fsize = pab->buflen;
-    if (res == FR_OK) {
-      if ( fsize == 0 ) {
-        rc = HEXSTAT_EOF;
-      } else {
-        // size of buffer provided by host (amount to send)
-        if ( fsize > pab->buflen ) {
-          fsize = pab->buflen;
+    if ( (uint16_t)file->fp.fptr < file->fp.fsize ) {
+      fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
+      if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
+        // amount of data for next value to be sent
+        if (file->attr & FILEATTR_RELATIVE) 
+          if (file->attr & FILEATTR_DISPLAY) 
+            fsize = next_value_size(file);
+          else
+            fsize = pab->buflen;
+        else  
+          fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
+      }
+      else if (pab->lun == 0)
+        fsize = pab->buflen;
+      if (res == FR_OK) {
+        if ( fsize == 0 ) {
+          rc = HEXSTAT_EOF;
+        } else {
+          // size of buffer provided by host (amount to send)
+          if ( fsize > pab->buflen ) {
+            fsize = pab->buflen;
+          }
         }
       }
-    }
-    if ( file->fp.fptr < file->fp.fsize ) {
+      if ((uint16_t)file->fp.fptr + fsize >= file->fp.fsize)
+        fsize = file->fp.fsize - (uint16_t)file->fp.fptr;
       // send how much we are going to send
       rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 
