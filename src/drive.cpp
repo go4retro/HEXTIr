@@ -705,69 +705,77 @@ static void hex_drv_read(pab_t *pab) {
   if ((file != NULL) && (file->attr & FILEATTR_RELATIVE))
     f_lseek(&(file->fp), pab->buflen * pab->record);
   if (file != NULL) {
-    fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
-    if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
-      // amount of data for next value to be sent
-      if (file->attr & FILEATTR_RELATIVE) 
-        if (file->attr & FILEATTR_DISPLAY) 
-          fsize = next_value_size(file);
-        else
-          fsize = pab->buflen;
-      else  
-        fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
-    }
-    else if (pab->lun == 0)
-      fsize = pab->buflen;
-    if (res == FR_OK) {
-      if ( fsize == 0 ) {
-        rc = HEXSTAT_EOF;
-      } else {
-        // size of buffer provided by host (amount to send)
-        if ( fsize > pab->buflen ) {
-          fsize = pab->buflen;
+    if ( (uint16_t)file->fp.fptr < file->fp.fsize ) {
+      fsize = file->fp.fsize - (uint16_t)file->fp.fptr; // amount of data in file that can be sent.
+      if (fsize != 0 && pab->lun != 0 && pab->lun != LUN_RAW) { // for 'normal' files (lun > 0 && lun < 254) send data value by value
+        // amount of data for next value to be sent
+        if (file->attr & FILEATTR_RELATIVE) 
+          if (file->attr & FILEATTR_DISPLAY) 
+            fsize = next_value_size(file);
+          else
+            fsize = pab->buflen;
+        else  
+          fsize = next_value_size(file); // TODO maybe rename fsize to something like send_size
+      }
+      else if (pab->lun == 0)
+        fsize = pab->buflen;
+      if (res == FR_OK) {
+        if ( fsize == 0 ) {
+          rc = HEXSTAT_EOF;
+        } else {
+          // size of buffer provided by host (amount to send)
+          if ( fsize > pab->buflen ) {
+            fsize = pab->buflen;
+          }
+        }
+      }
+      if ((uint16_t)file->fp.fptr + fsize >= file->fp.fsize)
+        fsize = file->fp.fsize - (uint16_t)file->fp.fptr;
+      // send how much we are going to send
+      rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+
+      // while we have data remaining to send.
+      while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
+
+        len = fsize;    // remaining amount to read from file
+        // while it fit into buffer or not?  Only read as much
+        // as we can hold in our buffer.
+        len = ( len > BUFSIZE ) ? BUFSIZE : len;
+
+        if ( !(file->attr & FILEATTR_CATALOG )) {
+          res = f_read(&(file->fp), buffer, len, &read);
+          if (!res) {
+            debug_trace(buffer, 0, read);
+          }
+        } else {
+          // catalog entry, if that's what we're reading, is already in buffer.
+          read = fsize; // 0 if no entry, else size of entry in buffer.
+        }
+
+        if (FR_OK == res) {
+          for (i = 0; i < read; i++) {
+            rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+          }
+        }
+        fsize -= read;
+      }
+
+      if(rc == HEXSTAT_SUCCESS)
+        rc = fresult2hexstatus(res);
+      if(rc == HEXSTAT_SUCCESS) {
+        if (file->attr & FILEATTR_DISPLAY) {
+          res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
+          if (token == '\r')
+            res = f_read(&(file->fp), &token, 1, &read);
+          if (file->attr & FILEATTR_RELATIVE)
+            f_lseek(&(file->fp), pab->buflen * (pab->record + 1));
         }
       }
     }
-    // send how much we are going to send
-    rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
-
-    // while we have data remaining to send.
-    while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
-
-      len = fsize;    // remaining amount to read from file
-      // while it fit into buffer or not?  Only read as much
-      // as we can hold in our buffer.
-      len = ( len > BUFSIZE ) ? BUFSIZE : len;
-
-      if ( !(file->attr & FILEATTR_CATALOG )) {
-        res = f_read(&(file->fp), buffer, len, &read);
-        if (!res) {
-          debug_trace(buffer, 0, read);
-        }
-      } else {
-        // catalog entry, if that's what we're reading, is already in buffer.
-        read = fsize; // 0 if no entry, else size of entry in buffer.
-      }
-
-      if (FR_OK == res) {
-        for (i = 0; i < read; i++) {
-          rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
-        }
-      }
-      fsize -= read;
-    }
-
-    if(rc == HEXSTAT_SUCCESS)
-      rc = fresult2hexstatus(res);
-    if(rc == HEXSTAT_SUCCESS) {
-      if (file->attr & FILEATTR_DISPLAY) {
-        res = f_read(&(file->fp), &token, 1, &read); // skip (CR)LF
-        if (token == '\r')
-          res = f_read(&(file->fp), &token, 1, &read);
-        if (file->attr & FILEATTR_RELATIVE)
-          f_lseek(&(file->fp), pab->buflen * (pab->record + 1));
-      }
-    }
+    else {
+      transmit_word(0);
+      rc = HEXSTAT_EOF;
+    }  
   } else {
     transmit_word(0);      // null file
     rc = HEXSTAT_NOT_FOUND;
@@ -896,6 +904,7 @@ static void hex_drv_open(pab_t *pab) {
   } else {
     if ( fs_initialized ) {
       file = reserve_lun(pab->lun);
+      file->pattern = strdup(path);
     }
     if (file != NULL) {
       res = f_open(&fs, &(file->fp), (UCHAR *)path, mode);
@@ -1087,6 +1096,33 @@ static void hex_drv_delete(pab_t *pab) {
 }
 
 /*
+   hex_drv_delete_open() -
+   delete a open file from the SD card.
+*/
+static void hex_drv_delete_open(pab_t *pab) {
+  hexstatus_t rc = HEXSTAT_SUCCESS;
+  FRESULT res;
+  file_t*  file = NULL;
+
+  debug_puts_P("Delete Open File\r\n");
+
+  drv_start();
+
+  file = find_lun(pab->lun);
+  if (file != NULL){
+    res = f_close(&(file->fp));
+    res = f_unlink(&fs, (UCHAR *)file->pattern);
+    free_lun(pab->lun);
+  }
+  else
+    rc = HEXSTAT_NOT_OPEN;
+  if (!hex_is_bav()) { // we can send response
+    hex_send_final_response( rc );
+  } else
+    hex_finish();
+}
+
+/*
     hex_drv_status() -
     initial simplistic implementation
 */
@@ -1152,6 +1188,7 @@ static void hex_drv_reset( __attribute__((unused)) pab_t *pab) {
 static const cmd_op_t ops[] PROGMEM = {
                                         {HEXCMD_OPEN, hex_drv_open},
                                         {HEXCMD_CLOSE, hex_drv_close},
+                                        {HEXCMD_DELETE_OPEN, hex_drv_delete_open},
                                         {HEXCMD_READ, hex_drv_read},
                                         {HEXCMD_WRITE, hex_drv_write},
                                         {HEXCMD_RESTORE, hex_drv_restore},
@@ -1165,6 +1202,7 @@ static const cmd_op_t ops[] PROGMEM = {
 static const cmd_proc fn_table[] PROGMEM = {
   hex_drv_open,
   hex_drv_close,
+  hex_drv_delete_open,
   hex_drv_read,
   hex_drv_write,
   hex_drv_restore,
@@ -1179,6 +1217,7 @@ static const cmd_proc fn_table[] PROGMEM = {
 static const uint8_t op_table[] PROGMEM = {
   HEXCMD_OPEN,
   HEXCMD_CLOSE,
+  HEXCMD_DELETE_OPEN,
   HEXCMD_READ,
   HEXCMD_WRITE,
   HEXCMD_RESTORE,
