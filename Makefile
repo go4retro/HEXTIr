@@ -12,7 +12,7 @@ PATCHLEVEL = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_PATCH))
 FIX = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_FIX))
 
 # Forces bootloader version to 0, comment out or leave empty for release
-#PRERELEASE = atentdead0
+#PRERELEASE = 
 PRERELEASE = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_PRERELEASE))
 
 #----------------------------------------------------------------------------
