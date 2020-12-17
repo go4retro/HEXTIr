@@ -63,46 +63,46 @@ static const uint8_t PGM_STR_LEN = 26;    // length of string without terminatin
 // called once at the beginning
 void cat_open_pgm(uint16_t num_entries) {
   uint16_t i = PGM_RECORD_LEN * num_entries + PGM_HEADER_LEN;
-  transmit_byte(pgm_header[0]);
-  transmit_byte(pgm_header[1]);
-  transmit_byte(i & 255);
-  transmit_byte(i >> 8);
+  hex_send_byte(pgm_header[0]);
+  hex_send_byte(pgm_header[1]);
+  hex_send_byte(i & 255);
+  hex_send_byte(i >> 8);
 }
 
 // called onece at the end
 void cat_close_pgm(void) {
   for (uint8_t i = 0; i < sizeof(pgm_trailer); i++) {
-    transmit_byte(pgm_trailer[i]);
+    hex_send_byte(pgm_trailer[i]);
   }
 }
 
 // called multiple times, once for each catalog entry
-void cat_write_record_pgm(uint16_t lineno, uint32_t fsize, const char* filename, char attrib) {
+void cat_write_record_pgm(uint16_t lineno, uint32_t fsize, const char* filename, uint8_t namelen, char attrib) {
 
   uint8_t i;
   uint8_t width = FILE_SIZE_WIDTH;
   char buf[width + 1];
   char* file_size = format_file_size(fsize, buf, width);
 
-  transmit_word(lineno);                // line number, 2 bytes
-  transmit_byte(PGM_LINE_LEN);          // length of next "code" line (without len. of line number), 1 byte
-  transmit_byte(0xa0);                  // 0xa0 : token for exclamation mark, next data is comment, 1 byte
-  transmit_byte(0xca);                  // 0xca : token for unquoted string, next data is string, 1 byte
-  transmit_byte(PGM_STR_LEN);           // length of the string without terminating zero, 1 byte
+  hex_send_word(lineno);                // line number, 2 bytes
+  hex_send_byte(PGM_LINE_LEN);          // length of next "code" line (without len. of line number), 1 byte
+  hex_send_byte(0xa0);                  // 0xa0 : token for exclamation mark, next data is comment, 1 byte
+  hex_send_byte(0xca);                  // 0xca : token for unquoted string, next data is string, 1 byte
+  hex_send_byte(PGM_STR_LEN);           // length of the string without terminating zero, 1 byte
   for (i = 0; i < width; i++) {         // file size in bytes or kiB, 5 bytes
-    transmit_byte(file_size[i]);        //
+    hex_send_byte(file_size[i]);        //
   }                                     //
-  transmit_byte(' ');                   // blank, 1 byte
-  transmit_byte('\"');                  // quote, 1 byte
-  for (i = 0; i < 17 && i < strlen(filename) ; i++) { // file name padded with trailing blanks, 17 bytes
-    transmit_byte(filename[i]);
+  hex_send_byte(' ');                   // blank, 1 byte
+  hex_send_byte('\"');                  // quote, 1 byte
+  for (i = 0; i < 17 && i < namelen ; i++) { // file name padded with trailing blanks, 17 bytes
+    hex_send_byte(filename[i]);
   }
-  transmit_byte('\"');                  // quote, 1 byte
+  hex_send_byte('\"');                  // quote, 1 byte
   for ( ; i < 17; i++) {
-    transmit_byte(' ');
+    hex_send_byte(' ');
   }
-  transmit_byte(attrib);                // file attribute, 1 byte
-  transmit_byte(0);                     // null termination of string, 1 byte
+  hex_send_byte(attrib);                // file attribute, 1 byte
+  hex_send_byte(0);                     // null termination of string, 1 byte
   // in total 33 bytes
 }
 
@@ -124,25 +124,25 @@ uint16_t cat_max_file_length_txt(void) {
 }
 
 // Output looks like : 10.2,HELLO.PGM,F
-void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, char attrib) {
+void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, uint8_t namelen, char attrib) {
   uint8_t i;
   uint8_t width = FILE_SIZE_WIDTH;
   char buf[width + 1];
   char* file_size = format_file_size(fsize, buf, width);
 
-  int len = 1 + strlen(file_size) + 1 + 1 + strlen(filename) + 1 + 1; // length of data transmitted
-  transmit_word(len);  // length
-  transmit_byte('\"'); // because we have leading whitespaces
+  int len = 1 + namelen + 1 + 1 + namelen + 1 + 1; // length of data transmitted
+  hex_send_word(len);  // length
+  hex_send_byte('\"'); // because we have leading whitespaces
   for (i = 0; i < strlen(file_size)  ; i++) { // file size in kilo bytes, 4 byte
-    transmit_byte(file_size[i]);              //
+    hex_send_byte(file_size[i]);              //
   }                                           //
-  transmit_byte('\"');
-  transmit_byte(',');                         // "," separator, 1 byte
-  for (i = 0; i < strlen(filename); i++) {    // file name , max. _MAX_LFN_LENGTH bytes
-    transmit_byte(filename[i]);               //
+  hex_send_byte('\"');
+  hex_send_byte(',');                         // "," separator, 1 byte
+  for (i = 0; i < namelen; i++) {    // file name , max. _MAX_LFN_LENGTH bytes
+    hex_send_byte(filename[i]);               //
   }                                           //
-  transmit_byte(',');                         // "," separator, 1 byte
-  transmit_byte(attrib);                      // file attribute, 1 byte
+  hex_send_byte(',');                         // "," separator, 1 byte
+  hex_send_byte(attrib);                      // file attribute, 1 byte
 
   *dirnum = *dirnum - 1; // decrement dirnum, used here as entries left to detect EOF for catalog when dirnum = 0
 }
@@ -263,13 +263,14 @@ void hex_read_catalog(file_t *file) {
   char attrib;
   uint32_t fsize;
   FILINFO fno;
+  uint8_t namelen;
   #ifdef _MAX_LFN_LENGTH
   UCHAR lfn[_MAX_LFN_LENGTH+1];
   fno.lfn = lfn;
   #endif
 
   debug_puts_P("Read PGM Catalog\r\n");
-  transmit_word(cat_file_length_pgm(file->dirnum));  // send full length of file
+  hex_send_word(cat_file_length_pgm(file->dirnum));  // send full length of file
   cat_open_pgm(file->dirnum);
   uint16_t i = 1;
   while(i <= file->dirnum && res == FR_OK) {
@@ -282,18 +283,19 @@ void hex_read_catalog(file_t *file) {
     filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
     attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
     fsize = fno.fsize;
+    namelen = strlen(filename);
 
     if (cat_skip_file(filename, file->pattern))
       continue; // skip certain files like "." and ".."
 
-    debug_trace(filename, 0, strlen(filename));
+    debug_trace(filename, 0, namelen);
 
-    cat_write_record_pgm(i++, fsize, filename, attrib);
+    cat_write_record_pgm(i++, fsize, filename, namelen, attrib);
   }
   cat_close_pgm();
   //debug_putc('>');
   rc = HEXSTAT_SUCCESS;
-  transmit_byte( rc ); // status byte transmit
+  hex_send_byte( rc ); // status byte transmit
   hex_finish();
 }
 
@@ -306,6 +308,7 @@ void hex_read_catalog_txt(file_t * file) {
   fno.lfn = lfn;
   #endif
   char* filename;
+  uint8_t namelen;
   char attrib;
   uint32_t size;
 
@@ -321,6 +324,7 @@ void hex_read_catalog_txt(file_t * file) {
       break; // break on error, leave do .. while loop
     }
     filename = (char*)(fno.lfn[0] != 0 ? fno.lfn : fno.fname );
+    namelen = strlen(filename);
     attrib = ((fno.fattrib & AM_DIR) ? 'D' : ((fno.fattrib & AM_VOL) ? 'V' : 'F'));
     size = fno.fsize;
     if (filename[0] == 0) {
@@ -335,23 +339,23 @@ void hex_read_catalog_txt(file_t * file) {
 
   switch(res) {
     case FR_OK:
-      debug_trace(filename, 0, strlen(filename));
+      debug_trace(filename, 0, namelen);
 
       // write the calatog entry for OPEN/INPUT
       // TODO can the below have a bad return code?
-      cat_write_txt(&(file->dirnum), size, filename, attrib);
+      cat_write_txt(&(file->dirnum), size, filename, namelen, attrib);
       rc = HEXSTAT_SUCCESS;
       break;
     case FR_NO_FILE:
-      transmit_word(0); // zero length data
+      hex_send_word(0); // zero length data
       rc = HEXSTAT_EOF;
       break;
     default:
-      transmit_word(0); // zero length data
+      hex_send_word(0); // zero length data
       rc = HEXSTAT_DEVICE_ERR;
       break;
   }
-  transmit_byte(rc);    // status code
+  hex_send_byte(rc);    // status code
   hex_finish();
 }
 
@@ -427,10 +431,10 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
   }
   if(!hex_is_bav()) { // we can send response
     if(rc == HEXSTAT_SUCCESS) {
-      transmit_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
-      transmit_word(fsize);
-      transmit_word(0);
-      transmit_byte(HEXSTAT_SUCCESS);    // status code
+      hex_send_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
+      hex_send_word(fsize);
+      hex_send_word(0);
+      hex_send_byte(HEXSTAT_SUCCESS);    // status code
       hex_finish();
       return;
     } else {

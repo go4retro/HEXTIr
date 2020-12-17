@@ -26,7 +26,6 @@
 
 #include "config.h"
 #include "clock.h"
-#include "configure.h"
 #include "debug.h"
 #include "drive.h"
 #include "eeprom.h"
@@ -61,10 +60,7 @@ static void hex_reset_bus(pab_t *pab) {
     drv_reset();
     prn_reset();
     ser_reset();
-    clock_reset();
-#ifdef USE_CFG_DEVICE
-    cfg_reset();
-#endif
+    clk_reset();
   }
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
@@ -77,56 +73,22 @@ static void hex_reset_bus(pab_t *pab) {
 
 static void execute_command(pab_t *pab) {
   cmd_proc  handler;
-#ifdef USE_NEW_OPTABLE
   cmd_op_t  *op;
-#else
-  uint8_t   *op;
-#endif
   uint8_t   i = 0;
   uint8_t   j;
   uint8_t   cmd;
 
-#ifndef NEW_REGISTER
-  // Parse the registry.  If incoming PAB has device code 0, start
-  // at index 0 in the registry as those are the handlers for that
-  // device code.
-
-  // If the incoming device code is NOT 0, then start at index 1
-  // and proceed forward.
-  // If no handler is found, IGNORE the command, unless the
-  // device code within the PAB IS found to be in our registry.
-  // If it is found, then we'll use the "unsupported" command
-  // default handler.
-  if ( pab->dev != 0 ) {
-    i++;
-  }
-#endif
-
   while ( i < registry.num_devices ) {
     // does the incoming PAB have a device in this group in the registry?
-#ifdef USE_NEW_OPTABLE
     if ( registry.entry[ i ].dev_cur == pab->dev ) {
-#else
-    if ( ( registry.entry[ i ].dev_low <= pab->dev ) &&
-         ( registry.entry[ i ].dev_high >= pab->dev ) )
-    {
-#endif
       // If so...
       // this entry will handle our device code.
       // Search for a matching command index now.
-#ifdef USE_NEW_OPTABLE
       op = registry.entry[ i ].oplist;
-#else
-      op = registry.entry[ i ].command;
-#endif
       j = 0;
       // Find a matching command code in this device's table, if present
       do {
-#ifdef USE_NEW_OPTABLE
         cmd = pgm_read_byte( &op[j].command );
-#else
-        cmd = pgm_read_byte( &op[j] );
-#endif
         j++;
       } while ( ( cmd != HEXCMD_INVALID_MARKER ) && cmd != pab->cmd );
       // If we found the command, we have the index to the operations routine
@@ -134,11 +96,7 @@ static void execute_command(pab_t *pab) {
         // found it!
         j--;  // here's the cmd index
         // fetch the handler for this command for this device group.
-#ifdef USE_NEW_OPTABLE
         handler = (cmd_proc)pgm_read_word( &op[j].operation );
-#else
-        handler = (cmd_proc)pgm_read_word( &registry.entry[ i ].operation[ j ] );
-#endif
         (handler)( pab );
         // and exit the command processor
         return;
@@ -161,55 +119,15 @@ static void execute_command(pab_t *pab) {
 //
 // Default registry for global bus support (device 0).
 //
-#ifdef USE_NEW_OPTABLE
 static const cmd_op_t ops[] PROGMEM = {
                                        {HEXCMD_RESET_BUS, hex_reset_bus},
                                        {HEXCMD_NULL, hex_null},
                                        {HEXCMD_INVALID_MARKER, NULL}
                                       };
-#else
-static const cmd_proc fn_table[] PROGMEM = {
-  hex_reset_bus,
-  hex_null,
-  NULL
-};
-
-static const uint8_t op_table[] PROGMEM = {
-  HEXCMD_RESET_BUS,
-  HEXCMD_NULL,
-  HEXCMD_INVALID_MARKER // mark end of this table.
-};
-#endif
 
 
-static inline void reg_init(void) {
-#ifdef NEW_REGISTER
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_ALL, DEV_ALL, DEV_ALL, ops);
-#else
-  cfg_register(DEV_ALL, DEV_ALL, DEV_ALL, op_table, fn_table);
-#endif
-#else
-  registry.num_devices = 1;
-  registry.entry[ 0 ].dev_low = DEV_ALL;
-  registry.entry[ 0 ].dev_cur = DEV_ALL;
-  registry.entry[ 0 ].dev_high = DEV_MAX;
-#ifdef USE_NEW_OPTABLE
-  registry.entry[ 0 ].oplist = (cmd_op_t *)&ops;
-#else
-  registry.entry[ 0 ].operation = (cmd_proc *)&fn_table;
-  registry.entry[ 0 ].command = (uint8_t *)&op_table;
-#endif
-#endif
-#ifndef INIT_COMBO
-#ifdef USE_CFG_DEVICE
-  cfg_register1();
-#endif
-  drv_register();
-  prn_register();
-  ser_register();
-  clock_register();
-#endif
+static inline void bus_init(void) {
+  reg_add(DEV_ALL, DEV_ALL, DEV_ALL, ops);
 }
 
 
@@ -231,16 +149,11 @@ void setup(void) {
   hex_init();
   leds_init();
   timer_init();
-#ifdef INIT_COMBO
-  reg_init();
-#endif
-  clock_init();
+  bus_init();
+  clk_init();
   drv_init();
   ser_init();
   prn_init();
-#ifdef USE_CFG_DEVICE
-  cfg_init(); // fetch our current settings from EEPROM if any (otherwise, the default RAM contents on reset apply)
-#endif
 
   wakeup_pin_init();
 }
@@ -260,9 +173,6 @@ int main(void) {
 #endif
 
   setup();
-#ifndef INIT_COMBO
-  reg_init(); // this must be done first.
-#endif
 
   pabdata.pab.cmd = 0;
   pabdata.pab.lun = 0;
@@ -288,7 +198,7 @@ int main(void) {
 
       while ( i < 9 ) {
         pabdata.raw[ i ] = i;
-        res = receive_byte( &pabdata.raw[ i ] );
+        res = hex_recv_byte( &pabdata.raw[ i ] );
 #ifdef HAVE_HOTPLUG
         // Since we defer mounting the drive until a file is requested,
         // this state may exist for some time.
@@ -322,7 +232,6 @@ int main(void) {
         }
       }
 
-#ifdef NEW_DEV_CHK
       if ( !ignore_cmd ) {
         ignore_cmd = TRUE;
         for (uint8_t j = 0; j < registry.num_devices; j++) {
@@ -333,30 +242,6 @@ int main(void) {
           }
         }
       }
-#else
-      if ( !ignore_cmd ) {
-       if ( !( ( pabdata.pab.dev == 0 ) ||
-                ( pabdata.pab.dev DEV_DRV_START )
-                || ( pabdata.pab.dev == DEV_CFG_START )
-#ifdef INCLUDE_PRINTER
-                ||
-                (( pabdata.pab.dev == DEV_PRN_DEFAULT ) )
-#endif
-#ifdef INCLUDE_CLOCK
-                ||
-                (( pabdata.pab.dev == DEV_RTC_START ) )
-#endif
-#ifdef INCLUDE_SERIAL
-                ||
-                (( pabdata.pab.dev == DEV_SER_START ) )
-#endif
-              )
-           )
-        {
-          ignore_cmd = TRUE;
-        }
-      }
-#endif
       if ( !ignore_cmd ) {
         if (i == 9) {
           // exec command

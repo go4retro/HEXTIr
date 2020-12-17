@@ -30,13 +30,13 @@
 #define DEV_RTC_END       239         // New device: RTC peripheral: device code block from 230 to 239.
 
 #ifdef INCLUDE_CLOCK
-void clock_reset(void);
-void clock_register(void);
-void clock_init(void);
+void clk_reset(void);
+void clk_register(void);
+void clk_init(void);
 #else
-#define clock_reset()     do {} while(0)
-#define clock_register()  do {} while(0)
-#define clock_init()      do {} while(0)
+#define clk_reset()     do {} while(0)
+#define clk_register()  do {} while(0)
+#define clk_init()      do {} while(0)
 #endif
 
 #endif /* SRC_CLOCK_H */

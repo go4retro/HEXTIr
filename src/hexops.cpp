@@ -101,7 +101,7 @@ hexstatus_t hex_get_data(uint8_t *buf, uint16_t len) {
 
   while (i < len) {
     buf[ i ] = 1;
-    if(receive_byte( &buf[ i++ ] ) != HEXERR_SUCCESS) {
+    if(hex_recv_byte( &buf[ i++ ] ) != HEXERR_SUCCESS) {
       // TODO probably should define what errors could happen
       return HEXSTAT_DATA_ERR;
     }
@@ -120,7 +120,7 @@ void hex_eat_it(uint16_t length, hexstatus_t status )
 
   while ( i < length ) {
     data = 1;
-    if ( receive_byte( &data ) != HEXERR_SUCCESS ) {
+    if ( hex_recv_byte( &data ) != HEXERR_SUCCESS ) {
       hex_release_bus();
       return;
     }
@@ -149,7 +149,6 @@ void hex_null(pab_t *pab __attribute__((unused))) {
     ;
 }
 
-#ifdef USE_OPEN_HELPER
 hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t *att) {
 
   if(pab->datalen > BUFSIZE) {
@@ -166,9 +165,7 @@ hexstatus_t hex_open_helper(pab_t *pab, hexstatus_t err, uint16_t *len, uint8_t 
   }
   return HEXSTAT_SUCCESS;
 }
-#endif
 
-#ifdef USE_CMD_LUN
 /**
  * Remove all leading and trailing whitespaces
  */
@@ -437,13 +434,12 @@ void hex_read_status(void) {
   hexstatus_t rc;
   uint8_t i;
 
-  rc = (transmit_word( STRLEN(_version) ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+  rc = (hex_send_word( STRLEN(_version) ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
   for (i = 0; rc == HEXSTAT_SUCCESS && i < STRLEN(_version); i++) {
-    rc = (transmit_byte(pgm_read_byte(&_version[i])) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+    rc = (hex_send_byte(pgm_read_byte(&_version[i])) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
   }
-  transmit_byte(rc);
+  hex_send_byte(rc);
   hex_finish();
 }
-#endif
 
 
