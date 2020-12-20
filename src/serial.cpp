@@ -23,7 +23,6 @@
 #include <avr/pgmspace.h>
 
 #include "config.h"
-#include "configure.h"
 #include "debug.h"
 #include "eeprom.h"
 #include "hexbus.h"
@@ -36,10 +35,8 @@
 #ifdef INCLUDE_SERIAL
 
 // Global defines
-volatile uint8_t  ser_open = FALSE;
+volatile uint8_t  _ser_open = FALSE;
 static serialcfg_t _cfg;
-
-#ifdef USE_CMD_LUN
 
 typedef enum _sercmd_t {
                           SER_CMD_NONE = 0,
@@ -311,12 +308,11 @@ static inline void ser_write_cmd(pab_t *pab, uint8_t * dev, serialcfg_t *cfg) {
     hex_finish();
   }
 }
-#endif
 
  /*
-   her_ser_open()
+   ser_open()
 */
-static void hex_ser_open(pab_t *pab) {
+static void ser_open(pab_t *pab) {
   uint16_t len;
   char *buf;
   uint8_t blen;
@@ -325,24 +321,9 @@ static void hex_ser_open(pab_t *pab) {
 
   debug_puts_P("Open Serial\r\n");
 
-#ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, HEXSTAT_TOO_LONG, &len, &att);
   if(rc != HEXSTAT_SUCCESS)
     return;
-#else
-  if(pab->datalen > BUFSIZE) {
-    hex_eat_it( pab->datalen, HEXSTAT_TOO_LONG );
-    return;
-  }
-
-  if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
-    len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
-    att = buffer[ 2 ];  // tells us open for read, write or both.
-  } else {
-    hex_release_bus();
-    return;
-  }
-#endif
 
   // Now, we need to parse the input buffer and decide on parameters.
   // realistically, all we can actually support is B=xxx.  Some other
@@ -362,7 +343,6 @@ static void hex_ser_open(pab_t *pab) {
   buf = (char *)(buffer + 3);
   trim(&buf, &blen);
 
-  #ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // we should check att, as it should be WRITE or UPDATE
     if(blen)
@@ -370,14 +350,12 @@ static void hex_ser_open(pab_t *pab) {
     hex_finish_open(BUFSIZE, rc);
     return;
   }
-#endif
 
   // we used to quit if serial was open, but that's not a valid error from open.
   if ( att != 0 ) {
     len = len ? len : BUFSIZE;
     if ( att & OPENMODE_UPDATE ) {
-      ser_open = att; // 00 attribute = illegal.
-#ifdef USE_CMD_LUN
+      _ser_open = att; // 00 attribute = illegal.
       _cfg.bpsrate = _config.ser.bpsrate;
       _cfg.echo = _config.ser.echo;
       _cfg.length = _config.ser.length;
@@ -391,9 +369,6 @@ static void hex_ser_open(pab_t *pab) {
       if(blen)
         rc = ser_exec_cmds(buf, blen, NULL, &_cfg);
       uart_config(CALC_BPS(_cfg.bpsrate), _cfg.length, _cfg.parity, _cfg.stopbits);
-#else
-      uart_config(CALC_BPS(baud), UART_LENGTH_8, UART_PARITY_NONE, UART_STOP_1);
-#endif
     } else {
       rc = HEXSTAT_APPEND_MODE_ERR;
     }
@@ -406,22 +381,20 @@ static void hex_ser_open(pab_t *pab) {
 
 
 /*
-   hex_ser_close()
+   ser_close()
 */
-static void hex_ser_close(pab_t *pab) {
+static void ser_close(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   debug_puts_P("Close Serial\r\n");
 
-#ifdef USE_CMD_LUN
   if (pab->lun == LUN_CMD) {
     // handle command channel close
     hex_close_cmd();
     return;
   }
-#endif
 
-  if ( ser_open ) {
+  if ( _ser_open ) {
     ser_reset();
   } else {
     rc = HEXSTAT_NOT_OPEN;
@@ -434,7 +407,7 @@ static void hex_ser_close(pab_t *pab) {
 }
 
 
-static void hex_ser_read(pab_t *pab) {
+static void ser_read(pab_t *pab) {
   uint16_t len = pab->buflen;
   uint16_t bcount = 0;
   hexstatus_t  rc = HEXSTAT_SUCCESS;
@@ -446,7 +419,7 @@ static void hex_ser_read(pab_t *pab) {
     return;
   }
 
-  if ( ser_open ) {
+  if ( _ser_open ) {
     // protect access via ser_open since serial_peripheral is not present
     // if ser_open = 0.
 //#ifdef ARDUINO
@@ -460,9 +433,9 @@ static void hex_ser_read(pab_t *pab) {
   }
 
   if ( !hex_is_bav() ) {
-    if ( ser_open & OPENMODE_READ ) {
+    if ( _ser_open & OPENMODE_READ ) {
       // send how much we are going to send
-      rc = (transmit_word( bcount ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+      rc = (hex_send_word( bcount ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 
       // while we have data remaining to send.
       while ( bcount && rc == HEXSTAT_SUCCESS ) {
@@ -474,14 +447,14 @@ static void hex_ser_read(pab_t *pab) {
 
         bcount -= len;
         while ( len-- && rc == HEXSTAT_SUCCESS ) {
-          rc = (transmit_byte( uart_getc() ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+          rc = (hex_send_byte( uart_getc() ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
         }
       }
       if ( rc == HEXSTAT_SUCCESS ) {
-        transmit_byte( rc );
+        hex_send_byte( rc );
       }
       hex_finish();
-    } else if ( ser_open ) {
+    } else if ( _ser_open ) {
       // open for OUTPUT only?
       hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
     } else {
@@ -493,7 +466,7 @@ static void hex_ser_read(pab_t *pab) {
 }
 
 
-static void hex_ser_write(pab_t *pab) {
+static void ser_write(pab_t *pab) {
   uint16_t len;
   uint16_t i;
   uint16_t j;
@@ -504,15 +477,13 @@ static void hex_ser_write(pab_t *pab) {
 
   len = pab->datalen;
 
-#ifdef USE_CMD_LUN
   if(pab->lun == LUN_CMD) {
     // handle command channel
     ser_write_cmd(pab, &(_config.ser_dev), &(_config.ser));
     return;
   }
-#endif
 
-  if ( ser_open & OPENMODE_WRITE ) {
+  if ( _ser_open & OPENMODE_WRITE ) {
     while (len && rc == HEXSTAT_SUCCESS ) {
       i = (len >= BUFSIZE ? BUFSIZE : len);
       rc = hex_get_data(buffer, i);
@@ -524,7 +495,7 @@ static void hex_ser_write(pab_t *pab) {
       }
       len -= i;
     }
-  } else if ( ser_open ) {
+  } else if ( _ser_open ) {
     rc = HEXSTAT_OUTPUT_MODE_ERR;
   } else {
     rc = HEXSTAT_NOT_OPEN;
@@ -542,17 +513,17 @@ static void hex_ser_write(pab_t *pab) {
 }
 
 
-static void hex_ser_rtn_sta(pab_t *pab __attribute__((unused))) {
+static void ser_rtn_sta(pab_t *pab __attribute__((unused))) {
   // TBD
 }
 
 
-static void hex_ser_set_opts(pab_t *pab __attribute__((unused))) {
+static void ser_set_opts(pab_t *pab __attribute__((unused))) {
   // TBD
 }
 
 
-static void hex_ser_reset(pab_t *pab __attribute__((unused))) {
+static void ser_reset_dev(pab_t *pab __attribute__((unused))) {
 
   ser_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -565,8 +536,8 @@ static void hex_ser_reset(pab_t *pab __attribute__((unused))) {
 
 
 void ser_reset(void) {
-  if ( ser_open ) {
-    ser_open = FALSE;
+  if ( _ser_open ) {
+    _ser_open = FALSE;
   }
   return;
 }
@@ -576,40 +547,16 @@ void ser_reset(void) {
    Command handling registry for device
 */
 
-#ifdef USE_NEW_OPTABLE
 static const cmd_op_t ops[] PROGMEM = {
-                                        {HEXCMD_OPEN,            hex_ser_open},
-                                        {HEXCMD_CLOSE,           hex_ser_close},
-                                        {HEXCMD_READ,            hex_ser_read},
-                                        {HEXCMD_WRITE,           hex_ser_write},
-                                        {HEXCMD_RETURN_STATUS,   hex_ser_rtn_sta},
-                                        {HEXCMD_SET_OPTIONS,     hex_ser_set_opts},
-                                        {HEXCMD_RESET_BUS,       hex_ser_reset},
+                                        {HEXCMD_OPEN,            ser_open},
+                                        {HEXCMD_CLOSE,           ser_close},
+                                        {HEXCMD_READ,            ser_read},
+                                        {HEXCMD_WRITE,           ser_write},
+                                        {HEXCMD_RETURN_STATUS,   ser_rtn_sta},
+                                        {HEXCMD_SET_OPTIONS,     ser_set_opts},
+                                        {HEXCMD_RESET_BUS,       ser_reset_dev},
                                         {(hexcmdtype_t)HEXCMD_INVALID_MARKER,  NULL}
                                       };
-#else
-static const cmd_proc fn_table[] PROGMEM = {
-  hex_ser_open,
-  hex_ser_close,
-  hex_ser_read,
-  hex_ser_write,
-  hex_ser_rtn_sta,
-  hex_ser_set_opts,
-  hex_ser_reset,
-  NULL // end of table.
-};
-
-static const uint8_t op_table[] PROGMEM = {
-  HEXCMD_OPEN,
-  HEXCMD_CLOSE,
-  HEXCMD_READ,
-  HEXCMD_WRITE,
-  HEXCMD_RETURN_STATUS,
-  HEXCMD_SET_OPTIONS,
-  HEXCMD_RESET_BUS,
-  HEXCMD_INVALID_MARKER
-};
-#endif
 
 static uint8_t is_cfg_valid(void) {
   return (_config.valid && _config.ser_dev >= DEV_SER_START && _config.ser_dev <= DEV_SER_END);
@@ -617,40 +564,19 @@ static uint8_t is_cfg_valid(void) {
 
 
 void ser_register(void) {
-#ifdef NEW_REGISTER
   uint8_t ser_dev = DEV_SER_DEFAULT;
 
   if(is_cfg_valid()) {
     ser_dev = _config.ser_dev;
   }
-#ifdef USE_NEW_OPTABLE
-  cfg_register(DEV_SER_START, ser_dev, DEV_SER_END, ops);
-#else
-  cfg_register(DEV_SER_START, ser_dev, DEV_SER_END, op_table, fn_table);
-#endif
-#else
-  uint8_t i = registry.num_devices;
-
-  registry.num_devices++;
-  registry.entry[ i ].dev_low = DEV_SER_START;
-  registry.entry[ i ].dev_cur = DEV_SER_DEFAULT;
-  registry.entry[ i ].dev_high = DEV_SER_END; // support 20, 21, 22, 23 as device codes
-#ifdef USE_NEW_OPTABLE
-  registry.entry[ i ].oplist = (cmd_op_t *)ops;
-#else
-  registry.entry[ i ].operation = (cmd_proc *)fn_table;
-  registry.entry[ i ].command = (uint8_t *)op_table;
-#endif
-#endif
+  reg_add(DEV_SER_START, ser_dev, DEV_SER_END, ops);
 }
 
 
 void ser_init(void) {
   uart_init();
-  ser_open = FALSE;
-#ifdef INIT_COMBO
+  _ser_open = FALSE;
   ser_register();
-#endif
   if(!is_cfg_valid()) {
     _config.ser.bpsrate = 300;
     _config.ser.echo = TRUE;  // TODO see exactly what this means.

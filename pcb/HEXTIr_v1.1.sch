@@ -8,34 +8,34 @@
 </settings>
 <grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
-<layer number="1" name="Top" color="4" fill="1" visible="yes" active="no"/>
-<layer number="2" name="Route2" color="1" fill="3" visible="yes" active="no"/>
-<layer number="3" name="Route3" color="4" fill="3" visible="yes" active="no"/>
-<layer number="4" name="Route4" color="1" fill="4" visible="yes" active="no"/>
-<layer number="5" name="Route5" color="4" fill="4" visible="yes" active="no"/>
-<layer number="6" name="Route6" color="1" fill="8" visible="yes" active="no"/>
-<layer number="7" name="Route7" color="4" fill="8" visible="yes" active="no"/>
-<layer number="8" name="Route8" color="1" fill="2" visible="yes" active="no"/>
-<layer number="9" name="Route9" color="4" fill="2" visible="yes" active="no"/>
-<layer number="10" name="Route10" color="1" fill="7" visible="yes" active="no"/>
-<layer number="11" name="Route11" color="4" fill="7" visible="yes" active="no"/>
-<layer number="12" name="Route12" color="1" fill="5" visible="yes" active="no"/>
-<layer number="13" name="Route13" color="4" fill="5" visible="yes" active="no"/>
-<layer number="14" name="Route14" color="1" fill="6" visible="yes" active="no"/>
-<layer number="15" name="Route15" color="4" fill="6" visible="yes" active="no"/>
-<layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="no"/>
-<layer number="17" name="Pads" color="2" fill="1" visible="yes" active="no"/>
-<layer number="18" name="Vias" color="2" fill="1" visible="yes" active="no"/>
-<layer number="19" name="Unrouted" color="6" fill="1" visible="yes" active="no"/>
-<layer number="20" name="Dimension" color="15" fill="1" visible="yes" active="no"/>
-<layer number="21" name="tPlace" color="7" fill="1" visible="yes" active="no"/>
-<layer number="22" name="bPlace" color="7" fill="1" visible="yes" active="no"/>
-<layer number="23" name="tOrigins" color="15" fill="1" visible="yes" active="no"/>
-<layer number="24" name="bOrigins" color="15" fill="1" visible="yes" active="no"/>
-<layer number="25" name="tNames" color="7" fill="1" visible="yes" active="no"/>
-<layer number="26" name="bNames" color="7" fill="1" visible="yes" active="no"/>
-<layer number="27" name="tValues" color="7" fill="1" visible="yes" active="no"/>
-<layer number="28" name="bValues" color="7" fill="1" visible="yes" active="no"/>
+<layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
+<layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
+<layer number="3" name="Route3" color="4" fill="3" visible="no" active="no"/>
+<layer number="4" name="Route4" color="1" fill="4" visible="no" active="no"/>
+<layer number="5" name="Route5" color="4" fill="4" visible="no" active="no"/>
+<layer number="6" name="Route6" color="1" fill="8" visible="no" active="no"/>
+<layer number="7" name="Route7" color="4" fill="8" visible="no" active="no"/>
+<layer number="8" name="Route8" color="1" fill="2" visible="no" active="no"/>
+<layer number="9" name="Route9" color="4" fill="2" visible="no" active="no"/>
+<layer number="10" name="Route10" color="1" fill="7" visible="no" active="no"/>
+<layer number="11" name="Route11" color="4" fill="7" visible="no" active="no"/>
+<layer number="12" name="Route12" color="1" fill="5" visible="no" active="no"/>
+<layer number="13" name="Route13" color="4" fill="5" visible="no" active="no"/>
+<layer number="14" name="Route14" color="1" fill="6" visible="no" active="no"/>
+<layer number="15" name="Route15" color="4" fill="6" visible="no" active="no"/>
+<layer number="16" name="Bottom" color="1" fill="1" visible="no" active="no"/>
+<layer number="17" name="Pads" color="2" fill="1" visible="no" active="no"/>
+<layer number="18" name="Vias" color="2" fill="1" visible="no" active="no"/>
+<layer number="19" name="Unrouted" color="6" fill="1" visible="no" active="no"/>
+<layer number="20" name="Dimension" color="15" fill="1" visible="no" active="no"/>
+<layer number="21" name="tPlace" color="7" fill="1" visible="no" active="no"/>
+<layer number="22" name="bPlace" color="7" fill="1" visible="no" active="no"/>
+<layer number="23" name="tOrigins" color="15" fill="1" visible="no" active="no"/>
+<layer number="24" name="bOrigins" color="15" fill="1" visible="no" active="no"/>
+<layer number="25" name="tNames" color="7" fill="1" visible="no" active="no"/>
+<layer number="26" name="bNames" color="7" fill="1" visible="no" active="no"/>
+<layer number="27" name="tValues" color="7" fill="1" visible="no" active="no"/>
+<layer number="28" name="bValues" color="7" fill="1" visible="no" active="no"/>
 <layer number="29" name="tStop" color="7" fill="3" visible="no" active="no"/>
 <layer number="30" name="bStop" color="7" fill="6" visible="no" active="no"/>
 <layer number="31" name="tCream" color="7" fill="4" visible="no" active="no"/>
@@ -44,8 +44,8 @@
 <layer number="34" name="bFinish" color="6" fill="6" visible="no" active="no"/>
 <layer number="35" name="tGlue" color="7" fill="4" visible="no" active="no"/>
 <layer number="36" name="bGlue" color="7" fill="5" visible="no" active="no"/>
-<layer number="37" name="tTest" color="7" fill="1" visible="yes" active="no"/>
-<layer number="38" name="bTest" color="7" fill="1" visible="yes" active="no"/>
+<layer number="37" name="tTest" color="7" fill="1" visible="no" active="no"/>
+<layer number="38" name="bTest" color="7" fill="1" visible="no" active="no"/>
 <layer number="39" name="tKeepout" color="4" fill="11" visible="no" active="no"/>
 <layer number="40" name="bKeepout" color="1" fill="11" visible="no" active="no"/>
 <layer number="41" name="tRestrict" color="4" fill="10" visible="no" active="no"/>
@@ -53,16 +53,16 @@
 <layer number="43" name="vRestrict" color="2" fill="10" visible="no" active="no"/>
 <layer number="44" name="Drills" color="7" fill="1" visible="no" active="no"/>
 <layer number="45" name="Holes" color="7" fill="1" visible="no" active="no"/>
-<layer number="46" name="Milling" color="3" fill="1" visible="yes" active="no"/>
-<layer number="47" name="Measures" color="7" fill="1" visible="yes" active="no"/>
-<layer number="48" name="Document" color="7" fill="1" visible="yes" active="no"/>
-<layer number="49" name="Reference" color="7" fill="1" visible="yes" active="no"/>
-<layer number="50" name="dxf" color="7" fill="1" visible="yes" active="no"/>
-<layer number="51" name="tDocu" color="7" fill="1" visible="yes" active="no"/>
-<layer number="52" name="bDocu" color="7" fill="1" visible="yes" active="no"/>
-<layer number="53" name="tGND_GNDA" color="7" fill="9" visible="yes" active="no"/>
-<layer number="54" name="bGND_GNDA" color="1" fill="9" visible="yes" active="no"/>
-<layer number="56" name="wert" color="7" fill="1" visible="yes" active="no"/>
+<layer number="46" name="Milling" color="3" fill="1" visible="no" active="no"/>
+<layer number="47" name="Measures" color="7" fill="1" visible="no" active="no"/>
+<layer number="48" name="Document" color="7" fill="1" visible="no" active="no"/>
+<layer number="49" name="Reference" color="7" fill="1" visible="no" active="no"/>
+<layer number="50" name="dxf" color="7" fill="1" visible="no" active="no"/>
+<layer number="51" name="tDocu" color="7" fill="1" visible="no" active="no"/>
+<layer number="52" name="bDocu" color="7" fill="1" visible="no" active="no"/>
+<layer number="53" name="tGND_GNDA" color="7" fill="9" visible="no" active="no"/>
+<layer number="54" name="bGND_GNDA" color="1" fill="9" visible="no" active="no"/>
+<layer number="56" name="wert" color="7" fill="1" visible="no" active="no"/>
 <layer number="90" name="Modules" color="5" fill="1" visible="yes" active="yes"/>
 <layer number="91" name="Nets" color="2" fill="1" visible="yes" active="yes"/>
 <layer number="92" name="Busses" color="1" fill="1" visible="yes" active="yes"/>
@@ -11977,6 +11977,146 @@ Source: www.kingbright.com</description>
 <rectangle x1="-5.4102" y1="0.4064" x2="-4.7498" y2="2.1336" layer="51"/>
 <rectangle x1="-5.4102" y1="-1.5748" x2="-4.7498" y2="-0.4064" layer="51"/>
 </package>
+<package name="DOCK-BUS">
+<description>&lt;b&gt;TI-74 DOCK-BUS&lt;/b&gt;</description>
+<wire x1="12.7" y1="1.524" x2="12.7" y2="4.318" width="0.1524" layer="21"/>
+<wire x1="1.27" y1="5.08" x2="1.27" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="3.81" y1="5.08" x2="3.81" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="6.35" y1="5.08" x2="6.35" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="8.89" y1="5.08" x2="8.89" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="11.43" y1="5.08" x2="11.43" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="12.7" y1="1.524" x2="-12.7" y2="1.524" width="0.1524" layer="21"/>
+<wire x1="-12.7" y1="4.318" x2="12.7" y2="4.318" width="0.1524" layer="21"/>
+<wire x1="-12.7" y1="1.524" x2="-12.7" y2="4.318" width="0.1524" layer="21"/>
+<wire x1="-11.43" y1="5.08" x2="-11.43" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-8.89" y1="5.08" x2="-8.89" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-6.35" y1="5.08" x2="-6.35" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-3.81" y1="5.08" x2="-3.81" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-1.27" y1="5.08" x2="-1.27" y2="9.779" width="0.6604" layer="51"/>
+<pad name="10" x="-11.43" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="9" x="-8.89" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="8" x="-6.35" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="7" x="-3.81" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="6" x="-1.27" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="5" x="1.27" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="4" x="3.81" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="3" x="6.35" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="2" x="8.89" y="0" drill="1.016" shape="long" rot="R270"/>
+<pad name="1" x="11.43" y="0" drill="1.016" shape="long" rot="R270"/>
+<text x="-12.7" y="-3.81" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="11.557" y="1.905" size="1.27" layer="21" ratio="10" align="bottom-center">1</text>
+<text x="-5.08" y="-3.81" size="1.27" layer="27" ratio="10">&gt;VALUE</text>
+<rectangle x1="0.9398" y1="4.318" x2="1.6002" y2="5.08" layer="21"/>
+<rectangle x1="3.4798" y1="4.318" x2="4.1402" y2="5.08" layer="21"/>
+<rectangle x1="6.0198" y1="4.318" x2="6.6802" y2="5.08" layer="21"/>
+<rectangle x1="8.5598" y1="4.318" x2="9.2202" y2="5.08" layer="21"/>
+<rectangle x1="11.0998" y1="4.318" x2="11.7602" y2="5.08" layer="21"/>
+<rectangle x1="-11.7602" y1="4.318" x2="-11.0998" y2="5.08" layer="21"/>
+<rectangle x1="-9.2202" y1="4.318" x2="-8.5598" y2="5.08" layer="21"/>
+<rectangle x1="-6.6802" y1="4.318" x2="-6.0198" y2="5.08" layer="21"/>
+<rectangle x1="-4.1402" y1="4.318" x2="-3.4798" y2="5.08" layer="21"/>
+<rectangle x1="-1.6002" y1="4.318" x2="-0.9398" y2="5.08" layer="21"/>
+<rectangle x1="11.0998" y1="0.8636" x2="11.7602" y2="1.524" layer="21"/>
+<rectangle x1="11.0998" y1="-0.3302" x2="11.7602" y2="0.8636" layer="51"/>
+<rectangle x1="8.5598" y1="0.8636" x2="9.2202" y2="1.524" layer="21"/>
+<rectangle x1="6.0198" y1="0.8636" x2="6.6802" y2="1.524" layer="21"/>
+<rectangle x1="8.5598" y1="-0.3302" x2="9.2202" y2="0.8636" layer="51"/>
+<rectangle x1="6.0198" y1="-0.3302" x2="6.6802" y2="0.8636" layer="51"/>
+<rectangle x1="3.4798" y1="0.8636" x2="4.1402" y2="1.524" layer="21"/>
+<rectangle x1="3.4798" y1="-0.3302" x2="4.1402" y2="0.8636" layer="51"/>
+<rectangle x1="0.9398" y1="0.8636" x2="1.6002" y2="1.524" layer="21"/>
+<rectangle x1="0.9398" y1="-0.3302" x2="1.6002" y2="0.8636" layer="51"/>
+<rectangle x1="-1.6002" y1="0.8636" x2="-0.9398" y2="1.524" layer="21"/>
+<rectangle x1="-4.1402" y1="0.8636" x2="-3.4798" y2="1.524" layer="21"/>
+<rectangle x1="-6.6802" y1="0.8636" x2="-6.0198" y2="1.524" layer="21"/>
+<rectangle x1="-1.6002" y1="-0.3302" x2="-0.9398" y2="0.8636" layer="51"/>
+<rectangle x1="-4.1402" y1="-0.3302" x2="-3.4798" y2="0.8636" layer="51"/>
+<rectangle x1="-6.6802" y1="-0.3302" x2="-6.0198" y2="0.8636" layer="51"/>
+<rectangle x1="-9.2202" y1="0.8636" x2="-8.5598" y2="1.524" layer="21"/>
+<rectangle x1="-11.7602" y1="0.8636" x2="-11.0998" y2="1.524" layer="21"/>
+<rectangle x1="-9.2202" y1="-0.3302" x2="-8.5598" y2="0.8636" layer="51"/>
+<rectangle x1="-11.7602" y1="-0.3302" x2="-11.0998" y2="0.8636" layer="51"/>
+<wire x1="12.065" y1="-1.905" x2="-12.065" y2="-1.905" width="0.1524" layer="21"/>
+<wire x1="12.065" y1="-1.905" x2="12.7" y2="-1.27" width="0.1524" layer="21"/>
+<wire x1="-12.065" y1="-1.905" x2="-12.7" y2="-1.27" width="0.1524" layer="21"/>
+<wire x1="-12.7" y1="-1.27" x2="-12.7" y2="1.27" width="0.1524" layer="21"/>
+<wire x1="12.7" y1="-1.27" x2="12.7" y2="1.27" width="0.1524" layer="21"/>
+<wire x1="-14.9225" y1="1.27" x2="-14.9225" y2="19.05" width="0.1524" layer="51"/>
+<wire x1="-14.9225" y1="19.05" x2="14.9225" y2="19.05" width="0.1524" layer="51"/>
+<wire x1="14.9225" y1="19.05" x2="14.9225" y2="1.27" width="0.1524" layer="51"/>
+<wire x1="-14.9225" y1="1.27" x2="-12.7" y2="1.27" width="0.1524" layer="51"/>
+<wire x1="14.9225" y1="1.27" x2="12.7" y2="1.27" width="0.1524" layer="51"/>
+</package>
+<package name="DOCK-BUS-RP">
+<description>&lt;b&gt;TI-74 DOCK-BUS&lt;/b&gt;</description>
+<wire x1="12.7" y1="1.524" x2="12.7" y2="4.318" width="0.1524" layer="21"/>
+<wire x1="1.27" y1="5.08" x2="1.27" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="3.81" y1="5.08" x2="3.81" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="6.35" y1="5.08" x2="6.35" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="8.89" y1="5.08" x2="8.89" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="11.43" y1="5.08" x2="11.43" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="12.7" y1="1.524" x2="-12.7" y2="1.524" width="0.1524" layer="21"/>
+<wire x1="-12.7" y1="4.318" x2="12.7" y2="4.318" width="0.1524" layer="21"/>
+<wire x1="-12.7" y1="1.524" x2="-12.7" y2="4.318" width="0.1524" layer="21"/>
+<wire x1="-11.43" y1="5.08" x2="-11.43" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-8.89" y1="5.08" x2="-8.89" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-6.35" y1="5.08" x2="-6.35" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-3.81" y1="5.08" x2="-3.81" y2="9.779" width="0.6604" layer="51"/>
+<wire x1="-1.27" y1="5.08" x2="-1.27" y2="9.779" width="0.6604" layer="51"/>
+<pad name="10" x="-11.43" y="0" drill="1.016" rot="R270"/>
+<pad name="9" x="-8.89" y="0" drill="1.016" rot="R270"/>
+<pad name="8" x="-6.35" y="0" drill="1.016" rot="R270"/>
+<pad name="7" x="-3.81" y="0" drill="1.016" rot="R270"/>
+<pad name="6" x="-1.27" y="0" drill="1.016" rot="R270"/>
+<pad name="5" x="1.27" y="0" drill="1.016" rot="R270"/>
+<pad name="4" x="3.81" y="0" drill="1.016" rot="R270"/>
+<pad name="3" x="6.35" y="0" drill="1.016" rot="R270"/>
+<pad name="2" x="8.89" y="0" drill="1.016" rot="R270"/>
+<pad name="1" x="11.43" y="0" drill="1.016" shape="square" rot="R270"/>
+<text x="-12.7" y="-3.175" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="11.43" y="1.905" size="1.27" layer="21" ratio="10" align="bottom-center">1</text>
+<text x="-5.08" y="-3.175" size="1.27" layer="27" ratio="10">&gt;VALUE</text>
+<rectangle x1="0.9398" y1="4.318" x2="1.6002" y2="5.08" layer="21"/>
+<rectangle x1="3.4798" y1="4.318" x2="4.1402" y2="5.08" layer="21"/>
+<rectangle x1="6.0198" y1="4.318" x2="6.6802" y2="5.08" layer="21"/>
+<rectangle x1="8.5598" y1="4.318" x2="9.2202" y2="5.08" layer="21"/>
+<rectangle x1="11.0998" y1="4.318" x2="11.7602" y2="5.08" layer="21"/>
+<rectangle x1="-11.7602" y1="4.318" x2="-11.0998" y2="5.08" layer="21"/>
+<rectangle x1="-9.2202" y1="4.318" x2="-8.5598" y2="5.08" layer="21"/>
+<rectangle x1="-6.6802" y1="4.318" x2="-6.0198" y2="5.08" layer="21"/>
+<rectangle x1="-4.1402" y1="4.318" x2="-3.4798" y2="5.08" layer="21"/>
+<rectangle x1="-1.6002" y1="4.318" x2="-0.9398" y2="5.08" layer="21"/>
+<rectangle x1="11.0998" y1="0.8636" x2="11.7602" y2="1.524" layer="21"/>
+<rectangle x1="11.0998" y1="-0.3302" x2="11.7602" y2="0.8636" layer="51"/>
+<rectangle x1="8.5598" y1="0.8636" x2="9.2202" y2="1.524" layer="21"/>
+<rectangle x1="6.0198" y1="0.8636" x2="6.6802" y2="1.524" layer="21"/>
+<rectangle x1="8.5598" y1="-0.3302" x2="9.2202" y2="0.8636" layer="51"/>
+<rectangle x1="6.0198" y1="-0.3302" x2="6.6802" y2="0.8636" layer="51"/>
+<rectangle x1="3.4798" y1="0.8636" x2="4.1402" y2="1.524" layer="21"/>
+<rectangle x1="3.4798" y1="-0.3302" x2="4.1402" y2="0.8636" layer="51"/>
+<rectangle x1="0.9398" y1="0.8636" x2="1.6002" y2="1.524" layer="21"/>
+<rectangle x1="0.9398" y1="-0.3302" x2="1.6002" y2="0.8636" layer="51"/>
+<rectangle x1="-1.6002" y1="0.8636" x2="-0.9398" y2="1.524" layer="21"/>
+<rectangle x1="-4.1402" y1="0.8636" x2="-3.4798" y2="1.524" layer="21"/>
+<rectangle x1="-6.6802" y1="0.8636" x2="-6.0198" y2="1.524" layer="21"/>
+<rectangle x1="-1.6002" y1="-0.3302" x2="-0.9398" y2="0.8636" layer="51"/>
+<rectangle x1="-4.1402" y1="-0.3302" x2="-3.4798" y2="0.8636" layer="51"/>
+<rectangle x1="-6.6802" y1="-0.3302" x2="-6.0198" y2="0.8636" layer="51"/>
+<rectangle x1="-9.2202" y1="0.8636" x2="-8.5598" y2="1.524" layer="21"/>
+<rectangle x1="-11.7602" y1="0.8636" x2="-11.0998" y2="1.524" layer="21"/>
+<rectangle x1="-9.2202" y1="-0.3302" x2="-8.5598" y2="0.8636" layer="51"/>
+<rectangle x1="-11.7602" y1="-0.3302" x2="-11.0998" y2="0.8636" layer="51"/>
+<wire x1="12.065" y1="-1.27" x2="-12.065" y2="-1.27" width="0.1524" layer="21"/>
+<wire x1="12.065" y1="-1.27" x2="12.7" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="-12.065" y1="-1.27" x2="-12.7" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="-12.7" y1="-0.635" x2="-12.7" y2="1.27" width="0.1524" layer="21"/>
+<wire x1="12.7" y1="-0.635" x2="12.7" y2="1.27" width="0.1524" layer="21"/>
+<wire x1="-14.9225" y1="1.27" x2="-14.9225" y2="19.05" width="0.1524" layer="51"/>
+<wire x1="-14.9225" y1="19.05" x2="14.9225" y2="19.05" width="0.1524" layer="51"/>
+<wire x1="14.9225" y1="19.05" x2="14.9225" y2="1.27" width="0.1524" layer="51"/>
+<wire x1="-14.9225" y1="1.27" x2="-12.7" y2="1.27" width="0.1524" layer="51"/>
+<wire x1="14.9225" y1="1.27" x2="12.7" y2="1.27" width="0.1524" layer="51"/>
+</package>
 </packages>
 <symbols>
 <symbol name="HEX-BUS">
@@ -11999,6 +12139,30 @@ Source: www.kingbright.com</description>
 <pin name="GND" x="0" y="-10.16" visible="pad" direction="pwr" rot="R90"/>
 <text x="2.54" y="-5.08" size="1.27" layer="96" rot="MR270">GND</text>
 </symbol>
+<symbol name="2PWRGND">
+<text x="0" y="0" size="1.778" layer="95" align="center">&gt;NAME</text>
+<pin name="GND" x="0" y="-10.16" visible="pad" direction="pwr" rot="R90"/>
+<pin name="PWR_OUT" x="2.54" y="10.16" visible="pad" direction="pwr" rot="R270"/>
+<pin name="PWN_IN" x="-2.54" y="10.16" visible="pad" direction="pwr" rot="R270"/>
+<text x="5.08" y="2.54" size="1.27" layer="96" rot="R90">PWR_OUT</text>
+<text x="0" y="2.54" size="1.27" layer="96" rot="R90">PWR_IN</text>
+<text x="2.54" y="-5.08" size="1.27" layer="96" rot="MR270">GND</text>
+</symbol>
+<symbol name="DOCK-BUS">
+<wire x1="5.08" y1="-15.24" x2="-5.08" y2="-15.24" width="0.4064" layer="94"/>
+<wire x1="-5.08" y1="15.24" x2="-5.08" y2="-15.24" width="0.4064" layer="94"/>
+<wire x1="5.08" y1="-15.24" x2="5.08" y2="15.24" width="0.4064" layer="94"/>
+<wire x1="-5.08" y1="15.24" x2="5.08" y2="15.24" width="0.4064" layer="94"/>
+<text x="-5.08" y="-17.78" size="1.778" layer="96">&gt;VALUE</text>
+<text x="-5.08" y="17.78" size="1.778" layer="95" rot="MR180">&gt;NAME</text>
+<pin name="D3" x="-10.16" y="-10.16" length="middle" swaplevel="1"/>
+<pin name="D2" x="-10.16" y="-7.62" length="middle" swaplevel="1"/>
+<pin name="BAV" x="-10.16" y="7.62" length="middle" direction="oc" swaplevel="1"/>
+<pin name="D1" x="-10.16" y="-5.08" length="middle" swaplevel="1"/>
+<pin name="!HSK" x="-10.16" y="2.54" length="middle" direction="oc" function="dotclk" swaplevel="1"/>
+<pin name="D0" x="-10.16" y="-2.54" length="middle" swaplevel="1"/>
+<pin name="!RESET" x="-10.16" y="12.7" length="middle" direction="oc" swaplevel="1"/>
+</symbol>
 </symbols>
 <devicesets>
 <deviceset name="HEX-BUS_DUAL" prefix="CN">
@@ -12018,6 +12182,48 @@ Source: www.kingbright.com</description>
 <connect gate="A" pin="D3" pad="8 8'"/>
 <connect gate="A" pin="FUT" pad="6 6'"/>
 <connect gate="P" pin="GND" pad="4 4'"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="DOCK-BUS" prefix="CN">
+<gates>
+<gate name="P" symbol="2PWRGND" x="-22.86" y="0" addlevel="request"/>
+<gate name="A" symbol="DOCK-BUS" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="DOCK-BUS">
+<connects>
+<connect gate="A" pin="!HSK" pad="7"/>
+<connect gate="A" pin="!RESET" pad="9"/>
+<connect gate="A" pin="BAV" pad="8"/>
+<connect gate="A" pin="D0" pad="3"/>
+<connect gate="A" pin="D1" pad="4"/>
+<connect gate="A" pin="D2" pad="5"/>
+<connect gate="A" pin="D3" pad="6"/>
+<connect gate="P" pin="GND" pad="10"/>
+<connect gate="P" pin="PWN_IN" pad="2"/>
+<connect gate="P" pin="PWR_OUT" pad="1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="R" package="DOCK-BUS-RP">
+<connects>
+<connect gate="A" pin="!HSK" pad="7"/>
+<connect gate="A" pin="!RESET" pad="9"/>
+<connect gate="A" pin="BAV" pad="8"/>
+<connect gate="A" pin="D0" pad="3"/>
+<connect gate="A" pin="D1" pad="4"/>
+<connect gate="A" pin="D2" pad="5"/>
+<connect gate="A" pin="D3" pad="6"/>
+<connect gate="P" pin="GND" pad="10"/>
+<connect gate="P" pin="PWN_IN" pad="2"/>
+<connect gate="P" pin="PWR_OUT" pad="1"/>
 </connects>
 <technologies>
 <technology name=""/>
@@ -12454,6 +12660,9 @@ W = angled&lt;p&gt;
 <part name="SV2" library="con-lstb-rp" deviceset="MA03-1" device=""/>
 <part name="SV3" library="con-lstb-rp" deviceset="MA05-1" device=""/>
 <part name="GND22" library="supply1" deviceset="GND" device=""/>
+<part name="CN1" library="ti-cc40" deviceset="DOCK-BUS" device="R"/>
+<part name="GND23" library="supply1" deviceset="GND" device=""/>
+<part name="GND24" library="supply1" deviceset="GND" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -12471,28 +12680,28 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <instance part="FRAME1" gate="G$2" x="167.64" y="0"/>
 <instance part="R1" gate="G$1" x="17.78" y="172.72"/>
 <instance part="SD1" gate="G$1" x="147.32" y="114.3"/>
-<instance part="SD1" gate="PWR" x="12.7" y="17.78"/>
+<instance part="SD1" gate="PWR" x="12.7" y="20.32"/>
 <instance part="GND3" gate="1" x="15.24" y="5.08"/>
 <instance part="GND4" gate="1" x="20.32" y="5.08"/>
 <instance part="GND5" gate="1" x="10.16" y="5.08"/>
 <instance part="GND7" gate="1" x="5.08" y="5.08"/>
-<instance part="VR2" gate="A1" x="96.52" y="20.32"/>
-<instance part="VR1" gate="G$1" x="127" y="20.32"/>
-<instance part="G1" gate="G$1" x="30.48" y="15.24" rot="R90"/>
-<instance part="G2" gate="G$1" x="45.72" y="15.24" rot="R90"/>
-<instance part="+3V1" gate="G$1" x="12.7" y="30.48"/>
-<instance part="+3V2" gate="G$1" x="137.16" y="30.48"/>
-<instance part="P+1" gate="1" x="109.22" y="30.48"/>
-<instance part="GND8" gate="1" x="30.48" y="5.08"/>
-<instance part="ALL3V3" gate="1" x="53.34" y="15.24" rot="R270"/>
-<instance part="GND9" gate="1" x="96.52" y="5.08"/>
-<instance part="GND10" gate="1" x="127" y="5.08"/>
-<instance part="C5" gate="G$1" x="144.78" y="20.32"/>
-<instance part="C6" gate="G$1" x="152.4" y="20.32"/>
-<instance part="C7" gate="G$1" x="160.02" y="20.32"/>
-<instance part="+3V3" gate="G$1" x="152.4" y="30.48"/>
-<instance part="P+5" gate="1" x="144.78" y="30.48"/>
-<instance part="P+6" gate="1" x="160.02" y="30.48"/>
+<instance part="VR2" gate="A1" x="121.92" y="20.32"/>
+<instance part="VR1" gate="G$1" x="152.4" y="20.32"/>
+<instance part="G1" gate="G$1" x="55.88" y="15.24" rot="R90"/>
+<instance part="G2" gate="G$1" x="71.12" y="15.24" rot="R90"/>
+<instance part="+3V1" gate="G$1" x="12.7" y="35.56"/>
+<instance part="+3V2" gate="G$1" x="162.56" y="30.48"/>
+<instance part="P+1" gate="1" x="134.62" y="30.48"/>
+<instance part="GND8" gate="1" x="55.88" y="5.08"/>
+<instance part="ALL3V3" gate="1" x="78.74" y="15.24" rot="R270"/>
+<instance part="GND9" gate="1" x="121.92" y="5.08"/>
+<instance part="GND10" gate="1" x="152.4" y="5.08"/>
+<instance part="C5" gate="G$1" x="5.08" y="60.96"/>
+<instance part="C6" gate="G$1" x="12.7" y="60.96"/>
+<instance part="C7" gate="G$1" x="20.32" y="60.96"/>
+<instance part="+3V3" gate="G$1" x="12.7" y="71.12"/>
+<instance part="P+5" gate="1" x="5.08" y="71.12"/>
+<instance part="P+6" gate="1" x="20.32" y="71.12"/>
 <instance part="R2" gate="G$1" x="109.22" y="121.92" smashed="yes">
 <attribute name="NAME" x="101.6" y="121.92" size="1.778" layer="95"/>
 <attribute name="VALUE" x="114.3" y="121.92" size="1.778" layer="96"/>
@@ -12519,12 +12728,12 @@ The Texas Instruments HEX-BUS SD Drive</text>
 </instance>
 <instance part="GND6" gate="1" x="124.46" y="81.28"/>
 <instance part="P+7" gate="1" x="10.16" y="203.2"/>
-<instance part="S1" gate="SW1" x="68.58" y="22.86" rot="R270"/>
-<instance part="SUPPLY1" gate="G$1" x="45.72" y="27.94"/>
-<instance part="SUPPLY2" gate="1" x="83.82" y="30.48"/>
-<instance part="SUPPLY3" gate="1" x="116.84" y="30.48"/>
-<instance part="SUPPLY4" gate="1" x="76.2" y="30.48"/>
-<instance part="SUPPLY5" gate="G$1" x="60.96" y="27.94"/>
+<instance part="S1" gate="SW1" x="93.98" y="22.86" rot="R270"/>
+<instance part="SUPPLY1" gate="G$1" x="71.12" y="27.94"/>
+<instance part="SUPPLY2" gate="1" x="109.22" y="30.48"/>
+<instance part="SUPPLY3" gate="1" x="142.24" y="30.48"/>
+<instance part="SUPPLY4" gate="1" x="101.6" y="30.48"/>
+<instance part="SUPPLY5" gate="G$1" x="86.36" y="27.94"/>
 <instance part="PWR" gate="G$1" x="124.46" y="134.62" rot="R90"/>
 <instance part="ACT" gate="G$1" x="124.46" y="132.08" smashed="yes" rot="R90">
 <attribute name="NAME" x="124.968" y="125.984" size="1.778" layer="95"/>
@@ -12539,9 +12748,9 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <attribute name="VALUE" x="116.84" y="130.048" size="1.778" layer="96"/>
 </instance>
 <instance part="GND2" gate="1" x="132.08" y="81.28"/>
-<instance part="GND11" gate="1" x="144.78" y="5.08"/>
-<instance part="GND12" gate="1" x="152.4" y="5.08"/>
-<instance part="GND13" gate="1" x="160.02" y="5.08"/>
+<instance part="GND11" gate="1" x="5.08" y="45.72"/>
+<instance part="GND12" gate="1" x="12.7" y="45.72"/>
+<instance part="GND13" gate="1" x="20.32" y="45.72"/>
 <instance part="GOLD_ORB_SM1" gate="G$1" x="226.06" y="48.26"/>
 <instance part="R10" gate="G$1" x="101.6" y="190.5" smashed="yes" rot="R270">
 <attribute name="NAME" x="103.9114" y="184.15" size="1.778" layer="95" rot="R90"/>
@@ -12585,26 +12794,31 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <instance part="GND17" gate="1" x="116.84" y="149.86"/>
 <instance part="GND18" gate="1" x="121.92" y="149.86"/>
 <instance part="GND19" gate="1" x="127" y="149.86"/>
-<instance part="CN2" gate="A" x="144.78" y="170.18"/>
-<instance part="IC2" gate="G$1" x="226.06" y="177.8"/>
-<instance part="GND20" gate="1" x="210.82" y="162.56"/>
-<instance part="R16" gate="G$1" x="254" y="182.88" smashed="yes" rot="R270">
-<attribute name="NAME" x="256.3114" y="176.53" size="1.778" layer="95" rot="R90"/>
-<attribute name="VALUE" x="256.032" y="185.42" size="1.778" layer="96" rot="R90"/>
+<instance part="CN2" gate="A" x="251.46" y="193.04"/>
+<instance part="IC2" gate="G$1" x="58.42" y="76.2"/>
+<instance part="GND20" gate="1" x="43.18" y="60.96"/>
+<instance part="R16" gate="G$1" x="86.36" y="81.28" smashed="yes" rot="R270">
+<attribute name="NAME" x="88.6714" y="74.93" size="1.778" layer="95" rot="R90"/>
+<attribute name="VALUE" x="88.392" y="83.82" size="1.778" layer="96" rot="R90"/>
 </instance>
-<instance part="R17" gate="G$1" x="259.08" y="182.88" smashed="yes" rot="R270">
-<attribute name="NAME" x="261.3914" y="176.53" size="1.778" layer="95" rot="R90"/>
-<attribute name="VALUE" x="261.112" y="185.42" size="1.778" layer="96" rot="R90"/>
+<instance part="R17" gate="G$1" x="91.44" y="81.28" smashed="yes" rot="R270">
+<attribute name="NAME" x="93.7514" y="74.93" size="1.778" layer="95" rot="R90"/>
+<attribute name="VALUE" x="93.472" y="83.82" size="1.778" layer="96" rot="R90"/>
 </instance>
-<instance part="P+12" gate="1" x="254" y="195.58"/>
-<instance part="P+13" gate="1" x="259.08" y="195.58"/>
-<instance part="GND21" gate="1" x="220.98" y="114.3"/>
-<instance part="P+14" gate="G$1" x="30.48" y="30.48"/>
-<instance part="P+11" gate="G$1" x="238.76" y="195.58"/>
-<instance part="P+15" gate="1" x="203.2" y="203.2"/>
-<instance part="SV2" gate="G$1" x="231.14" y="104.14" rot="R180"/>
-<instance part="SV3" gate="G$1" x="231.14" y="127" rot="R180"/>
-<instance part="GND22" gate="1" x="220.98" y="93.98"/>
+<instance part="P+12" gate="1" x="86.36" y="93.98"/>
+<instance part="P+13" gate="1" x="91.44" y="93.98"/>
+<instance part="GND21" gate="1" x="241.3" y="73.66"/>
+<instance part="P+14" gate="G$1" x="55.88" y="30.48"/>
+<instance part="P+11" gate="G$1" x="71.12" y="93.98"/>
+<instance part="P+15" gate="1" x="35.56" y="101.6"/>
+<instance part="SV2" gate="G$1" x="251.46" y="63.5" rot="R180"/>
+<instance part="SV3" gate="G$1" x="251.46" y="86.36" rot="R180"/>
+<instance part="GND22" gate="1" x="241.3" y="53.34"/>
+<instance part="CN1" gate="A" x="251.46" y="154.94"/>
+<instance part="CN1" gate="P" x="38.1" y="20.32"/>
+<instance part="CN2" gate="P" x="30.48" y="20.32"/>
+<instance part="GND23" gate="1" x="30.48" y="5.08"/>
+<instance part="GND24" gate="1" x="38.1" y="5.08"/>
 </instances>
 <busses>
 </busses>
@@ -12629,36 +12843,36 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <segment>
 <pinref part="SD1" gate="PWR" pin="VSS@1"/>
 <pinref part="GND7" gate="1" pin="GND"/>
-<wire x1="5.08" y1="10.16" x2="5.08" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="5.08" y1="12.7" x2="5.08" y2="7.62" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="SD1" gate="PWR" pin="VSS@2"/>
 <pinref part="GND5" gate="1" pin="GND"/>
-<wire x1="10.16" y1="10.16" x2="10.16" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="10.16" y1="12.7" x2="10.16" y2="7.62" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="SD1" gate="PWR" pin="GND@1"/>
 <pinref part="GND3" gate="1" pin="GND"/>
-<wire x1="15.24" y1="10.16" x2="15.24" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="15.24" y1="12.7" x2="15.24" y2="7.62" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="SD1" gate="PWR" pin="GND@2"/>
 <pinref part="GND4" gate="1" pin="GND"/>
-<wire x1="20.32" y1="10.16" x2="20.32" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="20.32" y1="12.7" x2="20.32" y2="7.62" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="G1" gate="G$1" pin="-"/>
-<wire x1="30.48" y1="10.16" x2="30.48" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="55.88" y1="10.16" x2="55.88" y2="7.62" width="0.1524" layer="91"/>
 <pinref part="GND8" gate="1" pin="GND"/>
 </segment>
 <segment>
 <pinref part="VR2" gate="A1" pin="GND"/>
-<wire x1="96.52" y1="12.7" x2="96.52" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="121.92" y1="12.7" x2="121.92" y2="7.62" width="0.1524" layer="91"/>
 <pinref part="GND9" gate="1" pin="GND"/>
 </segment>
 <segment>
 <pinref part="VR1" gate="G$1" pin="GND"/>
-<wire x1="127" y1="12.7" x2="127" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="152.4" y1="12.7" x2="152.4" y2="7.62" width="0.1524" layer="91"/>
 <pinref part="GND10" gate="1" pin="GND"/>
 </segment>
 <segment>
@@ -12686,17 +12900,17 @@ The Texas Instruments HEX-BUS SD Drive</text>
 </segment>
 <segment>
 <pinref part="C5" gate="G$1" pin="2"/>
-<wire x1="144.78" y1="15.24" x2="144.78" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="5.08" y1="55.88" x2="5.08" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="GND11" gate="1" pin="GND"/>
 </segment>
 <segment>
 <pinref part="C6" gate="G$1" pin="2"/>
-<wire x1="152.4" y1="15.24" x2="152.4" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="12.7" y1="55.88" x2="12.7" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="GND12" gate="1" pin="GND"/>
 </segment>
 <segment>
 <pinref part="C7" gate="G$1" pin="2"/>
-<wire x1="160.02" y1="15.24" x2="160.02" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="20.32" y1="55.88" x2="20.32" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="GND13" gate="1" pin="GND"/>
 </segment>
 <segment>
@@ -12731,25 +12945,35 @@ The Texas Instruments HEX-BUS SD Drive</text>
 </segment>
 <segment>
 <pinref part="IC2" gate="G$1" pin="GND"/>
-<wire x1="213.36" y1="170.18" x2="210.82" y2="170.18" width="0.1524" layer="91"/>
+<wire x1="45.72" y1="68.58" x2="43.18" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="GND20" gate="1" pin="GND"/>
-<wire x1="210.82" y1="170.18" x2="210.82" y2="165.1" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="68.58" x2="43.18" y2="63.5" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<wire x1="220.98" y1="132.08" x2="220.98" y2="121.92" width="0.1524" layer="91"/>
-<wire x1="220.98" y1="121.92" x2="220.98" y2="116.84" width="0.1524" layer="91"/>
-<junction x="220.98" y="121.92"/>
+<wire x1="241.3" y1="91.44" x2="241.3" y2="81.28" width="0.1524" layer="91"/>
+<wire x1="241.3" y1="81.28" x2="241.3" y2="76.2" width="0.1524" layer="91"/>
+<junction x="241.3" y="81.28"/>
 <pinref part="GND21" gate="1" pin="GND"/>
 <pinref part="SV3" gate="G$1" pin="1"/>
-<wire x1="220.98" y1="132.08" x2="223.52" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="241.3" y1="91.44" x2="243.84" y2="91.44" width="0.1524" layer="91"/>
 <pinref part="SV3" gate="G$1" pin="5"/>
-<wire x1="223.52" y1="121.92" x2="220.98" y2="121.92" width="0.1524" layer="91"/>
+<wire x1="243.84" y1="81.28" x2="241.3" y2="81.28" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="SV2" gate="G$1" pin="3"/>
-<wire x1="223.52" y1="101.6" x2="220.98" y2="101.6" width="0.1524" layer="91"/>
+<wire x1="243.84" y1="60.96" x2="241.3" y2="60.96" width="0.1524" layer="91"/>
 <pinref part="GND22" gate="1" pin="GND"/>
-<wire x1="220.98" y1="101.6" x2="220.98" y2="96.52" width="0.1524" layer="91"/>
+<wire x1="241.3" y1="60.96" x2="241.3" y2="55.88" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="CN2" gate="P" pin="GND"/>
+<pinref part="GND23" gate="1" pin="GND"/>
+<wire x1="30.48" y1="10.16" x2="30.48" y2="7.62" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="CN1" gate="P" pin="GND"/>
+<pinref part="GND24" gate="1" pin="GND"/>
+<wire x1="38.1" y1="10.16" x2="38.1" y2="7.62" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="/RESET" class="0">
@@ -12843,36 +13067,36 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <net name="+3V3" class="0">
 <segment>
 <pinref part="SD1" gate="PWR" pin="3V3"/>
-<wire x1="12.7" y1="25.4" x2="12.7" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="12.7" y1="27.94" x2="12.7" y2="33.02" width="0.1524" layer="91"/>
 <pinref part="+3V1" gate="G$1" pin="+3V3"/>
 </segment>
 <segment>
 <pinref part="+3V2" gate="G$1" pin="+3V3"/>
-<wire x1="137.16" y1="27.94" x2="137.16" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="162.56" y1="27.94" x2="162.56" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="VR1" gate="G$1" pin="OUT"/>
-<wire x1="137.16" y1="20.32" x2="134.62" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="162.56" y1="20.32" x2="160.02" y2="20.32" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="C6" gate="G$1" pin="1"/>
-<wire x1="152.4" y1="22.86" x2="152.4" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="12.7" y1="63.5" x2="12.7" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="+3V3" gate="G$1" pin="+3V3"/>
 </segment>
 </net>
 <net name="+5V" class="0">
 <segment>
 <pinref part="P+1" gate="1" pin="+5V"/>
-<wire x1="109.22" y1="27.94" x2="109.22" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="134.62" y1="27.94" x2="134.62" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="VR2" gate="A1" pin="VO"/>
-<wire x1="109.22" y1="20.32" x2="106.68" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="134.62" y1="20.32" x2="132.08" y2="20.32" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="C5" gate="G$1" pin="1"/>
-<wire x1="144.78" y1="22.86" x2="144.78" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="5.08" y1="63.5" x2="5.08" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="P+5" gate="1" pin="+5V"/>
 </segment>
 <segment>
 <pinref part="C7" gate="G$1" pin="1"/>
-<wire x1="160.02" y1="22.86" x2="160.02" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="20.32" y1="63.5" x2="20.32" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="P+6" gate="1" pin="+5V"/>
 </segment>
 <segment>
@@ -12923,17 +13147,17 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <segment>
 <pinref part="P+12" gate="1" pin="+5V"/>
 <pinref part="R16" gate="G$1" pin="1"/>
-<wire x1="254" y1="193.04" x2="254" y2="187.96" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="91.44" x2="86.36" y2="86.36" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="P+13" gate="1" pin="+5V"/>
 <pinref part="R17" gate="G$1" pin="1"/>
-<wire x1="259.08" y1="193.04" x2="259.08" y2="187.96" width="0.1524" layer="91"/>
+<wire x1="91.44" y1="91.44" x2="91.44" y2="86.36" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="IC2" gate="G$1" pin="VBAT"/>
-<wire x1="213.36" y1="175.26" x2="203.2" y2="175.26" width="0.1524" layer="91"/>
-<wire x1="203.2" y1="175.26" x2="203.2" y2="200.66" width="0.1524" layer="91"/>
+<wire x1="45.72" y1="73.66" x2="35.56" y2="73.66" width="0.1524" layer="91"/>
+<wire x1="35.56" y1="73.66" x2="35.56" y2="99.06" width="0.1524" layer="91"/>
 <pinref part="P+15" gate="1" pin="+5V"/>
 </segment>
 </net>
@@ -12942,25 +13166,45 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <pinref part="IC1" gate="G$1" pin="PC0(ADC0)"/>
 <wire x1="86.36" y1="172.72" x2="111.76" y2="172.72" width="0.1524" layer="91"/>
 <pinref part="R12" gate="G$1" pin="2"/>
-<wire x1="111.76" y1="172.72" x2="134.62" y2="172.72" width="0.1524" layer="91"/>
+<wire x1="111.76" y1="172.72" x2="129.54" y2="172.72" width="0.1524" layer="91"/>
 <wire x1="111.76" y1="185.42" x2="111.76" y2="172.72" width="0.1524" layer="91"/>
 <junction x="111.76" y="172.72"/>
 <pinref part="C8" gate="G$1" pin="1"/>
 <wire x1="111.76" y1="172.72" x2="111.76" y2="162.56" width="0.1524" layer="91"/>
+<label x="129.54" y="172.72" size="1.27" layer="95" ratio="10" xref="yes"/>
+</segment>
+<segment>
 <pinref part="CN2" gate="A" pin="D0"/>
+<wire x1="238.76" y1="195.58" x2="241.3" y2="195.58" width="0.1524" layer="91"/>
+<label x="238.76" y="195.58" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<pinref part="CN1" gate="A" pin="D0"/>
+<wire x1="241.3" y1="152.4" x2="238.76" y2="152.4" width="0.1524" layer="91"/>
+<label x="238.76" y="152.4" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="D1" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="PC1(ADC1)"/>
-<wire x1="134.62" y1="170.18" x2="116.84" y2="170.18" width="0.1524" layer="91"/>
+<wire x1="129.54" y1="170.18" x2="116.84" y2="170.18" width="0.1524" layer="91"/>
 <pinref part="R13" gate="G$1" pin="2"/>
 <wire x1="116.84" y1="170.18" x2="86.36" y2="170.18" width="0.1524" layer="91"/>
 <wire x1="116.84" y1="185.42" x2="116.84" y2="170.18" width="0.1524" layer="91"/>
 <junction x="116.84" y="170.18"/>
 <pinref part="C9" gate="G$1" pin="1"/>
 <wire x1="116.84" y1="170.18" x2="116.84" y2="162.56" width="0.1524" layer="91"/>
+<label x="129.54" y="170.18" size="1.27" layer="95" ratio="10" xref="yes"/>
+</segment>
+<segment>
 <pinref part="CN2" gate="A" pin="D1"/>
+<wire x1="241.3" y1="193.04" x2="238.76" y2="193.04" width="0.1524" layer="91"/>
+<label x="238.76" y="193.04" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<pinref part="CN1" gate="A" pin="D1"/>
+<wire x1="241.3" y1="149.86" x2="238.76" y2="149.86" width="0.1524" layer="91"/>
+<label x="238.76" y="149.86" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="D2" class="0">
@@ -12968,30 +13212,50 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <pinref part="IC1" gate="G$1" pin="PC2(ADC2)"/>
 <wire x1="86.36" y1="167.64" x2="121.92" y2="167.64" width="0.1524" layer="91"/>
 <pinref part="R14" gate="G$1" pin="2"/>
-<wire x1="121.92" y1="167.64" x2="134.62" y2="167.64" width="0.1524" layer="91"/>
+<wire x1="121.92" y1="167.64" x2="129.54" y2="167.64" width="0.1524" layer="91"/>
 <wire x1="121.92" y1="185.42" x2="121.92" y2="167.64" width="0.1524" layer="91"/>
 <junction x="121.92" y="167.64"/>
 <pinref part="C10" gate="G$1" pin="1"/>
 <wire x1="121.92" y1="167.64" x2="121.92" y2="162.56" width="0.1524" layer="91"/>
+<label x="129.54" y="167.64" size="1.27" layer="95" ratio="10" xref="yes"/>
+</segment>
+<segment>
 <pinref part="CN2" gate="A" pin="D2"/>
+<wire x1="238.76" y1="190.5" x2="241.3" y2="190.5" width="0.1524" layer="91"/>
+<label x="238.76" y="190.5" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<pinref part="CN1" gate="A" pin="D2"/>
+<wire x1="241.3" y1="147.32" x2="238.76" y2="147.32" width="0.1524" layer="91"/>
+<label x="238.76" y="147.32" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="D3" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="PC3(ADC3)"/>
-<wire x1="134.62" y1="165.1" x2="127" y2="165.1" width="0.1524" layer="91"/>
+<wire x1="129.54" y1="165.1" x2="127" y2="165.1" width="0.1524" layer="91"/>
 <pinref part="R15" gate="G$1" pin="2"/>
 <wire x1="127" y1="165.1" x2="86.36" y2="165.1" width="0.1524" layer="91"/>
 <wire x1="127" y1="185.42" x2="127" y2="165.1" width="0.1524" layer="91"/>
 <junction x="127" y="165.1"/>
 <pinref part="C11" gate="G$1" pin="1"/>
 <wire x1="127" y1="165.1" x2="127" y2="162.56" width="0.1524" layer="91"/>
+<label x="129.54" y="165.1" size="1.27" layer="95" ratio="10" xref="yes"/>
+</segment>
+<segment>
 <pinref part="CN2" gate="A" pin="D3"/>
+<wire x1="241.3" y1="187.96" x2="238.76" y2="187.96" width="0.1524" layer="91"/>
+<label x="238.76" y="187.96" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<pinref part="CN1" gate="A" pin="D3"/>
+<wire x1="241.3" y1="144.78" x2="238.76" y2="144.78" width="0.1524" layer="91"/>
+<label x="238.76" y="144.78" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="!HSK" class="0">
 <segment>
-<wire x1="134.62" y1="177.8" x2="106.68" y2="177.8" width="0.1524" layer="91"/>
+<wire x1="129.54" y1="177.8" x2="106.68" y2="177.8" width="0.1524" layer="91"/>
 <wire x1="106.68" y1="177.8" x2="99.06" y2="177.8" width="0.1524" layer="91"/>
 <wire x1="99.06" y1="177.8" x2="99.06" y2="142.24" width="0.1524" layer="91"/>
 <pinref part="IC1" gate="G$1" pin="PD3(INT1)"/>
@@ -13001,13 +13265,23 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <junction x="106.68" y="177.8"/>
 <pinref part="C4" gate="G$1" pin="1"/>
 <wire x1="106.68" y1="177.8" x2="106.68" y2="162.56" width="0.1524" layer="91"/>
+<label x="129.54" y="177.8" size="1.27" layer="95" ratio="10" xref="yes"/>
+</segment>
+<segment>
 <pinref part="CN2" gate="A" pin="!HSK"/>
+<wire x1="241.3" y1="200.66" x2="238.76" y2="200.66" width="0.1524" layer="91"/>
+<label x="238.76" y="200.66" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<pinref part="CN1" gate="A" pin="!HSK"/>
+<wire x1="241.3" y1="157.48" x2="238.76" y2="157.48" width="0.1524" layer="91"/>
+<label x="238.76" y="157.48" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="BAV" class="0">
 <segment>
 <wire x1="96.52" y1="182.88" x2="101.6" y2="182.88" width="0.1524" layer="91"/>
-<wire x1="101.6" y1="182.88" x2="134.62" y2="182.88" width="0.1524" layer="91"/>
+<wire x1="101.6" y1="182.88" x2="129.54" y2="182.88" width="0.1524" layer="91"/>
 <wire x1="96.52" y1="182.88" x2="96.52" y2="144.78" width="0.1524" layer="91"/>
 <pinref part="IC1" gate="G$1" pin="PD2(INT0)"/>
 <wire x1="96.52" y1="144.78" x2="86.36" y2="144.78" width="0.1524" layer="91"/>
@@ -13016,7 +13290,17 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <junction x="101.6" y="182.88"/>
 <pinref part="C3" gate="G$1" pin="1"/>
 <wire x1="101.6" y1="182.88" x2="101.6" y2="162.56" width="0.1524" layer="91"/>
+<label x="129.54" y="182.88" size="1.27" layer="95" ratio="10" xref="yes"/>
+</segment>
+<segment>
 <pinref part="CN2" gate="A" pin="BAV"/>
+<wire x1="238.76" y1="205.74" x2="241.3" y2="205.74" width="0.1524" layer="91"/>
+<label x="238.76" y="205.74" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<pinref part="CN1" gate="A" pin="BAV"/>
+<wire x1="241.3" y1="162.56" x2="238.76" y2="162.56" width="0.1524" layer="91"/>
+<label x="238.76" y="162.56" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="SS" class="0">
@@ -13047,9 +13331,9 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <label x="88.9" y="137.16" size="1.27" layer="95" ratio="10" xref="yes"/>
 </segment>
 <segment>
-<label x="218.44" y="129.54" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+<label x="238.76" y="88.9" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 <pinref part="SV3" gate="G$1" pin="2"/>
-<wire x1="218.44" y1="129.54" x2="223.52" y2="129.54" width="0.1524" layer="91"/>
+<wire x1="238.76" y1="88.9" x2="243.84" y2="88.9" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$23" class="0">
@@ -13061,39 +13345,39 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <net name="VCC" class="0">
 <segment>
 <pinref part="G2" gate="G$1" pin="+"/>
-<wire x1="45.72" y1="25.4" x2="45.72" y2="22.86" width="0.1524" layer="91"/>
-<wire x1="45.72" y1="22.86" x2="45.72" y2="20.32" width="0.1524" layer="91"/>
-<wire x1="45.72" y1="22.86" x2="53.34" y2="22.86" width="0.1524" layer="91"/>
-<junction x="45.72" y="22.86"/>
+<wire x1="71.12" y1="25.4" x2="71.12" y2="22.86" width="0.1524" layer="91"/>
+<wire x1="71.12" y1="22.86" x2="71.12" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="71.12" y1="22.86" x2="78.74" y2="22.86" width="0.1524" layer="91"/>
+<junction x="71.12" y="22.86"/>
 <pinref part="ALL3V3" gate="1" pin="1"/>
-<wire x1="53.34" y1="22.86" x2="53.34" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="78.74" y1="22.86" x2="78.74" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="SUPPLY1" gate="G$1" pin="VCC"/>
 </segment>
 <segment>
 <pinref part="SUPPLY5" gate="G$1" pin="VCC"/>
-<wire x1="60.96" y1="25.4" x2="60.96" y2="22.86" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="25.4" x2="86.36" y2="22.86" width="0.1524" layer="91"/>
 <pinref part="S1" gate="SW1" pin="P"/>
-<wire x1="60.96" y1="22.86" x2="63.5" y2="22.86" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="22.86" x2="88.9" y2="22.86" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="V+" class="0">
 <segment>
-<wire x1="83.82" y1="27.94" x2="83.82" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="27.94" x2="109.22" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="VR2" gate="A1" pin="VI"/>
-<wire x1="83.82" y1="20.32" x2="86.36" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="20.32" x2="111.76" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="SUPPLY2" gate="1" pin="V+"/>
 </segment>
 <segment>
-<wire x1="116.84" y1="27.94" x2="116.84" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="142.24" y1="27.94" x2="142.24" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="VR1" gate="G$1" pin="IN"/>
-<wire x1="116.84" y1="20.32" x2="119.38" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="142.24" y1="20.32" x2="144.78" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="SUPPLY3" gate="1" pin="V+"/>
 </segment>
 <segment>
 <pinref part="SUPPLY4" gate="1" pin="V+"/>
-<wire x1="76.2" y1="27.94" x2="76.2" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="101.6" y1="27.94" x2="101.6" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="S1" gate="SW1" pin="S"/>
-<wire x1="76.2" y1="20.32" x2="73.66" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="101.6" y1="20.32" x2="99.06" y2="20.32" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$26" class="0">
@@ -13118,14 +13402,14 @@ The Texas Instruments HEX-BUS SD Drive</text>
 </segment>
 <segment>
 <pinref part="IC2" gate="G$1" pin="SDA"/>
-<wire x1="236.22" y1="170.18" x2="238.76" y2="170.18" width="0.1524" layer="91"/>
-<label x="238.76" y="170.18" size="1.27" layer="95" ratio="10" xref="yes"/>
+<wire x1="68.58" y1="68.58" x2="71.12" y2="68.58" width="0.1524" layer="91"/>
+<label x="71.12" y="68.58" size="1.27" layer="95" ratio="10" xref="yes"/>
 </segment>
 <segment>
 <pinref part="R17" gate="G$1" pin="2"/>
-<wire x1="259.08" y1="177.8" x2="259.08" y2="170.18" width="0.1524" layer="91"/>
-<wire x1="259.08" y1="170.18" x2="251.46" y2="170.18" width="0.1524" layer="91"/>
-<label x="251.46" y="170.18" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+<wire x1="91.44" y1="76.2" x2="91.44" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="91.44" y1="68.58" x2="83.82" y2="68.58" width="0.1524" layer="91"/>
+<label x="83.82" y="68.58" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="SCL" class="0">
@@ -13136,14 +13420,14 @@ The Texas Instruments HEX-BUS SD Drive</text>
 </segment>
 <segment>
 <pinref part="IC2" gate="G$1" pin="SCL"/>
-<wire x1="236.22" y1="175.26" x2="238.76" y2="175.26" width="0.1524" layer="91"/>
-<label x="238.76" y="175.26" size="1.27" layer="95" ratio="10" xref="yes"/>
+<wire x1="68.58" y1="73.66" x2="71.12" y2="73.66" width="0.1524" layer="91"/>
+<label x="71.12" y="73.66" size="1.27" layer="95" ratio="10" xref="yes"/>
 </segment>
 <segment>
 <pinref part="R16" gate="G$1" pin="2"/>
-<wire x1="254" y1="177.8" x2="254" y2="175.26" width="0.1524" layer="91"/>
-<wire x1="254" y1="175.26" x2="251.46" y2="175.26" width="0.1524" layer="91"/>
-<label x="251.46" y="175.26" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+<wire x1="86.36" y1="76.2" x2="86.36" y2="73.66" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="73.66" x2="83.82" y2="73.66" width="0.1524" layer="91"/>
+<label x="83.82" y="73.66" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="RXD0" class="0">
@@ -13153,9 +13437,9 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <label x="88.9" y="149.86" size="1.27" layer="95" ratio="10" xref="yes"/>
 </segment>
 <segment>
-<label x="218.44" y="124.46" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+<label x="238.76" y="83.82" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 <pinref part="SV3" gate="G$1" pin="4"/>
-<wire x1="218.44" y1="124.46" x2="223.52" y2="124.46" width="0.1524" layer="91"/>
+<wire x1="238.76" y1="83.82" x2="243.84" y2="83.82" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="TXD0" class="0">
@@ -13165,16 +13449,16 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <label x="88.9" y="147.32" size="1.27" layer="95" ratio="10" xref="yes"/>
 </segment>
 <segment>
-<label x="218.44" y="127" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+<label x="238.76" y="86.36" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 <pinref part="SV3" gate="G$1" pin="3"/>
-<wire x1="223.52" y1="127" x2="218.44" y2="127" width="0.1524" layer="91"/>
+<wire x1="243.84" y1="86.36" x2="238.76" y2="86.36" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="PWR" class="0">
 <segment>
-<label x="218.44" y="106.68" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+<label x="238.76" y="66.04" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 <pinref part="SV2" gate="G$1" pin="1"/>
-<wire x1="218.44" y1="106.68" x2="223.52" y2="106.68" width="0.1524" layer="91"/>
+<wire x1="238.76" y1="66.04" x2="243.84" y2="66.04" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="IC1" gate="G$1" pin="PD6(AIN0)"/>
@@ -13184,9 +13468,9 @@ The Texas Instruments HEX-BUS SD Drive</text>
 </net>
 <net name="ACT" class="0">
 <segment>
-<label x="218.44" y="104.14" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
+<label x="238.76" y="63.5" size="1.27" layer="95" ratio="10" rot="R180" xref="yes"/>
 <pinref part="SV2" gate="G$1" pin="2"/>
-<wire x1="218.44" y1="104.14" x2="223.52" y2="104.14" width="0.1524" layer="91"/>
+<wire x1="238.76" y1="63.5" x2="243.84" y2="63.5" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="IC1" gate="G$1" pin="PD7(AIN1)"/>
@@ -13198,23 +13482,23 @@ The Texas Instruments HEX-BUS SD Drive</text>
 <segment>
 <pinref part="G2" gate="G$1" pin="-"/>
 <pinref part="G1" gate="G$1" pin="+"/>
-<wire x1="45.72" y1="10.16" x2="45.72" y2="7.62" width="0.1524" layer="91"/>
-<wire x1="45.72" y1="7.62" x2="38.1" y2="7.62" width="0.1524" layer="91"/>
-<wire x1="38.1" y1="7.62" x2="38.1" y2="22.86" width="0.1524" layer="91"/>
-<wire x1="38.1" y1="22.86" x2="30.48" y2="22.86" width="0.1524" layer="91"/>
-<wire x1="30.48" y1="22.86" x2="30.48" y2="20.32" width="0.1524" layer="91"/>
-<wire x1="45.72" y1="7.62" x2="53.34" y2="7.62" width="0.1524" layer="91"/>
-<junction x="45.72" y="7.62"/>
+<wire x1="71.12" y1="10.16" x2="71.12" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="71.12" y1="7.62" x2="63.5" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="63.5" y1="7.62" x2="63.5" y2="22.86" width="0.1524" layer="91"/>
+<wire x1="63.5" y1="22.86" x2="55.88" y2="22.86" width="0.1524" layer="91"/>
+<wire x1="55.88" y1="22.86" x2="55.88" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="71.12" y1="7.62" x2="78.74" y2="7.62" width="0.1524" layer="91"/>
+<junction x="71.12" y="7.62"/>
 <pinref part="ALL3V3" gate="1" pin="2"/>
-<wire x1="53.34" y1="7.62" x2="53.34" y2="10.16" width="0.1524" layer="91"/>
+<wire x1="78.74" y1="7.62" x2="78.74" y2="10.16" width="0.1524" layer="91"/>
 <pinref part="P+14" gate="G$1" pin="VCC/2"/>
-<wire x1="30.48" y1="27.94" x2="30.48" y2="22.86" width="0.1524" layer="91"/>
-<junction x="30.48" y="22.86"/>
+<wire x1="55.88" y1="27.94" x2="55.88" y2="22.86" width="0.1524" layer="91"/>
+<junction x="55.88" y="22.86"/>
 </segment>
 <segment>
-<wire x1="238.76" y1="193.04" x2="238.76" y2="185.42" width="0.1524" layer="91"/>
+<wire x1="71.12" y1="91.44" x2="71.12" y2="83.82" width="0.1524" layer="91"/>
 <pinref part="IC2" gate="G$1" pin="VCC"/>
-<wire x1="238.76" y1="185.42" x2="236.22" y2="185.42" width="0.1524" layer="91"/>
+<wire x1="71.12" y1="83.82" x2="68.58" y2="83.82" width="0.1524" layer="91"/>
 <pinref part="P+11" gate="G$1" pin="VCC/2"/>
 </segment>
 </net>

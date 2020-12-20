@@ -33,7 +33,6 @@
 
 #include "config.h"
 #include "catalog.h"
-#include "configure.h"
 #include "debug.h"
 #include "diskio.h"
 #include "eeprom.h"
@@ -56,39 +55,6 @@ uint8_t open_files = 0;
 luntbl_t files[MAX_OPEN_FILES]; // file number to file mapping
 uint8_t fs_initialized = FALSE;
 
-#ifndef USE_CMD_LUN
-/**
- * Remove all leading and trailing whitespaces
- */
-static void trim(char **buf, uint8_t *blen) {
-  uint8_t i;
-
-  // Trim leading space
-  while(**buf == ' ') {
-    (*buf)++;
-    (*blen)--;
-  }
-
-  if(!(*blen)) {  // All spaces?
-    (*buf)[0] = '\0';
-    return;
-  }
-
-  // Trim trailing space
-  i = *blen - 1;
-  while(i) {
-    if((*buf)[i] != ' ')
-      break;
-    i--;
-    (*blen)--;
-  }
-
-  // Write new null terminator character
-  (*buf)[*blen] = '\0';
-  return;
-}
-
-#endif
 
 static file_t* find_file_in_use(uint8_t *lun) {
   uint8_t i;
@@ -252,17 +218,6 @@ static hexstatus_t fresult2hexstatus(FRESULT fr) {
    the length of the stored program (returned in the open response) is greater
    then the length of the program in memory. But this is not the case. 
    
-   The following is not true:
-   Instead
-   the calculator starts to send (step 2) its memory content up to the length
-   it got in the open response no matter if this exceeds the actual length of
-   the program stored in memory! By staring at the debug output I found out
-   that the bytes 2 and 3 (start counting at 0) is the actual length of the
-   program. So one can compare the sizes and, in case they differ, return IO
-   error 12.
-   
-   Correct:
-   
    The calculator always sends the complete program in memory, regardless of
    the size of the stored file. Therefore if pab->datalen is different from
    file size, we have an error 12.
@@ -271,7 +226,7 @@ static hexstatus_t fresult2hexstatus(FRESULT fr) {
    transmitted in the verify command until sending stops.
 */
 
-static void hex_drv_verify(pab_t *pab) {
+static void drv_verify(pab_t *pab) {
   uint8_t  *data = &buffer[ BUFSIZE / 2 ]; // split our buffer in half
   // so we do not use all of our limited amount of RAM on buffers...
   UINT     read;
@@ -292,13 +247,13 @@ static void hex_drv_verify(pab_t *pab) {
       rc = HEXSTAT_BUF_SIZE_ERR;
     }  
 
-    while ((len>0) && (rc == HEXSTAT_SUCCESS)) {
+    while (( len > 0) && (rc == HEXSTAT_SUCCESS)) {
 
       // figure out how much will fit...
       i = ( len >= ( BUFSIZE / 2 ))  ? ( BUFSIZE / 2 ) : len;
 
       rc = hex_get_data(buffer, i);  // use front half of buffer for incoming data from the host.
-      if (rc==HEXSTAT_SUCCESS) {
+      if (rc == HEXSTAT_SUCCESS) {
         res = f_read(&(file->fp), data, i, &read);
         rc = fresult2hexstatus(res);
         if ( memcmp(data, buffer, read) != 0 ) {
@@ -317,14 +272,11 @@ static void hex_drv_verify(pab_t *pab) {
     hex_eat_it( len, rc ); // reports status back.
     return;
   } else {
-    if (!hex_is_bav()) { // we can send response
-      hex_send_final_response( rc );
-    } else {
-      hex_finish();
-    }
+     hex_send_final_response( rc );
   }
 }
-#ifdef USE_CMD_LUN
+
+
 typedef enum _diskcmd_t {
   DISK_CMD_NONE = 0,
   DISK_CMD_CHDIR,
@@ -434,119 +386,30 @@ static inline hexstatus_t drv_exec_cmds(char* buf, uint8_t len, uint8_t *dev) {
   } while(rc == HEXSTAT_SUCCESS && len2);
   return rc;
 }
-#endif
 
 
 static void drv_write_cmd(pab_t *pab, uint8_t *dev) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
-#ifndef USE_CMD_LUN
-  BYTE res = FR_OK;
-  uint16_t len;
-  char *s;
-  char *comma;
-  char *newname;
-  char *name;
-  uint8_t namelen;
-  uint8_t cmd;
-#endif
 
   debug_puts_P("Exec Disk Command\r\n");
 
-#ifdef USE_CMD_LUN
   rc = hex_write_cmd_helper(pab->datalen);
   if(rc != HEXSTAT_SUCCESS) {
     return;
   }
   rc = drv_exec_cmds((char *)buffer, pab->datalen, dev);
-#else
-  len = pab->datalen;
-  if (len < BUFSIZE){
-    rc = hex_get_data(buffer, len);
-    if (rc == HEXSTAT_SUCCESS) {
-      name = (char*)&(buffer[0]);
-      namelen = len;
-      // path, trimmed whitespaces
-      trim(&name, &namelen);
-      // ToDo: We need a simple parser. That requires more knowledge of C/C++ then I have
-      // and some string operations. This is a very simple implementation:
-      do {
-        comma = strchr((char *)name, ',');
-        if (comma != NULL) comma[0] = 0; // terminating next command
-        namelen = strlen((char *)name);
-        trim(&name, &namelen);
-        if (namelen > 3 && (name[1]=='d' || name[1]=='D') && name[2]==' ')  {
-          cmd = name[0];
-          name = &(name[3]);
-          namelen = strlen((char *)name);
-          trim(&name, &namelen);
-          if (cmd == 'c' || cmd == 'C')
-            res = f_chdir(&fs,(UCHAR*)name);
-          else if (cmd == 'm' || cmd == 'M')
-            res = f_mkdir(&fs,(UCHAR*)name);
-          else
-            res = FR_RW_ERROR;
-          }
-        else if (namelen > 3 && (name[1]=='n' || name[1]=='N') && name[2]==' ')  {
-          cmd = name[0];
-          name = &(name[3]);
-          if (cmd == 'r' || cmd == 'R'){
-            s = strchr((char *)name, '=');
-            if (s != NULL){
-              s[0] = 0; // terminating 0 for name
-              newname = &(s[1]);
-              namelen = strlen((char *)name);
-              trim(&name, &namelen);
-              namelen = strlen((char *)newname);
-              trim(&newname, &namelen);
-              res = f_rename(&fs,(UCHAR*)name,(UCHAR*)newname);
-            }
-            else
-              res = FR_RW_ERROR;
-          }
-          else
-            res = FR_RW_ERROR;
-          }
-        else
-          res = FR_RW_ERROR;
-        if (comma != NULL) name = &(comma[1]);
-      } while (res == FR_OK && comma != NULL);
-      }
-    else
-      res = FR_RW_ERROR;
-  }
-  else {
-    res = FR_INVALID_OBJECT;
-    // TODO what error should this be?
-    hex_eat_it( len, HEXSTAT_BUS_ERR ); // reports status back.
-    return;
-  }
 
-  if (rc == HEXSTAT_SUCCESS) {
-    switch (res) {
-      case FR_OK:
-        rc = HEXSTAT_SUCCESS;
-        break;
-      default:
-        rc = HEXSTAT_DEVICE_ERR;
-        break;
-    }
-  }
-#endif
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
 
 /*
-   hex_drv_write() -
+   drv_write() -
    writes data to the open file associated with the LUN number
    in the PAB.
 
 */
-static void hex_drv_write(pab_t *pab) {
+static void drv_write(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   uint16_t len;
   uint16_t i;
@@ -560,9 +423,7 @@ static void hex_drv_write(pab_t *pab) {
 
   len = pab->datalen;
   if (pab->lun == _cmd_lun
-#ifdef USE_CMD_LUN
       || pab->lun == LUN_CMD
-#endif
       ) {
     // handle command channel
     drv_write_cmd(pab, &(_config.drv_dev));
@@ -604,26 +465,7 @@ static void hex_drv_write(pab_t *pab) {
     }
     len -= i;
   }
-  buffer[2] = 0;
-  // if in DISPLAY mode
-  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && (header == 0)) {
-	// add CRLF to data (for DISPLAY mode)
-    buffer[0] = 13;
-    buffer[1] = 10;
-    buffer[2] =  2;
-    res = f_write(&(file->fp), buffer, 2, &written);
-    if (!res) {
-      debug_trace(buffer, 0, written);
-    }
-    if (written != 2) {
-      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
-    }
-  }
-  if (file != NULL && (file->attr & FILEATTR_RELATIVE)){
-    buffer[0] = 0;
-    for (i=pab->datalen + 1 + buffer[2]; i <= pab->buflen; i++)
-      res = f_write(&(file->fp), buffer, 1, &written);
-  }
+
   if ( len ) {
     if ( !fs_initialized ) {
       rc = HEXSTAT_DEVICE_ERR;
@@ -633,19 +475,34 @@ static void hex_drv_write(pab_t *pab) {
     return;
   }
 
+  // if in DISPLAY mode
+  if (file != NULL && (file->attr & FILEATTR_DISPLAY) && (header == 0)) {
+	// add CRLF to data (for DISPLAY mode)
+    buffer[0] = 13;
+    buffer[1] = 10;
+    len = 2;
+    res = f_write(&(file->fp), buffer, 2, &written);
+    if (!res) {
+      debug_trace(buffer, 0, written);
+    }
+    if (written != 2) {
+      rc = HEXSTAT_BUF_SIZE_ERR;  // generic error.
+    }
+  }
+  if (file != NULL && (file->attr & FILEATTR_RELATIVE)) {
+    buffer[0] = 0;
+    for (i = pab->datalen + 1 + len; i <= pab->buflen; i++)
+      res = f_write(&(file->fp), buffer, 1, &written);
+  }
   if (rc == HEXSTAT_SUCCESS) {
     rc = fresult2hexstatus(res);
   }
 
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
 /*
-   hex_drv_read() -
+   drv_read() -
    read data from currently open file associated with the LUN
    in the PAB.
    structured data files:
@@ -660,13 +517,12 @@ static void hex_drv_write(pab_t *pab) {
   raw data files
     OLD/RUN reads a program file, the amount of bytes to be send is
     determined by the file length. These commands use LUN 0 as special LUN
-    Other raw data files (e.g. RAM/ROM images) must use LUN 255 as a
+    Other raw data files (e.g. RAM/ROM images) must use LUN 254 as a
     special LUN. The amount of bytes to be send is determined by the
     file length    
 */
-// TODO replace 255 above with 254 if we use LUN CMD
 
-static void hex_drv_read(pab_t *pab) {
+static void drv_read(pab_t *pab) {
   hexstatus_t rc;
   uint8_t i;
   uint16_t len;
@@ -684,12 +540,6 @@ static void hex_drv_read(pab_t *pab) {
   }
 
   file = find_lun(pab->lun);
-#ifndef USE_CMD_LUN
-  if (file != NULL && (file->attr & FILEATTR_COMMAND)) {
-    // handle command channel read
-    hex_drv_read_cmd(pab);
-  }
-#endif
   if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab->lun == 0 ) {
       debug_putc('P');
@@ -732,16 +582,16 @@ static void hex_drv_read(pab_t *pab) {
       if ((uint16_t)file->fp.fptr + fsize >= file->fp.fsize)
         fsize = file->fp.fsize - (uint16_t)file->fp.fptr;
       // send how much we are going to send
-      rc = (transmit_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
-
+      rc = (hex_send_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+      len = 1; // send data immediately byte by byte to avoid time-out errors
       // while we have data remaining to send.
       while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
-
+        /*
         len = fsize;    // remaining amount to read from file
         // while it fit into buffer or not?  Only read as much
         // as we can hold in our buffer.
         len = ( len > BUFSIZE ) ? BUFSIZE : len;
-
+        */
         if ( !(file->attr & FILEATTR_CATALOG )) {
           res = f_read(&(file->fp), buffer, len, &read);
           if (!res) {
@@ -754,7 +604,7 @@ static void hex_drv_read(pab_t *pab) {
 
         if (FR_OK == res) {
           for (i = 0; i < read; i++) {
-            rc = (transmit_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+            rc = (hex_send_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
           }
         }
         fsize -= read;
@@ -773,17 +623,17 @@ static void hex_drv_read(pab_t *pab) {
       }
     }
     else {
-      transmit_word(0);
+      hex_send_word(0);
       rc = HEXSTAT_EOF;
     }  
   } else {
-    transmit_word(0);      // null file
+    hex_send_word(0);      // null file
     rc = HEXSTAT_NOT_FOUND;
     if ( !fs_initialized ) {
       rc = HEXSTAT_DEVICE_ERR;
     }
   }
-  transmit_byte( rc ); // status byte transmit
+  hex_send_byte( rc ); // status byte transmit
   hex_finish();
 }
 
@@ -811,10 +661,10 @@ static void drv_start(void) {
 
 
 /*
-   hex_drv_open() -
+   drv_open() -
    open a file for read or write on the SD card.
 */
-static void hex_drv_open(pab_t *pab) {
+static void drv_open(pab_t *pab) {
   uint16_t len = 0;
   uint16_t read;    // how many bytes are read
   uint8_t att = 0;
@@ -830,24 +680,9 @@ static void hex_drv_open(pab_t *pab) {
 
   debug_puts_P("Open File\r\n");
 
-#ifdef USE_OPEN_HELPER
   rc = hex_open_helper(pab, (pab->lun == LUN_CMD ? HEXSTAT_TOO_LONG : HEXSTAT_FILE_NAME_INVALID), &len, &att);
   if(rc != HEXSTAT_SUCCESS)
     return;
-#else
-  if(pab->datalen > BUFSIZE) {
-    hex_eat_it( pab->datalen, (pab->lun == LUN_CMD ? HEXSTAT_TOO_LONG : HEXSTAT_FILE_NAME_INVALID));
-    return;
-  }
-
-  if ( hex_get_data( buffer, pab->datalen ) == HEXSTAT_SUCCESS ) {
-    len = buffer[ 0 ] + ( buffer[ 1 ] << 8 );
-    att = buffer[ 2 ];
-  } else {
-    hex_release_bus();
-    return;
-  }
-#endif
 
   pathlen = pab->datalen - 3;
   path = (char *)(buffer + 3);
@@ -859,9 +694,7 @@ static void hex_drv_open(pab_t *pab) {
   if(
       // special file name "" -> command_mode
      (path[0] == 0)
-#ifdef USE_CMD_LUN
      || (pab->lun == LUN_CMD)
-#endif
     ) {
       _cmd_lun = pab->lun;
     // we should check att, as it should be WRITE or UPDATE
@@ -972,22 +805,20 @@ static void hex_drv_open(pab_t *pab) {
 
 
 /*
-   hex_drv_close() -
+   drv_close() -
    close the file associated with the LUN in the PAB.
    If the file is open, it is closed and data is sync'd.
    If the file is not open, appropriate status is returned
 
 */
-static void hex_drv_close(pab_t *pab) {
+static void drv_close(pab_t *pab) {
   hexstatus_t rc;
   file_t* file = NULL;
   FRESULT res = FR_OK;
 
   if (
       pab->lun == _cmd_lun
-#ifdef USE_CMD_LUN
       || pab->lun == LUN_CMD
-#endif
      ) {
     // handle command channel read
     hex_close_cmd();
@@ -1011,18 +842,15 @@ static void hex_drv_close(pab_t *pab) {
     }
   }
 
-  if ( !hex_is_bav() ) {
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 /*
-   hex_drv_restore() -
+   drv_restore() -
    reset file to beginning
    valid for update, input mode open files.
 */
-static void hex_drv_restore( pab_t *pab ) {
+static void drv_restore( pab_t *pab ) {
   hexstatus_t  rc = HEXSTAT_SUCCESS;
   file_t*  file = NULL;
 
@@ -1039,27 +867,24 @@ static void hex_drv_restore( pab_t *pab ) {
     rc = HEXSTAT_NOT_OPEN;
   }
 
-  if (!hex_is_bav() ) {
-    if ( rc == HEXSTAT_SUCCESS ) {
-      // If we are restore on an open directory...rewind to start
-      if ( file->attr & FILEATTR_CATALOG ) {
-        //file->fp.rewindDirectory();
-        rc = HEXSTAT_UNSUPP_CMD;
-      } else {
-        // if we are a normal file, rewind to starting position.
-        f_lseek(&(file->fp),  0 ); // restore back to start of file.
-      }
+  if ( rc == HEXSTAT_SUCCESS ) {
+    // If we are restore on an open directory...rewind to start
+    if ( file->attr & FILEATTR_CATALOG ) {
+      //file->fp.rewindDirectory();
+      rc = HEXSTAT_UNSUPP_CMD;
+    } else {
+      // if we are a normal file, rewind to starting position.
+      f_lseek(&(file->fp),  0 ); // restore back to start of file.
     }
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  }
+  hex_send_final_response( rc );
 }
 
 /*
-   hex_drv_delete() -
+   drv_delete() -
    delete a file from the SD card.
 */
-static void hex_drv_delete(pab_t *pab) {
+static void drv_delete(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   FRESULT fr;
   uint8_t len;
@@ -1089,17 +914,14 @@ static void hex_drv_delete(pab_t *pab) {
     fr = f_unlink(&fs, (UCHAR *)buf);
     rc = fresult2hexstatus(fr);
   }
-  if (!hex_is_bav()) { // we can send response
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 /*
-   hex_drv_delete_open() -
+   drv_delete_open() -
    delete a open file from the SD card.
 */
-static void hex_drv_delete_open(pab_t *pab) {
+static void drv_delete_open(pab_t *pab) {
   hexstatus_t rc = HEXSTAT_SUCCESS;
   FRESULT res;
   file_t*  file = NULL;
@@ -1116,17 +938,14 @@ static void hex_drv_delete_open(pab_t *pab) {
   }
   else
     rc = HEXSTAT_NOT_OPEN;
-  if (!hex_is_bav()) { // we can send response
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 /*
-    hex_drv_status() -
+    drv_status() -
     initial simplistic implementation
 */
-static void hex_drv_status( pab_t *pab ) {
+static void drv_status( pab_t *pab ) {
   uint8_t st = FILE_REQ_STATUS_NONE;
   file_t* file = NULL;
 
@@ -1154,22 +973,19 @@ static void hex_drv_status( pab_t *pab ) {
       }
     }
   }
-  if ( !hex_is_bav() ) {
-    if ( pab->buflen >= 1 )
-    {
-      transmit_word( 1 );
-      transmit_byte( st );
-      transmit_byte( HEXSTAT_SUCCESS );
-      hex_finish();
-    } else {
-      hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
-    }
-  } else
+  if ( pab->buflen >= 1 )
+  {
+    hex_send_word( 1 );
+    hex_send_byte( st );
+    hex_send_byte( HEXSTAT_SUCCESS );
     hex_finish();
+  } else {
+    hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
+  }
 }
 
 
-static void hex_drv_reset( __attribute__((unused)) pab_t *pab) {
+static void drv_reset_dev( __attribute__((unused)) pab_t *pab) {
 
   drv_reset();
   // release the bus ignoring any further action on bus. no response sent.
@@ -1184,77 +1000,29 @@ static void hex_drv_reset( __attribute__((unused)) pab_t *pab) {
 /*
    Command handling registry for device
 */
-#ifdef USE_NEW_OPTABLE
 static const cmd_op_t ops[] PROGMEM = {
-                                        {HEXCMD_OPEN, hex_drv_open},
-                                        {HEXCMD_CLOSE, hex_drv_close},
-                                        {HEXCMD_DELETE_OPEN, hex_drv_delete_open},
-                                        {HEXCMD_READ, hex_drv_read},
-                                        {HEXCMD_WRITE, hex_drv_write},
-                                        {HEXCMD_RESTORE, hex_drv_restore},
-                                        {HEXCMD_RETURN_STATUS, hex_drv_status},
-                                        {HEXCMD_DELETE, hex_drv_delete},
-                                        {HEXCMD_VERIFY, hex_drv_verify},
-                                        {HEXCMD_RESET_BUS, hex_drv_reset},
+                                        {HEXCMD_OPEN, drv_open},
+                                        {HEXCMD_CLOSE, drv_close},
+                                        {HEXCMD_DELETE_OPEN, drv_delete_open},
+                                        {HEXCMD_READ, drv_read},
+                                        {HEXCMD_WRITE, drv_write},
+                                        {HEXCMD_RESTORE, drv_restore},
+                                        {HEXCMD_RETURN_STATUS, drv_status},
+                                        {HEXCMD_DELETE, drv_delete},
+                                        {HEXCMD_VERIFY, drv_verify},
+                                        {HEXCMD_RESET_BUS, drv_reset_dev},
                                         {(hexcmdtype_t)HEXCMD_INVALID_MARKER, NULL}
                                       }; // end of table.
-#else
-static const cmd_proc fn_table[] PROGMEM = {
-  hex_drv_open,
-  hex_drv_close,
-  hex_drv_delete_open,
-  hex_drv_read,
-  hex_drv_write,
-  hex_drv_restore,
-  hex_drv_status,
-  hex_drv_delete,
-  hex_drv_verify,
-  hex_drv_reset,
-  NULL // end of table.
-};
 
-
-static const uint8_t op_table[] PROGMEM = {
-  HEXCMD_OPEN,
-  HEXCMD_CLOSE,
-  HEXCMD_DELETE_OPEN,
-  HEXCMD_READ,
-  HEXCMD_WRITE,
-  HEXCMD_RESTORE,
-  HEXCMD_RETURN_STATUS,
-  HEXCMD_DELETE,
-  HEXCMD_VERIFY,
-  HEXCMD_RESET_BUS,
-  HEXCMD_INVALID_MARKER
-};
-#endif
 
 void drv_register(void) {
-#ifdef NEW_REGISTER
   uint8_t drv_dev = DEV_DRV_DEFAULT;
 
   if(_config.valid) {
     drv_dev = _config.drv_dev;
   }
-  cfg_register(DEV_DRV_START, drv_dev, DEV_DRV_END, ops);
-#ifdef USE_NEW_OPTABLE
-#else
-  cfg_register(DEV_DRV_START, drv_dev, DEV_DRV_END, op_table, fn_table);
-#endif
+  reg_add(DEV_DRV_START, drv_dev, DEV_DRV_END, ops);
   disk_init();
-#else
-  uint8_t i = registry.num_devices;
-
-  registry.num_devices++;
-  registry.entry[ i ].dev_low = DEV_DRV_START;
-  registry.entry[ i ].dev_cur = DEV_DRV_DEFAULT;
-  registry.entry[ i ].dev_high = DEV_DRV_END; // support 100-109 for disks
-#ifdef USE_NEW_OPTABLE
-#else
-  registry.entry[ i ].operation = (cmd_proc *)&fn_table;
-  registry.entry[ i ].command = (uint8_t *)&op_table;
-#endif
-#endif
 }
 
 
@@ -1290,9 +1058,7 @@ void drv_init(void) {
   }
   open_files = 0;
   fs_initialized = FALSE;
-#ifdef INIT_COMBO
   drv_register();
-#endif
   disk_init();
 
   //strcpy((char *)buffer,"set device=101");

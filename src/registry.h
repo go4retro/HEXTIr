@@ -36,7 +36,6 @@
 
 typedef void (*cmd_proc)(pab_t *pab);
 
-#ifdef USE_NEW_OPTABLE
 // This is used as a marker in our registry to indicate end of operations table.
 // It is NOT a valid HexBus command code.
 #define HEXCMD_INVALID_MARKER     (hexcmdtype_t)0xAA
@@ -46,20 +45,11 @@ typedef struct _cmd_op_t {
   void (*operation)(pab_t*);
 } cmd_op_t;
 
-#else
-#define HEXCMD_INVALID_MARKER     0xAA
-#endif
-
 typedef struct _registry_entry {
   uint8_t dev_low;
   uint8_t dev_cur;
   uint8_t dev_high;
-#ifdef USE_NEW_OPTABLE
   cmd_op_t *oplist;
-#else
-  cmd_proc *operation;
-  uint8_t  *command;
-#endif
 } registry_entry_t;
 
 typedef struct _registry_t {
@@ -68,5 +58,7 @@ typedef struct _registry_t {
 } registry_t;
 
 extern registry_t  registry;
+
+void reg_add(uint8_t low, uint8_t cur, uint8_t high, const cmd_op_t ops[]);
 
 #endif

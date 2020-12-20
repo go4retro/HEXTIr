@@ -170,14 +170,14 @@ hexerror_t hex_capture_hsk( void ) {
 }
 
 /*
-   receive_byte() -
+   hex_recv_byte() -
    incoming byte == 0: do not check for HSK HI. (reading first byte of PAB)
    incoming byte != 0 : release HSK (reading "next" byte of incoming message)
    outgoing byte stored in parameter is the byte of data read.
    return value is status (HEX_BAVERR or HEXERR_SUCCESS)
 */
 
-hexerror_t receive_byte( uint8_t *inout)
+hexerror_t hex_recv_byte( uint8_t *inout)
 {
   uint8_t lsn, msn;
   
@@ -229,14 +229,14 @@ lowhsk:  // Host has driven HSK low. Peripheral side must now hold it low.
 }
 
 /*
-   transmit_byte() -
+   hex_send_byte() -
    send 1 byte over bus.  holds BAV lo throughout.
    when we are completed, we will externally release BAV to let
    host know we are done with response frame.
 
 */
 
-hexerror_t transmit_byte( uint8_t xmit )
+hexerror_t hex_send_byte( uint8_t xmit )
 {
   uint8_t nibble = xmit;
 
@@ -274,18 +274,18 @@ hexerror_t transmit_byte( uint8_t xmit )
 
 
 /*
-   transmit_word() -
-   use transmit_byte() to send LSB/MSB of a word over the bus.
+   hex_send_word() -
+   use hex_send_byte() to send LSB/MSB of a word over the bus.
 */
-hexerror_t transmit_word( uint16_t value )
+hexerror_t hex_send_word( uint16_t value )
 {
   hexerror_t rc;
 
   // Send LSB of word over bus
-  rc = transmit_byte( value & 0xff );
+  rc = hex_send_byte( value & 0xff );
   if ( rc == HEXERR_SUCCESS ) {
     // Send MSB of word over bus
-    rc = transmit_byte( value >> 8 );
+    rc = hex_send_byte( value >> 8 );
   }
   // return to caller.
   return rc;
@@ -299,10 +299,10 @@ hexerror_t transmit_word( uint16_t value )
    * a success status response.
 */
 void hex_send_size_response( uint16_t len , uint16_t record) {
-  transmit_word( 4 );
-  transmit_word( len );
-  transmit_word( record );
-  transmit_byte( HEXERR_SUCCESS );
+  hex_send_word( 4 );
+  hex_send_word( len );
+  hex_send_word( record );
+  hex_send_byte( HEXERR_SUCCESS );
   hex_finish();
   return;
 }
@@ -316,8 +316,8 @@ void hex_send_size_response( uint16_t len , uint16_t record) {
 */
 void hex_send_final_response( hexstatus_t rc )
 {
-  transmit_word( 0 );
-  transmit_byte( rc );
+  hex_send_word( 0 );
+  hex_send_byte( rc );
   hex_finish();
   return;
 }

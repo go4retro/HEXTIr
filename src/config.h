@@ -22,14 +22,26 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define USE_NEW_OPTABLE 1
-#define NEW_REGISTER    1
-#define INIT_COMBO      1
-#define NEW_DEV_CHK     1
-#define NEW_REG_CNT     1
-#define USE_OPEN_HELPER 1
-#define USE_CMD_LUN     1
-//#ifdef USE_CFG_DEVICE 1
+#include "version.h"
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#ifdef VER_PATCH
+#ifdef VER_FIX
+  #define VER_TEXT           TOSTRING(VER_MAJOR) "." TOSTRING(VER_MINOR) "." TOSTRING(VER_PATCH) "." TOSTRING(VER_FIX)
+#else
+  #define VER_TEXT           TOSTRING(VER_MAJOR) "." TOSTRING(VER_MINOR) "." TOSTRING(VER_PATCH)
+#endif
+#else
+  #define VER_TEXT           TOSTRING(VER_MAJOR) "." TOSTRING(VER_MINOR)
+#endif
+#ifdef VER_PRERELEASE
+  #define VERSION "" VER_TEXT TOSTRING(VER_PRERELEASE) ""
+#else
+  #define VERSION "" VER_TEXT ""
+#endif
+
 #define FLASH_MEM_DATA  1
 
 #include <avr/io.h>
@@ -234,7 +246,6 @@ static inline void pwr_irq_disable(void) {
 // This needs to be moved somewhere else...
 //--------------------------
 #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
-#define VERSION "0.9.3.1"
 #define CONFIG_RTC_DSRTC
 //#define CONFIG_RTC_SOFTWARE
 #define CONFIG_SD_AUTO_RETRIES 10
@@ -456,9 +467,6 @@ static inline void leds_sleep(void) {
 # define set_sd_led(x) do {} while (0)
 #endif
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
 /* ----- Translate CONFIG_RTC_* symbols to HAVE_RTC symbol ----- */
 #if defined(INCLUDE_CLOCK)
   #if defined(CONFIG_RTC_DSRTC) || \
@@ -520,7 +528,5 @@ static inline void leds_sleep(void) {
 #define mem_read_byte(x) (x)
 #define mem_read_word(x) (x)
 #endif
-
-#include "configure.h" // TODO FIXME: This creates circular references.  Why is it needed in here?
 
 #endif /*CONFIG_H*/

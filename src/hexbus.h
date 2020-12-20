@@ -142,9 +142,9 @@ typedef enum _openmode_t {
 uint8_t hex_is_bav(void);
 void hex_release_bus(void);
 hexerror_t hex_capture_hsk( void );
-hexerror_t receive_byte( uint8_t *inout);
-hexerror_t transmit_byte( uint8_t xmit );
-hexerror_t transmit_word( uint16_t value );
+hexerror_t hex_recv_byte( uint8_t *inout);
+hexerror_t hex_send_byte( uint8_t xmit );
+hexerror_t hex_send_word( uint16_t value );
 void hex_finish( void );
 void hex_send_size_response( uint16_t len , uint16_t record);
 void hex_send_final_response( hexstatus_t rc );

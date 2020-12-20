@@ -1,14 +1,19 @@
 # Hey Emacs, this is a -*- makefile -*-
 
 # Define version number
-MAJOR = 0
-MINOR = 9
-PATCHLEVEL = 3
-FIX = 
+include scripts/gmtt.mk
+
+# create a 3-column table from the header file. The first column is just the "#define"
+VER_TABLE := 3 $(file < src/version.h)
+
+MAJOR = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_MAJOR))
+MINOR = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_MINOR))
+PATCHLEVEL = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_PATCH))
+FIX = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_FIX))
 
 # Forces bootloader version to 0, comment out or leave empty for release
-#PRERELEASE = atentdead0
-PRERELEASE = .2
+#PRERELEASE = 
+PRERELEASE = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_PRERELEASE))
 
 #----------------------------------------------------------------------------
 # WinAVR Makefile Template written by Eric B. Weddington, Joerg Wunsch, et al.
@@ -77,7 +82,7 @@ SRC += serial.c
 SRC += printer.c
 SRC += powermgmt.c
 SRC += eeprom.c
-SRC += configure.c
+SRC += registry.c
 SRC += swuart.c
 SRC += debug.c
 SRC += uart.c
@@ -177,7 +182,9 @@ PROGRAMVERSION := $(PROGRAMVERSION)$(PRERELEASE)
 endif
 
 LONGVERSION := -$(CONFIGSUFFIX)
-CDEFS += -DVERSION=\"$(PROGRAMVERSION)\" -DLONGVERSION=\"$(LONGVERSION)\"
+#CDEFS += -DVERSION=\"$(PROGRAMVERSION)\" -DLONGVERSION=\"$(LONGVERSION)\"
+#if version.h is included in code
+CDEFS += -DLONGVERSION=\"$(LONGVERSION)\"
 
 
 # Define programs and commands.
