@@ -130,7 +130,7 @@ void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, uint8
   char buf[width + 1];
   char* file_size = format_file_size(fsize, buf, width);
 
-  int len = 1 + namelen + 1 + 1 + namelen + 1 + 1; // length of data transmitted
+  int len = 1 + strlen(file_size) + 1 + 1 + namelen + 1 + 1; // length of data transmitted
   hex_send_word(len);  // length
   hex_send_byte('\"'); // because we have leading whitespaces
   for (i = 0; i < strlen(file_size)  ; i++) { // file size in kilo bytes, 4 byte

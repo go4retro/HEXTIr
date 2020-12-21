@@ -588,20 +588,14 @@ static void drv_read(pab_t *pab) {
       while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
         /*
         len = fsize;    // remaining amount to read from file
-        // while it fit into buffer or not?  Only read as much
+        // will it fit into buffer or not?  Only read as much
         // as we can hold in our buffer.
         len = ( len > BUFSIZE ) ? BUFSIZE : len;
         */
-        if ( !(file->attr & FILEATTR_CATALOG )) {
-          res = f_read(&(file->fp), buffer, len, &read);
-          if (!res) {
-            debug_trace(buffer, 0, read);
-          }
-        } else {
-          // catalog entry, if that's what we're reading, is already in buffer.
-          read = fsize; // 0 if no entry, else size of entry in buffer.
+        res = f_read(&(file->fp), buffer, len, &read);
+        if (!res) {
+          debug_trace(buffer, 0, read);
         }
-
         if (FR_OK == res) {
           for (i = 0; i < read; i++) {
             rc = (hex_send_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
