@@ -233,7 +233,7 @@ static void drv_verify(pab_t *pab) {
   uint16_t len;
   uint16_t i;
   file_t*  file;
-  BYTE     res = FR_OK;
+  FRESULT  res = FR_OK;
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   debug_puts_P("Verify File\r\n");

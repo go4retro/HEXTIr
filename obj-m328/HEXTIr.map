@@ -165,7 +165,7 @@ Discarded input sections
  .text.hex_exec_cmds
                 0x00000000       0x58 obj-m328/src/hexops.o
  .text.hex_write_cmd
-                0x00000000       0x60 obj-m328/src/hexops.o
+                0x00000000       0x4e obj-m328/src/hexops.o
  .text          0x00000000        0x0 obj-m328/src/led.o
  .data          0x00000000        0x0 obj-m328/src/led.o
  .bss           0x00000000        0x0 obj-m328/src/led.o
@@ -635,7 +635,7 @@ END GROUP
 .rela.plt
  *(.rela.plt)
 
-.text           0x00000000     0x5d4a
+.text           0x00000000     0x5c9a
  *(.vectors)
  .vectors       0x00000000       0x68 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
                 0x00000000                __vector_default
@@ -754,440 +754,440 @@ END GROUP
                 0x00000446       0xa4 obj-m328/src/catalog.o
                 0x00000446                cat_write_record_pgm
  .text.cat_write_txt
-                0x000004ea       0xa4 obj-m328/src/catalog.o
+                0x000004ea       0xb2 obj-m328/src/catalog.o
                 0x000004ea                cat_write_txt
  .text.cat_skip_file
-                0x0000058e       0x4a obj-m328/src/catalog.o
-                0x0000058e                cat_skip_file
+                0x0000059c       0x4a obj-m328/src/catalog.o
+                0x0000059c                cat_skip_file
  .text.cat_get_num_entries
-                0x000005d8       0x6e obj-m328/src/catalog.o
-                0x000005d8                cat_get_num_entries
+                0x000005e6       0x6e obj-m328/src/catalog.o
+                0x000005e6                cat_get_num_entries
  .text.hex_read_catalog
-                0x00000646       0xec obj-m328/src/catalog.o
-                0x00000646                hex_read_catalog
+                0x00000654       0xec obj-m328/src/catalog.o
+                0x00000654                hex_read_catalog
  .text.hex_read_catalog_txt
-                0x00000732       0xc8 obj-m328/src/catalog.o
-                0x00000732                hex_read_catalog_txt
+                0x00000740       0xc8 obj-m328/src/catalog.o
+                0x00000740                hex_read_catalog_txt
  .text.hex_open_catalog
-                0x000007fa      0x18e obj-m328/src/catalog.o
-                0x000007fa                hex_open_catalog
+                0x00000808      0x17c obj-m328/src/catalog.o
+                0x00000808                hex_open_catalog
  .text.find_lun
-                0x00000988       0x38 obj-m328/src/drive.o
+                0x00000984       0x38 obj-m328/src/drive.o
  .text.drv_verify
-                0x000009c0       0xee obj-m328/src/drive.o
+                0x000009bc       0xe0 obj-m328/src/drive.o
  .text.drv_status
-                0x00000aae       0x8e obj-m328/src/drive.o
+                0x00000a9c       0x8e obj-m328/src/drive.o
  .text.next_value_size
-                0x00000b3c       0xbc obj-m328/src/drive.o
+                0x00000b2a       0xbc obj-m328/src/drive.o
  .text.drv_read
-                0x00000bf8      0x272 obj-m328/src/drive.o
+                0x00000be6      0x23c obj-m328/src/drive.o
  .text.free_lun
-                0x00000e6a       0x46 obj-m328/src/drive.o
+                0x00000e22       0x46 obj-m328/src/drive.o
  .text.reserve_lun
-                0x00000eb0       0x5e obj-m328/src/drive.o
+                0x00000e68       0x5e obj-m328/src/drive.o
  .text.drv_close
-                0x00000f0e       0x78 obj-m328/src/drive.o
+                0x00000ec6       0x6a obj-m328/src/drive.o
  .text.drv_start
-                0x00000f86       0x1e obj-m328/src/drive.o
+                0x00000f30       0x1e obj-m328/src/drive.o
  .text.drv_delete
-                0x00000fa4       0x86 obj-m328/src/drive.o
+                0x00000f4e       0x76 obj-m328/src/drive.o
  .text.drv_restore
-                0x0000102a       0x64 obj-m328/src/drive.o
+                0x00000fc4       0x42 obj-m328/src/drive.o
  .text.drv_delete_open
-                0x0000108e       0x52 obj-m328/src/drive.o
+                0x00001006       0x66 obj-m328/src/drive.o
  .text.drv_exec_cmds.constprop.4
-                0x000010e0      0x13c obj-m328/src/drive.o
+                0x0000106c      0x13c obj-m328/src/drive.o
  .text.drv_write
-                0x0000121c      0x272 obj-m328/src/drive.o
+                0x000011a8      0x258 obj-m328/src/drive.o
  .text.drv_open
-                0x0000148e      0x1f2 obj-m328/src/drive.o
+                0x00001400      0x1f2 obj-m328/src/drive.o
  .text.drv_register
-                0x00001680       0x20 obj-m328/src/drive.o
-                0x00001680                drv_register
+                0x000015f2       0x20 obj-m328/src/drive.o
+                0x000015f2                drv_register
  .text.drv_reset
-                0x000016a0       0x5a obj-m328/src/drive.o
-                0x000016a0                drv_reset
+                0x00001612       0x5a obj-m328/src/drive.o
+                0x00001612                drv_reset
  .text.drv_reset_dev
-                0x000016fa       0x10 obj-m328/src/drive.o
+                0x0000166c       0x10 obj-m328/src/drive.o
  .text.drv_init
-                0x0000170a       0x30 obj-m328/src/drive.o
-                0x0000170a                drv_init
+                0x0000167c       0x30 obj-m328/src/drive.o
+                0x0000167c                drv_init
  .text.ee_get_config
-                0x0000173a       0x6a obj-m328/src/eeprom.o
-                0x0000173a                ee_get_config
+                0x000016ac       0x6a obj-m328/src/eeprom.o
+                0x000016ac                ee_get_config
  .text.ee_set_config
-                0x000017a4       0x30 obj-m328/src/eeprom.o
-                0x000017a4                ee_set_config
+                0x00001716       0x30 obj-m328/src/eeprom.o
+                0x00001716                ee_set_config
  .text.clust2sect
-                0x000017d4       0x50 obj-m328/src/ff.o
+                0x00001746       0x50 obj-m328/src/ff.o
  .text.get_fileinfo
-                0x00001824       0xe2 obj-m328/src/ff.o
+                0x00001796       0xe2 obj-m328/src/ff.o
  .text.dos_char
-                0x00001906       0x50 obj-m328/src/ff.o
+                0x00001878       0x50 obj-m328/src/ff.o
  .text.auto_mount.isra.5
-                0x00001956       0x34 obj-m328/src/ff.o
+                0x000018c8       0x34 obj-m328/src/ff.o
  .text.validate
-                0x0000198a       0x1a obj-m328/src/ff.o
+                0x000018fc       0x1a obj-m328/src/ff.o
  .text.move_window.constprop.8
-                0x000019a4      0x118 obj-m328/src/ff.o
+                0x00001916      0x118 obj-m328/src/ff.o
  .text.move_fs_window
-                0x00001abc        0x4 obj-m328/src/ff.o
+                0x00001a2e        0x4 obj-m328/src/ff.o
  .text.check_fs
-                0x00001ac0       0xa4 obj-m328/src/ff.o
+                0x00001a32       0xa4 obj-m328/src/ff.o
  .text.get_cluster
-                0x00001b64      0x142 obj-m328/src/ff.o
+                0x00001ad6      0x142 obj-m328/src/ff.o
  .text.next_dir_entry
-                0x00001ca6       0xc2 obj-m328/src/ff.o
+                0x00001c18       0xc2 obj-m328/src/ff.o
  .text.put_cluster
-                0x00001d68      0x178 obj-m328/src/ff.o
+                0x00001cda      0x178 obj-m328/src/ff.o
  .text.create_chain
-                0x00001ee0      0x17e obj-m328/src/ff.o
+                0x00001e52      0x17e obj-m328/src/ff.o
  .text.remove_chain
-                0x0000205e       0x98 obj-m328/src/ff.o
+                0x00001fd0       0x98 obj-m328/src/ff.o
  .text.reserve_direntry
-                0x000020f6      0x2ce obj-m328/src/ff.o
- .text.sync     0x000023c4       0xe0 obj-m328/src/ff.o
+                0x00002068      0x2ce obj-m328/src/ff.o
+ .text.sync     0x00002336       0xe0 obj-m328/src/ff.o
  .text.trace_path
-                0x000024a4      0x416 obj-m328/src/ff.o
+                0x00002416      0x416 obj-m328/src/ff.o
  .text.mount_drv
-                0x000028ba      0x3ea obj-m328/src/ff.o
-                0x000028ba                mount_drv
+                0x0000282c      0x3ea obj-m328/src/ff.o
+                0x0000282c                mount_drv
  .text.add_direntry
-                0x00002ca4      0x3f8 obj-m328/src/ff.o
-                0x00002ca4                add_direntry
- .text.f_mount  0x0000309c       0x10 obj-m328/src/ff.o
-                0x0000309c                f_mount
- .text.f_open   0x000030ac      0x26a obj-m328/src/ff.o
-                0x000030ac                f_open
- .text.f_read   0x00003316      0x20a obj-m328/src/ff.o
-                0x00003316                f_read
- .text.f_write  0x00003520      0x2b0 obj-m328/src/ff.o
-                0x00003520                f_write
- .text.f_sync   0x000037d0       0x9a obj-m328/src/ff.o
-                0x000037d0                f_sync
- .text.f_close  0x0000386a       0x16 obj-m328/src/ff.o
-                0x0000386a                f_close
- .text.f_lseek  0x00003880      0x2f2 obj-m328/src/ff.o
-                0x00003880                f_lseek
+                0x00002c16      0x3f8 obj-m328/src/ff.o
+                0x00002c16                add_direntry
+ .text.f_mount  0x0000300e       0x10 obj-m328/src/ff.o
+                0x0000300e                f_mount
+ .text.f_open   0x0000301e      0x26a obj-m328/src/ff.o
+                0x0000301e                f_open
+ .text.f_read   0x00003288      0x20a obj-m328/src/ff.o
+                0x00003288                f_read
+ .text.f_write  0x00003492      0x2b0 obj-m328/src/ff.o
+                0x00003492                f_write
+ .text.f_sync   0x00003742       0x9a obj-m328/src/ff.o
+                0x00003742                f_sync
+ .text.f_close  0x000037dc       0x16 obj-m328/src/ff.o
+                0x000037dc                f_close
+ .text.f_lseek  0x000037f2      0x2f2 obj-m328/src/ff.o
+                0x000037f2                f_lseek
  .text.f_opendir
-                0x00003b72       0xa8 obj-m328/src/ff.o
-                0x00003b72                f_opendir
+                0x00003ae4       0xa8 obj-m328/src/ff.o
+                0x00003ae4                f_opendir
  .text.f_readdir
-                0x00003c1a      0x158 obj-m328/src/ff.o
-                0x00003c1a                f_readdir
+                0x00003b8c      0x158 obj-m328/src/ff.o
+                0x00003b8c                f_readdir
  .text.f_unlink
-                0x00003d72      0x1aa obj-m328/src/ff.o
-                0x00003d72                f_unlink
- .text.f_mkdir  0x00003f1c      0x28e obj-m328/src/ff.o
-                0x00003f1c                f_mkdir
- .text.f_chdir  0x000041aa       0x96 obj-m328/src/ff.o
-                0x000041aa                f_chdir
+                0x00003ce4      0x1aa obj-m328/src/ff.o
+                0x00003ce4                f_unlink
+ .text.f_mkdir  0x00003e8e      0x28e obj-m328/src/ff.o
+                0x00003e8e                f_mkdir
+ .text.f_chdir  0x0000411c       0x96 obj-m328/src/ff.o
+                0x0000411c                f_chdir
  .text.f_rename
-                0x00004240      0x1f2 obj-m328/src/ff.o
-                0x00004240                f_rename
+                0x000041b2      0x1f2 obj-m328/src/ff.o
+                0x000041b2                f_rename
  .text.hex_hsk_lo
-                0x00004432        0xa obj-m328/src/hexbus.o
+                0x000043a4        0xa obj-m328/src/hexbus.o
  .text.hex_wait_for_hsk_lo
-                0x0000443c       0x10 obj-m328/src/hexbus.o
+                0x000043ae       0x10 obj-m328/src/hexbus.o
  .text.hex_is_bav
-                0x0000444c        0x6 obj-m328/src/hexbus.o
-                0x0000444c                hex_is_bav
+                0x000043be        0x6 obj-m328/src/hexbus.o
+                0x000043be                hex_is_bav
  .text.hex_release_data
-                0x00004452       0x16 obj-m328/src/hexbus.o
-                0x00004452                hex_release_data
+                0x000043c4       0x16 obj-m328/src/hexbus.o
+                0x000043c4                hex_release_data
  .text.hex_release_bus
-                0x00004468        0xe obj-m328/src/hexbus.o
-                0x00004468                hex_release_bus
+                0x000043da        0xe obj-m328/src/hexbus.o
+                0x000043da                hex_release_bus
  .text.hex_finish
-                0x00004476       0x12 obj-m328/src/hexbus.o
-                0x00004476                hex_finish
+                0x000043e8       0x12 obj-m328/src/hexbus.o
+                0x000043e8                hex_finish
  .text.hex_capture_hsk
-                0x00004488        0xc obj-m328/src/hexbus.o
-                0x00004488                hex_capture_hsk
+                0x000043fa        0xc obj-m328/src/hexbus.o
+                0x000043fa                hex_capture_hsk
  .text.hex_recv_byte
-                0x00004494       0x44 obj-m328/src/hexbus.o
-                0x00004494                hex_recv_byte
+                0x00004406       0x44 obj-m328/src/hexbus.o
+                0x00004406                hex_recv_byte
  .text.hex_send_byte
-                0x000044d8       0x68 obj-m328/src/hexbus.o
-                0x000044d8                hex_send_byte
+                0x0000444a       0x68 obj-m328/src/hexbus.o
+                0x0000444a                hex_send_byte
  .text.hex_send_word
-                0x00004540       0x12 obj-m328/src/hexbus.o
-                0x00004540                hex_send_word
+                0x000044b2       0x12 obj-m328/src/hexbus.o
+                0x000044b2                hex_send_word
  .text.hex_send_size_response
-                0x00004552       0x2a obj-m328/src/hexbus.o
-                0x00004552                hex_send_size_response
+                0x000044c4       0x2e obj-m328/src/hexbus.o
+                0x000044c4                hex_send_size_response
  .text.hex_send_final_response
-                0x0000457c       0x14 obj-m328/src/hexbus.o
-                0x0000457c                hex_send_final_response
+                0x000044f2       0x18 obj-m328/src/hexbus.o
+                0x000044f2                hex_send_final_response
  .text.hex_init
-                0x00004590       0x16 obj-m328/src/hexbus.o
-                0x00004590                hex_init
+                0x0000450a       0x16 obj-m328/src/hexbus.o
+                0x0000450a                hex_init
  .text.parse_number
-                0x000045a6       0xdc obj-m328/src/hexops.o
-                0x000045a6                parse_number
+                0x00004520       0xdc obj-m328/src/hexops.o
+                0x00004520                parse_number
  .text.hex_get_data
-                0x00004682       0x34 obj-m328/src/hexops.o
-                0x00004682                hex_get_data
+                0x000045fc       0x34 obj-m328/src/hexops.o
+                0x000045fc                hex_get_data
  .text.hex_eat_it
-                0x000046b6       0x42 obj-m328/src/hexops.o
-                0x000046b6                hex_eat_it
+                0x00004630       0x3c obj-m328/src/hexops.o
+                0x00004630                hex_eat_it
  .text.hex_unsupported
-                0x000046f8        0xc obj-m328/src/hexops.o
-                0x000046f8                hex_unsupported
+                0x0000466c        0xc obj-m328/src/hexops.o
+                0x0000466c                hex_unsupported
  .text.hex_null
-                0x00004704        0xa obj-m328/src/hexops.o
-                0x00004704                hex_null
+                0x00004678        0xa obj-m328/src/hexops.o
+                0x00004678                hex_null
  .text.hex_open_helper
-                0x0000470e       0x64 obj-m328/src/hexops.o
-                0x0000470e                hex_open_helper
- .text.trim     0x00004772       0x60 obj-m328/src/hexops.o
-                0x00004772                trim
+                0x00004682       0x64 obj-m328/src/hexops.o
+                0x00004682                hex_open_helper
+ .text.trim     0x000046e6       0x60 obj-m328/src/hexops.o
+                0x000046e6                trim
  .text.parse_cmd
-                0x000047d2       0xa8 obj-m328/src/hexops.o
-                0x000047d2                parse_cmd
+                0x00004746       0xa8 obj-m328/src/hexops.o
+                0x00004746                parse_cmd
  .text.parse_equate
-                0x0000487a       0x7a obj-m328/src/hexops.o
-                0x0000487a                parse_equate
+                0x000047ee       0x7a obj-m328/src/hexops.o
+                0x000047ee                parse_equate
  .text.split_cmd
-                0x000048f4       0x5c obj-m328/src/hexops.o
-                0x000048f4                split_cmd
+                0x00004868       0x5c obj-m328/src/hexops.o
+                0x00004868                split_cmd
  .text.hex_finish_open
-                0x00004950       0x2e obj-m328/src/hexops.o
-                0x00004950                hex_finish_open
+                0x000048c4       0x12 obj-m328/src/hexops.o
+                0x000048c4                hex_finish_open
  .text.hex_exec_cmd
-                0x0000497e       0xe0 obj-m328/src/hexops.o
-                0x0000497e                hex_exec_cmd
+                0x000048d6       0xe0 obj-m328/src/hexops.o
+                0x000048d6                hex_exec_cmd
  .text.hex_write_cmd_helper
-                0x00004a5e       0x18 obj-m328/src/hexops.o
-                0x00004a5e                hex_write_cmd_helper
+                0x000049b6       0x18 obj-m328/src/hexops.o
+                0x000049b6                hex_write_cmd_helper
  .text.hex_close_cmd
-                0x00004a76        0xe obj-m328/src/hexops.o
-                0x00004a76                hex_close_cmd
+                0x000049ce        0x6 obj-m328/src/hexops.o
+                0x000049ce                hex_close_cmd
  .text.hex_read_status
-                0x00004a84       0x44 obj-m328/src/hexops.o
-                0x00004a84                hex_read_status
+                0x000049d4       0x44 obj-m328/src/hexops.o
+                0x000049d4                hex_read_status
  .text.set_busy_led
-                0x00004ac8       0x18 obj-m328/src/led.o
-                0x00004ac8                set_busy_led
+                0x00004a18       0x18 obj-m328/src/led.o
+                0x00004a18                set_busy_led
  .text.get_led_state
-                0x00004ae0        0x6 obj-m328/src/led.o
-                0x00004ae0                get_led_state
+                0x00004a30        0x6 obj-m328/src/led.o
+                0x00004a30                get_led_state
  .text.hex_reset_bus
-                0x00004ae6       0x16 obj-m328/src/main.o
- .text.setup    0x00004afc       0x26 obj-m328/src/main.o
-                0x00004afc                setup
+                0x00004a36       0x16 obj-m328/src/main.o
+ .text.setup    0x00004a4c       0x26 obj-m328/src/main.o
+                0x00004a4c                setup
  .text.startup.main
-                0x00004b22      0x12e obj-m328/src/main.o
-                0x00004b22                main
+                0x00004a72      0x12e obj-m328/src/main.o
+                0x00004a72                main
  .text.__vector_1
-                0x00004c50       0x38 obj-m328/src/powermgmt.o
-                0x00004c50                __vector_1
+                0x00004ba0       0x38 obj-m328/src/powermgmt.o
+                0x00004ba0                __vector_1
  .text.sleep_the_system
-                0x00004c88       0x36 obj-m328/src/powermgmt.o
-                0x00004c88                sleep_the_system
- .text.reg_add  0x00004cbe       0x48 obj-m328/src/registry.o
-                0x00004cbe                reg_add
+                0x00004bd8       0x36 obj-m328/src/powermgmt.o
+                0x00004bd8                sleep_the_system
+ .text.reg_add  0x00004c0e       0x48 obj-m328/src/registry.o
+                0x00004c0e                reg_add
  .text._crc_xmodem_update
-                0x00004d06       0x34 obj-m328/src/sdcard.o
+                0x00004c56       0x34 obj-m328/src/sdcard.o
  .text.getticks
-                0x00004d3a       0x10 obj-m328/src/sdcard.o
+                0x00004c8a       0x10 obj-m328/src/sdcard.o
  .text.deselect_card
-                0x00004d4a        0xa obj-m328/src/sdcard.o
+                0x00004c9a        0xa obj-m328/src/sdcard.o
  .text.send_command.constprop.7
-                0x00004d54       0x86 obj-m328/src/sdcard.o
+                0x00004ca4       0x86 obj-m328/src/sdcard.o
  .text.__vector_3
-                0x00004dda       0x26 obj-m328/src/sdcard.o
-                0x00004dda                __vector_3
- .text.sd_init  0x00004e00       0x1e obj-m328/src/sdcard.o
-                0x00004e00                sd_init
-                0x00004e00                disk_init
+                0x00004d2a       0x26 obj-m328/src/sdcard.o
+                0x00004d2a                __vector_3
+ .text.sd_init  0x00004d50       0x1e obj-m328/src/sdcard.o
+                0x00004d50                sd_init
+                0x00004d50                disk_init
  .text.sd_status
-                0x00004e1e       0x14 obj-m328/src/sdcard.o
-                0x00004e1e                sd_status
-                0x00004e1e                disk_status
+                0x00004d6e       0x14 obj-m328/src/sdcard.o
+                0x00004d6e                sd_status
+                0x00004d6e                disk_status
  .text.sd_initialize
-                0x00004e32      0x19a obj-m328/src/sdcard.o
-                0x00004e32                sd_initialize
-                0x00004e32                disk_initialize
- .text.sd_read  0x00004fcc      0x132 obj-m328/src/sdcard.o
-                0x00004fcc                disk_read
-                0x00004fcc                sd_read
+                0x00004d82      0x19a obj-m328/src/sdcard.o
+                0x00004d82                sd_initialize
+                0x00004d82                disk_initialize
+ .text.sd_read  0x00004f1c      0x132 obj-m328/src/sdcard.o
+                0x00004f1c                disk_read
+                0x00004f1c                sd_read
  .text.sd_write
-                0x000050fe      0x112 obj-m328/src/sdcard.o
-                0x000050fe                disk_write
-                0x000050fe                sd_write
+                0x0000504e      0x112 obj-m328/src/sdcard.o
+                0x0000504e                disk_write
+                0x0000504e                sd_write
  .text.spi_set_speed
-                0x00005210       0x14 obj-m328/src/spi.o
-                0x00005210                spi_set_speed
+                0x00005160       0x14 obj-m328/src/spi.o
+                0x00005160                spi_set_speed
  .text.spi_init
-                0x00005224       0x28 obj-m328/src/spi.o
-                0x00005224                spi_init
+                0x00005174       0x28 obj-m328/src/spi.o
+                0x00005174                spi_init
  .text.spi_tx_byte
-                0x0000524c        0xc obj-m328/src/spi.o
-                0x0000524c                spi_tx_byte
+                0x0000519c        0xc obj-m328/src/spi.o
+                0x0000519c                spi_tx_byte
  .text.spi_rx_byte
-                0x00005258        0xe obj-m328/src/spi.o
-                0x00005258                spi_rx_byte
+                0x000051a8        0xe obj-m328/src/spi.o
+                0x000051a8                spi_rx_byte
  .text.spi_exchange_block
-                0x00005266       0x30 obj-m328/src/spi.o
-                0x00005266                spi_exchange_block
+                0x000051b6       0x30 obj-m328/src/spi.o
+                0x000051b6                spi_exchange_block
  .text.__vector_14
-                0x00005296       0x86 obj-m328/src/timer.o
-                0x00005296                __vector_14
+                0x000051e6       0x86 obj-m328/src/timer.o
+                0x000051e6                __vector_14
  .text.timer_init
-                0x0000531c       0x1a obj-m328/src/timer.o
-                0x0000531c                timer_init
+                0x0000526c       0x1a obj-m328/src/timer.o
+                0x0000526c                timer_init
  .text.libgcc.mul
-                0x00005336       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
-                0x00005336                __mulsi3
+                0x00005286       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
+                0x00005286                __mulsi3
  .text.libgcc.div
-                0x00005354       0x28 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
-                0x00005354                __udivmodhi4
+                0x000052a4       0x28 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
+                0x000052a4                __udivmodhi4
  .text.libgcc.div
-                0x0000537c       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
-                0x0000537c                __udivmodsi4
+                0x000052cc       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
+                0x000052cc                __udivmodsi4
  .text.libgcc.mul
-                0x000053c0       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
-                0x000053c0                __muluhisi3
+                0x00005310       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
+                0x00005310                __muluhisi3
  .text.libgcc.prologue
-                0x000053d4       0x38 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
-                0x000053d4                __prologue_saves__
+                0x00005324       0x38 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
+                0x00005324                __prologue_saves__
  .text.libgcc.prologue
-                0x0000540c       0x36 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
-                0x0000540c                __epilogue_restores__
+                0x0000535c       0x36 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
+                0x0000535c                __epilogue_restores__
  .text.libgcc.mul
-                0x00005442       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
-                0x00005442                __umulhisi3
+                0x00005392       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
+                0x00005392                __umulhisi3
  .text.avr-libc.fplib
-                0x00005460        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3.o)
-                0x00005460                __divsf3
+                0x000053b0        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3.o)
+                0x000053b0                __divsf3
  .text.avr-libc.fplib
-                0x00005464       0xcc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3x.o)
-                0x0000547a                __divsf3x
-                0x0000547e                __divsf3_pse
+                0x000053b4       0xcc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3x.o)
+                0x000053ca                __divsf3x
+                0x000053ce                __divsf3_pse
  .text.avr-libc.fplib
-                0x00005530        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixsfsi.o)
-                0x00005530                __fixsfsi
+                0x00005480        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixsfsi.o)
+                0x00005480                __fixsfsi
  .text.avr-libc.fplib
-                0x0000553a       0x58 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixunssfsi.o)
-                0x0000553a                __fixunssfsi
+                0x0000548a       0x58 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixunssfsi.o)
+                0x0000548a                __fixunssfsi
  .text.avr-libc.fplib
-                0x00005592       0x7a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(floatsisf.o)
-                0x00005592                __floatunsisf
-                0x00005596                __floatsisf
+                0x000054e2       0x7a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(floatsisf.o)
+                0x000054e2                __floatunsisf
+                0x000054e6                __floatsisf
  .text.avr-libc.fplib
-                0x0000560c        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_inf.o)
-                0x0000560c                __fp_inf
+                0x0000555c        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_inf.o)
+                0x0000555c                __fp_inf
  .text.avr-libc.fplib
-                0x00005618        0x6 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_nan.o)
-                0x00005618                __fp_nan
+                0x00005568        0x6 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_nan.o)
+                0x00005568                __fp_nan
  .text.avr-libc.fplib
-                0x0000561e        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscA.o)
-                0x0000561e                __fp_pscA
+                0x0000556e        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscA.o)
+                0x0000556e                __fp_pscA
  .text.avr-libc.fplib
-                0x0000562c        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscB.o)
-                0x0000562c                __fp_pscB
+                0x0000557c        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscB.o)
+                0x0000557c                __fp_pscB
  .text.avr-libc.fplib
-                0x0000563a       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_round.o)
-                0x0000563a                __fp_round
+                0x0000558a       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_round.o)
+                0x0000558a                __fp_round
  .text.avr-libc.fplib
-                0x0000565c       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_split3.o)
-                0x0000565c                __fp_split3
-                0x0000566c                __fp_splitA
+                0x000055ac       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_split3.o)
+                0x000055ac                __fp_split3
+                0x000055bc                __fp_splitA
  .text.avr-libc.fplib
-                0x000056a0        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_zero.o)
-                0x000056a0                __fp_zero
-                0x000056a2                __fp_szero
+                0x000055f0        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_zero.o)
+                0x000055f0                __fp_zero
+                0x000055f2                __fp_szero
  .text.avr-libc.fplib
-                0x000056ae        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log10.o)
-                0x000056ae                log10
+                0x000055fe        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log10.o)
+                0x000055fe                log10
  .text.avr-libc.fplib
-                0x000056ba       0x8a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log.o)
-                0x000056c4                log
+                0x0000560a       0x8a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log.o)
+                0x00005614                log
  .text.avr-libc.fplib
-                0x00005744        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3.o)
-                0x00005744                __mulsf3
+                0x00005694        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3.o)
+                0x00005694                __mulsf3
  .text.avr-libc.fplib
-                0x00005748       0xc2 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3x.o)
-                0x0000575c                __mulsf3x
-                0x00005760                __mulsf3_pse
+                0x00005698       0xc2 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3x.o)
+                0x000056ac                __mulsf3x
+                0x000056b0                __mulsf3_pse
  .text.avr-libc.fplib
-                0x0000580a        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3.o)
-                0x0000580a                __subsf3
-                0x0000580c                __addsf3
+                0x0000575a        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3.o)
+                0x0000575a                __subsf3
+                0x0000575c                __addsf3
  .text.avr-libc.fplib
-                0x00005814       0xc0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3x.o)
-                0x0000582e                __addsf3x
+                0x00005764       0xc0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3x.o)
+                0x0000577e                __addsf3x
  .text.avr-libc.fplib
-                0x000058d4       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_mpack.o)
-                0x000058d4                __fp_mpack
-                0x000058d8                __fp_mpack_finite
+                0x00005824       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_mpack.o)
+                0x00005824                __fp_mpack
+                0x00005828                __fp_mpack_finite
  .text.avr-libc.fplib
-                0x000058f0       0x4a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_powser.o)
-                0x000058f0                __fp_powser
+                0x00005840       0x4a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_powser.o)
+                0x00005840                __fp_powser
  .text.avr-libc
-                0x0000593a      0x24a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(malloc.o)
-                0x0000593a                malloc
-                0x00005a72                free
+                0x0000588a      0x24a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(malloc.o)
+                0x0000588a                malloc
+                0x000059c2                free
  .text.avr-libc
-                0x00005b84       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp_P.o)
-                0x00005b84                memcmp_P
+                0x00005ad4       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp_P.o)
+                0x00005ad4                memcmp_P
  .text.avr-libc
-                0x00005b9e       0x30 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strdup.o)
-                0x00005b9e                strdup
+                0x00005aee       0x30 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strdup.o)
+                0x00005aee                strdup
  .text.avr-libc
-                0x00005bce       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp.o)
-                0x00005bce                memcmp
+                0x00005b1e       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp.o)
+                0x00005b1e                memcmp
  .text.avr-libc
-                0x00005be8       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcpy.o)
-                0x00005be8                memcpy
+                0x00005b38       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcpy.o)
+                0x00005b38                memcpy
  .text.avr-libc
-                0x00005bfa       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memmove.o)
-                0x00005bfa                memmove
+                0x00005b4a       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memmove.o)
+                0x00005b4a                memmove
  .text.avr-libc
-                0x00005c1c        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memset.o)
-                0x00005c1c                memset
+                0x00005b6c        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memset.o)
+                0x00005b6c                memset
  .text.avr-libc
-                0x00005c2a       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcmp.o)
-                0x00005c2a                strcmp
+                0x00005b7a       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcmp.o)
+                0x00005b7a                strcmp
  .text.avr-libc
-                0x00005c3c        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcpy.o)
-                0x00005c3c                strcpy
+                0x00005b8c        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcpy.o)
+                0x00005b8c                strcpy
  .text.avr-libc
-                0x00005c4a       0x16 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrchr.o)
-                0x00005c4a                strrchr
+                0x00005b9a       0x16 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrchr.o)
+                0x00005b9a                strrchr
  .text.avr-libc
-                0x00005c60       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ltoa_ncheck.o)
-                0x00005c60                __ltoa_ncheck
+                0x00005bb0       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ltoa_ncheck.o)
+                0x00005bb0                __ltoa_ncheck
  .text.avr-libc
-                0x00005c7c       0x42 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ultoa_ncheck.o)
-                0x00005c7c                __ultoa_ncheck
-                0x00005c7e                __ultoa_common
+                0x00005bcc       0x42 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ultoa_ncheck.o)
+                0x00005bcc                __ultoa_ncheck
+                0x00005bce                __ultoa_common
  .text.avr-libc
-                0x00005cbe       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrev.o)
-                0x00005cbe                strrev
+                0x00005c0e       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrev.o)
+                0x00005c0e                strrev
  .text.avr-libc
-                0x00005cde       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eerd_block.o)
-                0x00005cde                eeprom_read_block
-                0x00005ce2                eeprom_read_blraw
+                0x00005c2e       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eerd_block.o)
+                0x00005c2e                eeprom_read_block
+                0x00005c32                eeprom_read_blraw
  .text.avr-libc
-                0x00005cfe       0x10 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eerd_byte.o)
-                0x00005cfe                eeprom_read_byte
+                0x00005c4e       0x10 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eerd_byte.o)
+                0x00005c4e                eeprom_read_byte
  .text.avr-libc
-                0x00005d0e        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eerd_word.o)
-                0x00005d0e                eeprom_read_word
+                0x00005c5e        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eerd_word.o)
+                0x00005c5e                eeprom_read_word
  .text.avr-libc
-                0x00005d18       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eewr_block.o)
-                0x00005d18                eeprom_write_block
+                0x00005c68       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eewr_block.o)
+                0x00005c68                eeprom_write_block
  .text.avr-libc
-                0x00005d2a       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eewr_byte.o)
-                0x00005d2a                eeprom_write_byte
-                0x00005d2c                eeprom_write_r18
-                0x00005d46                . = ALIGN (0x2)
+                0x00005c7a       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328.a(eewr_byte.o)
+                0x00005c7a                eeprom_write_byte
+                0x00005c7c                eeprom_write_r18
+                0x00005c96                . = ALIGN (0x2)
  *(.fini9)
- .fini9         0x00005d46        0x0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
-                0x00005d46                _exit
-                0x00005d46                exit
+ .fini9         0x00005c96        0x0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+                0x00005c96                _exit
+                0x00005c96                exit
  *(.fini9)
  *(.fini8)
  *(.fini8)
@@ -1206,11 +1206,11 @@ END GROUP
  *(.fini1)
  *(.fini1)
  *(.fini0)
- .fini0         0x00005d46        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+ .fini0         0x00005c96        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
  *(.fini0)
-                0x00005d4a                _etext = .
+                0x00005c9a                _etext = .
 
-.data           0x00800100       0x24 load address 0x00005d4a
+.data           0x00800100       0x24 load address 0x00005c9a
                 0x00800100                PROVIDE (__data_start, .)
  *(.data)
  .data          0x00800100        0x6 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(malloc.o)
@@ -1277,8 +1277,8 @@ END GROUP
                 0x00800635                __brkval
                 0x00800637                __flp
                 0x00800639                PROVIDE (__bss_end, .)
-                0x00005d4a                __data_load_start = LOADADDR (.data)
-                0x00005d6e                __data_load_end = (__data_load_start + SIZEOF (.data))
+                0x00005c9a                __data_load_start = LOADADDR (.data)
+                0x00005cbe                __data_load_end = (__data_load_start + SIZEOF (.data))
 
 .noinit         0x00800639        0x0
                 [!provide]                PROVIDE (__noinit_start, .)
@@ -1421,105 +1421,105 @@ END GROUP
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000     0xbd8a
+.debug_info     0x00000000     0xbc30
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x00000000      0x5f4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
- .debug_info    0x000005f4     0x1a0b obj-m328/src/catalog.o
- .debug_info    0x00001fff       0x9f obj-m328/src/diskio.o
- .debug_info    0x0000209e     0x1efb obj-m328/src/drive.o
- .debug_info    0x00003f99      0x525 obj-m328/src/eeprom.o
- .debug_info    0x000044be     0x354f obj-m328/src/ff.o
- .debug_info    0x00007a0d      0x72c obj-m328/src/hexbus.o
- .debug_info    0x00008139     0x10c4 obj-m328/src/hexops.o
- .debug_info    0x000091fd       0xee obj-m328/src/led.o
- .debug_info    0x000092eb      0x8b3 obj-m328/src/main.o
- .debug_info    0x00009b9e      0x155 obj-m328/src/powermgmt.o
- .debug_info    0x00009cf3      0x344 obj-m328/src/registry.o
- .debug_info    0x0000a037     0x1223 obj-m328/src/sdcard.o
- .debug_info    0x0000b25a      0x269 obj-m328/src/spi.o
- .debug_info    0x0000b4c3      0x179 obj-m328/src/timer.o
- .debug_info    0x0000b63c       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
- .debug_info    0x0000b6f7       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
- .debug_info    0x0000b7b2       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
- .debug_info    0x0000b86d       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
- .debug_info    0x0000b928       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
- .debug_info    0x0000b9e3       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
- .debug_info    0x0000ba9e       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
- .debug_info    0x0000bb59       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
- .debug_info    0x0000bc14       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
- .debug_info    0x0000bccf       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
+ .debug_info    0x000005f4     0x19f0 obj-m328/src/catalog.o
+ .debug_info    0x00001fe4       0x9f obj-m328/src/diskio.o
+ .debug_info    0x00002083     0x1e50 obj-m328/src/drive.o
+ .debug_info    0x00003ed3      0x525 obj-m328/src/eeprom.o
+ .debug_info    0x000043f8     0x354f obj-m328/src/ff.o
+ .debug_info    0x00007947      0x72c obj-m328/src/hexbus.o
+ .debug_info    0x00008073     0x1030 obj-m328/src/hexops.o
+ .debug_info    0x000090a3       0xee obj-m328/src/led.o
+ .debug_info    0x00009191      0x8b3 obj-m328/src/main.o
+ .debug_info    0x00009a44      0x155 obj-m328/src/powermgmt.o
+ .debug_info    0x00009b99      0x344 obj-m328/src/registry.o
+ .debug_info    0x00009edd     0x1223 obj-m328/src/sdcard.o
+ .debug_info    0x0000b100      0x269 obj-m328/src/spi.o
+ .debug_info    0x0000b369      0x179 obj-m328/src/timer.o
+ .debug_info    0x0000b4e2       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
+ .debug_info    0x0000b59d       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
+ .debug_info    0x0000b658       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
+ .debug_info    0x0000b713       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+ .debug_info    0x0000b7ce       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
+ .debug_info    0x0000b889       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
+ .debug_info    0x0000b944       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
+ .debug_info    0x0000b9ff       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
+ .debug_info    0x0000baba       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
+ .debug_info    0x0000bb75       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
 
-.debug_abbrev   0x00000000     0x2821
+.debug_abbrev   0x00000000     0x27e5
  *(.debug_abbrev)
  .debug_abbrev  0x00000000      0x5a2 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
  .debug_abbrev  0x000005a2      0x48c obj-m328/src/catalog.o
  .debug_abbrev  0x00000a2e       0x67 obj-m328/src/diskio.o
- .debug_abbrev  0x00000a95      0x422 obj-m328/src/drive.o
- .debug_abbrev  0x00000eb7      0x191 obj-m328/src/eeprom.o
- .debug_abbrev  0x00001048      0x477 obj-m328/src/ff.o
- .debug_abbrev  0x000014bf      0x2f5 obj-m328/src/hexbus.o
- .debug_abbrev  0x000017b4      0x3ad obj-m328/src/hexops.o
- .debug_abbrev  0x00001b61       0xac obj-m328/src/led.o
- .debug_abbrev  0x00001c0d      0x2c9 obj-m328/src/main.o
- .debug_abbrev  0x00001ed6       0xf4 obj-m328/src/powermgmt.o
- .debug_abbrev  0x00001fca      0x10c obj-m328/src/registry.o
- .debug_abbrev  0x000020d6      0x425 obj-m328/src/sdcard.o
- .debug_abbrev  0x000024fb      0x14a obj-m328/src/spi.o
- .debug_abbrev  0x00002645      0x114 obj-m328/src/timer.o
- .debug_abbrev  0x00002759       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
- .debug_abbrev  0x0000276d       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
- .debug_abbrev  0x00002781       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
- .debug_abbrev  0x00002795       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
- .debug_abbrev  0x000027a9       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
- .debug_abbrev  0x000027bd       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
- .debug_abbrev  0x000027d1       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
- .debug_abbrev  0x000027e5       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
- .debug_abbrev  0x000027f9       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
- .debug_abbrev  0x0000280d       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
+ .debug_abbrev  0x00000a95      0x433 obj-m328/src/drive.o
+ .debug_abbrev  0x00000ec8      0x191 obj-m328/src/eeprom.o
+ .debug_abbrev  0x00001059      0x477 obj-m328/src/ff.o
+ .debug_abbrev  0x000014d0      0x2f5 obj-m328/src/hexbus.o
+ .debug_abbrev  0x000017c5      0x360 obj-m328/src/hexops.o
+ .debug_abbrev  0x00001b25       0xac obj-m328/src/led.o
+ .debug_abbrev  0x00001bd1      0x2c9 obj-m328/src/main.o
+ .debug_abbrev  0x00001e9a       0xf4 obj-m328/src/powermgmt.o
+ .debug_abbrev  0x00001f8e      0x10c obj-m328/src/registry.o
+ .debug_abbrev  0x0000209a      0x425 obj-m328/src/sdcard.o
+ .debug_abbrev  0x000024bf      0x14a obj-m328/src/spi.o
+ .debug_abbrev  0x00002609      0x114 obj-m328/src/timer.o
+ .debug_abbrev  0x0000271d       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
+ .debug_abbrev  0x00002731       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
+ .debug_abbrev  0x00002745       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
+ .debug_abbrev  0x00002759       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+ .debug_abbrev  0x0000276d       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
+ .debug_abbrev  0x00002781       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
+ .debug_abbrev  0x00002795       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
+ .debug_abbrev  0x000027a9       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
+ .debug_abbrev  0x000027bd       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
+ .debug_abbrev  0x000027d1       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
 
-.debug_line     0x00000000     0x53eb
+.debug_line     0x00000000     0x5327
  *(.debug_line .debug_line.* .debug_line_end)
  .debug_line    0x00000000       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
- .debug_line    0x0000001a      0x773 obj-m328/src/catalog.o
- .debug_line    0x0000078d       0x38 obj-m328/src/diskio.o
- .debug_line    0x000007c5      0xcbf obj-m328/src/drive.o
- .debug_line    0x00001484      0x178 obj-m328/src/eeprom.o
- .debug_line    0x000015fc     0x1cb6 obj-m328/src/ff.o
- .debug_line    0x000032b2      0x3be obj-m328/src/hexbus.o
- .debug_line    0x00003670      0x633 obj-m328/src/hexops.o
- .debug_line    0x00003ca3       0xce obj-m328/src/led.o
- .debug_line    0x00003d71      0x2db obj-m328/src/main.o
- .debug_line    0x0000404c      0x149 obj-m328/src/powermgmt.o
- .debug_line    0x00004195       0xe5 obj-m328/src/registry.o
- .debug_line    0x0000427a      0x771 obj-m328/src/sdcard.o
- .debug_line    0x000049eb      0x197 obj-m328/src/spi.o
- .debug_line    0x00004b82      0x111 obj-m328/src/timer.o
- .debug_line    0x00004c93       0xb0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
- .debug_line    0x00004d43       0xce c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
- .debug_line    0x00004e11      0x122 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
- .debug_line    0x00004f33       0x62 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
- .debug_line    0x00004f95       0x98 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
- .debug_line    0x0000502d       0x86 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
- .debug_line    0x000050b3       0x92 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
- .debug_line    0x00005145       0xfe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
- .debug_line    0x00005243       0xf8 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
- .debug_line    0x0000533b       0xb0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
+ .debug_line    0x0000001a      0x755 obj-m328/src/catalog.o
+ .debug_line    0x0000076f       0x38 obj-m328/src/diskio.o
+ .debug_line    0x000007a7      0xc3d obj-m328/src/drive.o
+ .debug_line    0x000013e4      0x178 obj-m328/src/eeprom.o
+ .debug_line    0x0000155c     0x1cb6 obj-m328/src/ff.o
+ .debug_line    0x00003212      0x3ca obj-m328/src/hexbus.o
+ .debug_line    0x000035dc      0x603 obj-m328/src/hexops.o
+ .debug_line    0x00003bdf       0xce obj-m328/src/led.o
+ .debug_line    0x00003cad      0x2db obj-m328/src/main.o
+ .debug_line    0x00003f88      0x149 obj-m328/src/powermgmt.o
+ .debug_line    0x000040d1       0xe5 obj-m328/src/registry.o
+ .debug_line    0x000041b6      0x771 obj-m328/src/sdcard.o
+ .debug_line    0x00004927      0x197 obj-m328/src/spi.o
+ .debug_line    0x00004abe      0x111 obj-m328/src/timer.o
+ .debug_line    0x00004bcf       0xb0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
+ .debug_line    0x00004c7f       0xce c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
+ .debug_line    0x00004d4d      0x122 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
+ .debug_line    0x00004e6f       0x62 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+ .debug_line    0x00004ed1       0x98 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
+ .debug_line    0x00004f69       0x86 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
+ .debug_line    0x00004fef       0x92 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
+ .debug_line    0x00005081       0xfe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
+ .debug_line    0x0000517f       0xf8 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
+ .debug_line    0x00005277       0xb0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
 
-.debug_frame    0x00000000     0x12dc
+.debug_frame    0x00000000     0x12b0
  *(.debug_frame)
  .debug_frame   0x00000000      0x248 obj-m328/src/catalog.o
- .debug_frame   0x00000248      0x28c obj-m328/src/drive.o
- .debug_frame   0x000004d4       0x50 obj-m328/src/eeprom.o
- .debug_frame   0x00000524      0x6a4 obj-m328/src/ff.o
- .debug_frame   0x00000bc8      0x134 obj-m328/src/hexbus.o
- .debug_frame   0x00000cfc      0x254 obj-m328/src/hexops.o
- .debug_frame   0x00000f50       0x44 obj-m328/src/led.o
- .debug_frame   0x00000f94       0x4c obj-m328/src/main.o
- .debug_frame   0x00000fe0       0x50 obj-m328/src/powermgmt.o
- .debug_frame   0x00001030       0x24 obj-m328/src/registry.o
- .debug_frame   0x00001054      0x1a8 obj-m328/src/sdcard.o
- .debug_frame   0x000011fc       0x64 obj-m328/src/spi.o
- .debug_frame   0x00001260       0x7c obj-m328/src/timer.o
+ .debug_frame   0x00000248      0x270 obj-m328/src/drive.o
+ .debug_frame   0x000004b8       0x50 obj-m328/src/eeprom.o
+ .debug_frame   0x00000508      0x6a4 obj-m328/src/ff.o
+ .debug_frame   0x00000bac      0x134 obj-m328/src/hexbus.o
+ .debug_frame   0x00000ce0      0x244 obj-m328/src/hexops.o
+ .debug_frame   0x00000f24       0x44 obj-m328/src/led.o
+ .debug_frame   0x00000f68       0x4c obj-m328/src/main.o
+ .debug_frame   0x00000fb4       0x50 obj-m328/src/powermgmt.o
+ .debug_frame   0x00001004       0x24 obj-m328/src/registry.o
+ .debug_frame   0x00001028      0x1a8 obj-m328/src/sdcard.o
+ .debug_frame   0x000011d0       0x64 obj-m328/src/spi.o
+ .debug_frame   0x00001234       0x7c obj-m328/src/timer.o
 
 .debug_str      0x00000000     0x1d2c
  *(.debug_str)
@@ -1553,21 +1553,21 @@ END GROUP
  .debug_str     0x00001cf4       0x38 obj-m328/src/timer.o
                                 0x1e5 (size before relaxing)
 
-.debug_loc      0x00000000     0x9158
+.debug_loc      0x00000000     0x90a8
  *(.debug_loc)
- .debug_loc     0x00000000      0xfcd obj-m328/src/catalog.o
- .debug_loc     0x00000fcd     0x13ae obj-m328/src/drive.o
- .debug_loc     0x0000237b      0x145 obj-m328/src/eeprom.o
- .debug_loc     0x000024c0     0x4350 obj-m328/src/ff.o
- .debug_loc     0x00006810      0x477 obj-m328/src/hexbus.o
- .debug_loc     0x00006c87     0x109c obj-m328/src/hexops.o
- .debug_loc     0x00007d23       0x74 obj-m328/src/led.o
- .debug_loc     0x00007d97      0x28a obj-m328/src/main.o
- .debug_loc     0x00008021       0x56 obj-m328/src/powermgmt.o
- .debug_loc     0x00008077       0x2a obj-m328/src/registry.o
- .debug_loc     0x000080a1      0xe75 obj-m328/src/sdcard.o
- .debug_loc     0x00008f16      0x13f obj-m328/src/spi.o
- .debug_loc     0x00009055      0x103 obj-m328/src/timer.o
+ .debug_loc     0x00000000     0x1000 obj-m328/src/catalog.o
+ .debug_loc     0x00001000     0x1331 obj-m328/src/drive.o
+ .debug_loc     0x00002331      0x145 obj-m328/src/eeprom.o
+ .debug_loc     0x00002476     0x4350 obj-m328/src/ff.o
+ .debug_loc     0x000067c6      0x477 obj-m328/src/hexbus.o
+ .debug_loc     0x00006c3d     0x1036 obj-m328/src/hexops.o
+ .debug_loc     0x00007c73       0x74 obj-m328/src/led.o
+ .debug_loc     0x00007ce7      0x28a obj-m328/src/main.o
+ .debug_loc     0x00007f71       0x56 obj-m328/src/powermgmt.o
+ .debug_loc     0x00007fc7       0x2a obj-m328/src/registry.o
+ .debug_loc     0x00007ff1      0xe75 obj-m328/src/sdcard.o
+ .debug_loc     0x00008e66      0x13f obj-m328/src/spi.o
+ .debug_loc     0x00008fa5      0x103 obj-m328/src/timer.o
 
 .debug_macinfo
  *(.debug_macinfo)
@@ -1587,21 +1587,21 @@ END GROUP
 .debug_pubtypes
  *(.debug_pubtypes)
 
-.debug_ranges   0x00000000      0x7a8
+.debug_ranges   0x00000000      0x790
  *(.debug_ranges)
  .debug_ranges  0x00000000       0xd8 obj-m328/src/catalog.o
- .debug_ranges  0x000000d8      0x130 obj-m328/src/drive.o
- .debug_ranges  0x00000208       0x18 obj-m328/src/eeprom.o
- .debug_ranges  0x00000220      0x248 obj-m328/src/ff.o
- .debug_ranges  0x00000468       0x78 obj-m328/src/hexbus.o
- .debug_ranges  0x000004e0       0xa8 obj-m328/src/hexops.o
- .debug_ranges  0x00000588       0x20 obj-m328/src/led.o
- .debug_ranges  0x000005a8       0x78 obj-m328/src/main.o
- .debug_ranges  0x00000620       0x18 obj-m328/src/powermgmt.o
- .debug_ranges  0x00000638       0x10 obj-m328/src/registry.o
- .debug_ranges  0x00000648       0xe8 obj-m328/src/sdcard.o
- .debug_ranges  0x00000730       0x60 obj-m328/src/spi.o
- .debug_ranges  0x00000790       0x18 obj-m328/src/timer.o
+ .debug_ranges  0x000000d8      0x118 obj-m328/src/drive.o
+ .debug_ranges  0x000001f0       0x18 obj-m328/src/eeprom.o
+ .debug_ranges  0x00000208      0x248 obj-m328/src/ff.o
+ .debug_ranges  0x00000450       0x78 obj-m328/src/hexbus.o
+ .debug_ranges  0x000004c8       0xa8 obj-m328/src/hexops.o
+ .debug_ranges  0x00000570       0x20 obj-m328/src/led.o
+ .debug_ranges  0x00000590       0x78 obj-m328/src/main.o
+ .debug_ranges  0x00000608       0x18 obj-m328/src/powermgmt.o
+ .debug_ranges  0x00000620       0x10 obj-m328/src/registry.o
+ .debug_ranges  0x00000630       0xe8 obj-m328/src/sdcard.o
+ .debug_ranges  0x00000718       0x60 obj-m328/src/spi.o
+ .debug_ranges  0x00000778       0x18 obj-m328/src/timer.o
 
 .debug_macro
  *(.debug_macro)

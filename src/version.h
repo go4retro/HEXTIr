@@ -22,5 +22,5 @@
 #define VER_MAJOR         0
 #define VER_MINOR         9
 #define VER_PATCH         3 
-#define VER_FIX           2 
+#define VER_FIX           4
 #define VER_PRERELEASE    
