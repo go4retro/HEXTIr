@@ -299,12 +299,13 @@ hexerror_t hex_send_word( uint16_t value )
    * a success status response.
 */
 void hex_send_size_response( uint16_t len , uint16_t record) {
-  hex_send_word( 4 );
-  hex_send_word( len );
-  hex_send_word( record );
-  hex_send_byte( HEXERR_SUCCESS );
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_word( 4 );
+    hex_send_word( len );
+    hex_send_word( record );
+    hex_send_byte( HEXERR_SUCCESS );
+  }
   hex_finish();
-  return;
 }
 
 /*
@@ -314,12 +315,12 @@ void hex_send_size_response( uint16_t len , uint16_t record) {
    byte of error code response, then release and finish
    up the bus cycle.
 */
-void hex_send_final_response( hexstatus_t rc )
-{
-  hex_send_word( 0 );
-  hex_send_byte( rc );
+void hex_send_final_response( hexstatus_t rc ) {
+  if (!hex_is_bav() ) { // we can send response
+    hex_send_word( 0 );
+    hex_send_byte( rc );
+  }
   hex_finish();
-  return;
 }
 
 /*
@@ -332,7 +333,6 @@ void hex_wait_for_next_bus( void )
   hex_release_bus();
   while (!hex_is_bav() )  // wait for BAV back high, ignore any traffic
     ;
-  return;
 }
 
 
@@ -350,5 +350,4 @@ void hex_init(void) {
 
   HEX_DATA_DDR &= ~HEX_DATA_PIN;
   HEX_DATA_OUT |= HEX_DATA_PIN;
-  return;
 }

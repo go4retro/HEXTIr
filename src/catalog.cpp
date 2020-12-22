@@ -130,7 +130,7 @@ void cat_write_txt(uint16_t* dirnum, uint32_t fsize, const char* filename, uint8
   char buf[width + 1];
   char* file_size = format_file_size(fsize, buf, width);
 
-  int len = 1 + namelen + 1 + 1 + namelen + 1 + 1; // length of data transmitted
+  int len = 1 + strlen(file_size) + 1 + 1 + namelen + 1 + 1; // length of data transmitted
   hex_send_word(len);  // length
   hex_send_byte('\"'); // because we have leading whitespaces
   for (i = 0; i < strlen(file_size)  ; i++) { // file size in kilo bytes, 4 byte
@@ -429,19 +429,16 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
         break;
     }
   }
-  if(!hex_is_bav()) { // we can send response
-    if(rc == HEXSTAT_SUCCESS) {
+  if(rc == HEXSTAT_SUCCESS) {
+    if(!hex_is_bav()) { // we can send response
       hex_send_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
       hex_send_word(fsize);
       hex_send_word(0);
       hex_send_byte(HEXSTAT_SUCCESS);    // status code
       hex_finish();
-      return;
-    } else {
-      hex_send_final_response( rc );
     }
+  } else {
+    hex_send_final_response( rc );
   }
-  hex_finish();
-  debug_putc('E');
 }
 #endif

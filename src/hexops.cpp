@@ -128,9 +128,7 @@ void hex_eat_it(uint16_t length, hexstatus_t status )
   }
   // safe to turn around now.  As long as BAV is still
   // low, then go ahead and send a response.
-  if (!hex_is_bav()) { // we can send response
-    hex_send_final_response( status );
-  }
+  hex_send_final_response( status );
 }
 
 
@@ -281,15 +279,11 @@ void split_cmd(char **buf, uint8_t *len, char **buf2, uint8_t *len2) {
 
 void hex_finish_open(uint16_t len, hexstatus_t rc) {
 
-  if (!hex_is_bav()) { // we can send response
-    if ( rc == HEXSTAT_SUCCESS ) {
-      hex_send_size_response(len, 0);
-    } else {
-      hex_send_final_response( rc );
-    }
-  } else
-    hex_finish();
-  return;
+  if ( rc == HEXSTAT_SUCCESS ) {
+    hex_send_size_response(len, 0);
+  } else {
+    hex_send_final_response( rc );
+  }
 }
 
 typedef enum _execcmd_t {
@@ -411,19 +405,12 @@ void hex_write_cmd(pab_t *pab, uint8_t *dev) {
   // trim whitespace
   trim(&buf, &len);
   rc = hex_exec_cmds(buf, len, dev);
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
 
 void hex_close_cmd(void) {
-  if ( !hex_is_bav() ) {
-    hex_send_final_response( HEXSTAT_SUCCESS );
-  } else
-    hex_finish();
+  hex_send_final_response( HEXSTAT_SUCCESS );
 }
 
 

@@ -150,11 +150,7 @@ static inline void prn_write_cmd(pab_t *pab, uint8_t *dev, printcfg_t *cfg) {
     return;
   }
   rc = prn_exec_cmds((char *)buffer, pab->datalen, dev, cfg);
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
 
@@ -226,31 +222,25 @@ static void prn_close(pab_t *pab) {
     rc = HEXSTAT_NOT_OPEN;
   }
   _prn_open = FALSE;      // mark printer closed regardless.
-  if ( !hex_is_bav() ) {
-    // send 0000 response with appropriate status code.
-    hex_send_final_response( rc );
-  }
+  // send 0000 response with appropriate status code.
+  hex_send_final_response( rc );
 }
 
 
 static void prn_read(pab_t *pab) {
-  hexstatus_t  rc = HEXSTAT_SUCCESS;
 
   debug_puts_P("Read Printer Status\r\n");
 
   if(pab->lun == LUN_CMD) {
     hex_read_status();
-    return;
+  } else {
+    // TODO I don't think this is needed here.  
+  	//if ( !hex_is_bav() ) {
+    //  rc = (hex_send_word( 0 ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
+    //}
+    // normally you cannot get here, but just in case.
+    hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
   }
-
-  // normally you cannot get here, but just in case.
-  if ( !hex_is_bav() ) {
-    rc = (hex_send_word( 0 ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
-    if(rc == HEXSTAT_SUCCESS) {
-      hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
-    }
-  }
-  hex_finish();
 }
 
 
@@ -328,11 +318,7 @@ static void prn_write(pab_t *pab) {
   /*
      send response and finish operation
   */
-  if (!hex_is_bav() ) {
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
 

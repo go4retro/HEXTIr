@@ -24,11 +24,7 @@
 #include "hexbus.h"
 
 #define LUN_CMD       255
-#ifdef USE_CMD_LUN
 #define LUN_RAW       254
-#else
-#define LUN_RAW       255
-#endif
 
 // add 1 to buffer size to handle null termination if used as a string
 extern uint8_t buffer[BUFSIZE + 1];
@@ -69,9 +65,6 @@ typedef struct _pab_raw_t {
 #define FILEATTR_DISPLAY   8
 #define FILEATTR_CATALOG  16
 #define FILEATTR_RELATIVE 32
-#ifndef USE_CMD_LUN
-#define FILEATTR_COMMAND  64
-#endif
 
 hexstatus_t hex_get_data(uint8_t buf[256], uint16_t len);
 void hex_eat_it(uint16_t length, hexstatus_t rc);

@@ -149,8 +149,8 @@ static void clk_read(pab_t *pab) {
   } else {
     rc = HEXSTAT_NOT_OPEN;
   }
-  if ( !hex_is_bav() ) {
-    if ( rc == HEXSTAT_SUCCESS ) {
+  if ( rc == HEXSTAT_SUCCESS ) {
+    if ( !hex_is_bav() ) {
       len = (len > pab->buflen) ? pab->buflen : len;
       hex_send_word( len );
       for ( i = 0; i < len; i++ ) {
@@ -158,11 +158,10 @@ static void clk_read(pab_t *pab) {
       }
       hex_send_byte( rc );
       hex_finish();
-    } else {
-      hex_send_final_response( rc );
     }
-  } else
-    hex_finish();
+  } else {
+    hex_send_final_response( rc );
+  }
 }
 
 
@@ -231,10 +230,7 @@ static void clk_write( pab_t *pab ) {
     hex_eat_it( len, rc );
     return;
   }
-  if ( !hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 

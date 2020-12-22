@@ -272,11 +272,7 @@ static void drv_verify(pab_t *pab) {
     hex_eat_it( len, rc ); // reports status back.
     return;
   } else {
-    if (!hex_is_bav()) { // we can send response
-      hex_send_final_response( rc );
-    } else {
-      hex_finish();
-    }
+    hex_send_final_response( rc );
   }
 }
 
@@ -403,11 +399,7 @@ static void drv_write_cmd(pab_t *pab, uint8_t *dev) {
   }
   rc = drv_exec_cmds((char *)buffer, pab->datalen, dev);
 
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
 
@@ -506,11 +498,7 @@ static void drv_write(pab_t *pab) {
     rc = fresult2hexstatus(res);
   }
 
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
 /*
@@ -595,25 +583,19 @@ static void drv_read(pab_t *pab) {
         fsize = file->fp.fsize - (uint16_t)file->fp.fptr;
       // send how much we are going to send
       rc = (hex_send_word( fsize ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
-
+      len = 1; // send data immediately byte by byte to avoid time-out errors
       // while we have data remaining to send.
       while ( fsize && rc == HEXSTAT_SUCCESS && res == FR_OK) {
-
+        /*
         len = fsize;    // remaining amount to read from file
-        // while it fit into buffer or not?  Only read as much
+        // will it fit into buffer or not?  Only read as much
         // as we can hold in our buffer.
         len = ( len > BUFSIZE ) ? BUFSIZE : len;
-
-        if ( !(file->attr & FILEATTR_CATALOG )) {
-          res = f_read(&(file->fp), buffer, len, &read);
-          if (!res) {
-            debug_trace(buffer, 0, read);
-          }
-        } else {
-          // catalog entry, if that's what we're reading, is already in buffer.
-          read = fsize; // 0 if no entry, else size of entry in buffer.
+        */
+        res = f_read(&(file->fp), buffer, len, &read);
+        if (!res) {
+          debug_trace(buffer, 0, read);
         }
-
         if (FR_OK == res) {
           for (i = 0; i < read; i++) {
             rc = (hex_send_byte(buffer[i]) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
@@ -678,7 +660,6 @@ static void drv_start(void) {
 */
 static void drv_open(pab_t *pab) {
   uint16_t len = 0;
-  uint16_t read;    // how many bytes are read
   uint8_t att = 0;
   hexstatus_t rc;
   BYTE    mode = 0;
@@ -854,10 +835,7 @@ static void drv_close(pab_t *pab) {
     }
   }
 
-  if ( !hex_is_bav() ) {
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 /*
@@ -882,20 +860,17 @@ static void drv_restore( pab_t *pab ) {
     rc = HEXSTAT_NOT_OPEN;
   }
 
-  if (!hex_is_bav() ) {
-    if ( rc == HEXSTAT_SUCCESS ) {
-      // If we are restore on an open directory...rewind to start
-      if ( file->attr & FILEATTR_CATALOG ) {
-        //file->fp.rewindDirectory();
-        rc = HEXSTAT_UNSUPP_CMD;
-      } else {
-        // if we are a normal file, rewind to starting position.
-        f_lseek(&(file->fp),  0 ); // restore back to start of file.
-      }
+  if ( rc == HEXSTAT_SUCCESS ) {
+    // If we are restore on an open directory...rewind to start
+    if ( file->attr & FILEATTR_CATALOG ) {
+      //file->fp.rewindDirectory();
+      rc = HEXSTAT_UNSUPP_CMD;
+    } else {
+      // if we are a normal file, rewind to starting position.
+      f_lseek(&(file->fp),  0 ); // restore back to start of file.
     }
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  }
+  hex_send_final_response( rc );
 }
 
 /*
@@ -932,10 +907,7 @@ static void drv_delete(pab_t *pab) {
     fr = f_unlink(&fs, (UCHAR *)buf);
     rc = fresult2hexstatus(fr);
   }
-  if (!hex_is_bav()) { // we can send response
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 /*
@@ -954,15 +926,15 @@ static void drv_delete_open(pab_t *pab) {
   file = find_lun(pab->lun);
   if (file != NULL){
     res = f_close(&(file->fp));
-    res = f_unlink(&fs, (UCHAR *)file->pattern);
+    rc = fresult2hexstatus(res);
+    if(rc == HEXSTAT_SUCCESS) {
+      res = f_unlink(&fs, (UCHAR *)file->pattern);
+      rc = fresult2hexstatus(res);
+    }
     free_lun(pab->lun);
-  }
-  else
-    rc = HEXSTAT_NOT_OPEN;
-  if (!hex_is_bav()) { // we can send response
-    hex_send_final_response( rc );
   } else
-    hex_finish();
+    rc = HEXSTAT_NOT_OPEN;
+  hex_send_final_response( rc );
 }
 
 /*
@@ -997,18 +969,16 @@ static void drv_status( pab_t *pab ) {
       }
     }
   }
-  if ( !hex_is_bav() ) {
-    if ( pab->buflen >= 1 )
-    {
+  if ( pab->buflen >= 1 ) {
+    if ( !hex_is_bav() ) {
       hex_send_word( 1 );
       hex_send_byte( st );
       hex_send_byte( HEXSTAT_SUCCESS );
       hex_finish();
-    } else {
-      hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
     }
-  } else
-    hex_finish();
+  } else {
+    hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
+  }
 }
 
 
