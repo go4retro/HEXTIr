@@ -233,7 +233,7 @@ static void drv_verify(pab_t *pab) {
   uint16_t len;
   uint16_t i;
   file_t*  file;
-  BYTE     res = FR_OK;
+  FRESULT  res = FR_OK;
   hexstatus_t rc = HEXSTAT_SUCCESS;
 
   debug_puts_P("Verify File\r\n");
@@ -272,7 +272,7 @@ static void drv_verify(pab_t *pab) {
     hex_eat_it( len, rc ); // reports status back.
     return;
   } else {
-     hex_send_final_response( rc );
+    hex_send_final_response( rc );
   }
 }
 
@@ -660,7 +660,6 @@ static void drv_start(void) {
 */
 static void drv_open(pab_t *pab) {
   uint16_t len = 0;
-  uint16_t read;    // how many bytes are read
   uint8_t att = 0;
   hexstatus_t rc;
   BYTE    mode = 0;
@@ -927,10 +926,13 @@ static void drv_delete_open(pab_t *pab) {
   file = find_lun(pab->lun);
   if (file != NULL){
     res = f_close(&(file->fp));
-    res = f_unlink(&fs, (UCHAR *)file->pattern);
+    rc = fresult2hexstatus(res);
+    if(rc == HEXSTAT_SUCCESS) {
+      res = f_unlink(&fs, (UCHAR *)file->pattern);
+      rc = fresult2hexstatus(res);
+    }
     free_lun(pab->lun);
-  }
-  else
+  } else
     rc = HEXSTAT_NOT_OPEN;
   hex_send_final_response( rc );
 }
@@ -967,12 +969,13 @@ static void drv_status( pab_t *pab ) {
       }
     }
   }
-  if ( pab->buflen >= 1 )
-  {
-    hex_send_word( 1 );
-    hex_send_byte( st );
-    hex_send_byte( HEXSTAT_SUCCESS );
-    hex_finish();
+  if ( pab->buflen >= 1 ) {
+    if ( !hex_is_bav() ) {
+      hex_send_word( 1 );
+      hex_send_byte( st );
+      hex_send_byte( HEXSTAT_SUCCESS );
+      hex_finish();
+    }
   } else {
     hex_send_final_response( HEXSTAT_BUF_SIZE_ERR );
   }

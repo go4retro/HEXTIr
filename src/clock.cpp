@@ -92,6 +92,12 @@ static void clk_close(pab_t *pab __attribute__((unused))) {
 
   debug_puts_P("Close RTC\r\n");
 
+  if (pab->lun == LUN_CMD) {
+    // handle command channel close
+    hex_close_cmd();
+    return;
+  }
+
   if ( rtc_open ) {
     clk_reset();
   } else {
@@ -149,20 +155,17 @@ static void clk_read(pab_t *pab) {
   } else {
     rc = HEXSTAT_NOT_OPEN;
   }
-  if ( !hex_is_bav() ) {
-    if ( rc == HEXSTAT_SUCCESS ) {
-      len = (len > pab->buflen) ? pab->buflen : len;
-      hex_send_word( len );
-      for ( i = 0; i < len; i++ ) {
-        hex_send_byte( buffer[ i ] );
-      }
-      hex_send_byte( rc );
-      hex_finish();
-    } else {
-      hex_send_final_response( rc );
+  if ( rc == HEXSTAT_SUCCESS ) {
+    len = (len > pab->buflen) ? pab->buflen : len;
+    hex_send_word( len );
+    for ( i = 0; i < len; i++ ) {
+      hex_send_byte( buffer[ i ] );
     }
-  } else
+    hex_send_byte( rc );
     hex_finish();
+  } else {
+    hex_send_final_response( rc );
+  }
 }
 
 
@@ -231,10 +234,7 @@ static void clk_write( pab_t *pab ) {
     hex_eat_it( len, rc );
     return;
   }
-  if ( !hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 

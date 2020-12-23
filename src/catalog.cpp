@@ -429,19 +429,14 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
         break;
     }
   }
-  if(!hex_is_bav()) { // we can send response
-    if(rc == HEXSTAT_SUCCESS) {
-      hex_send_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
-      hex_send_word(fsize);
-      hex_send_word(0);
-      hex_send_byte(HEXSTAT_SUCCESS);    // status code
-      hex_finish();
-      return;
-    } else {
-      hex_send_final_response( rc );
-    }
+  if(rc == HEXSTAT_SUCCESS) {
+    hex_send_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
+    hex_send_word(fsize);
+    hex_send_word(0);
+    hex_send_byte(HEXSTAT_SUCCESS);    // status code
+    hex_finish();
+  } else {
+    hex_send_final_response( rc );
   }
-  hex_finish();
-  debug_putc('E');
 }
 #endif

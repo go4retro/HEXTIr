@@ -302,11 +302,7 @@ static inline void ser_write_cmd(pab_t *pab, uint8_t * dev, serialcfg_t *cfg) {
     return;
   }
   rc = ser_exec_cmds((char *)buffer, pab->datalen, dev, cfg );
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else {
-    hex_finish();
-  }
+  hex_send_final_response( rc );
 }
 
  /*
@@ -399,11 +395,7 @@ static void ser_close(pab_t *pab) {
   } else {
     rc = HEXSTAT_NOT_OPEN;
   }
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-    return;
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 
@@ -432,8 +424,8 @@ static void ser_read(pab_t *pab) {
     }
   }
 
-  if ( !hex_is_bav() ) {
-    if ( _ser_open & OPENMODE_READ ) {
+  if ( _ser_open & OPENMODE_READ ) {
+    if ( !hex_is_bav() ) {
       // send how much we are going to send
       rc = (hex_send_word( bcount ) == HEXERR_SUCCESS ? HEXSTAT_SUCCESS : HEXSTAT_DATA_ERR);
 
@@ -454,15 +446,14 @@ static void ser_read(pab_t *pab) {
         hex_send_byte( rc );
       }
       hex_finish();
-    } else if ( _ser_open ) {
-      // open for OUTPUT only?
-      hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
-    } else {
-      // not open at all?
-      hex_send_final_response( HEXSTAT_NOT_OPEN );
     }
-  } else
-    hex_finish();
+  } else if ( _ser_open ) {
+    // open for OUTPUT only?
+    hex_send_final_response( HEXSTAT_INPUT_MODE_ERR );
+  } else {
+    // not open at all?
+    hex_send_final_response( HEXSTAT_NOT_OPEN );
+  }
 }
 
 
@@ -506,10 +497,7 @@ static void ser_write(pab_t *pab) {
     return;
   }
 
-  if (!hex_is_bav() ) { // we can send response
-    hex_send_final_response( rc );
-  } else
-    hex_finish();
+  hex_send_final_response( rc );
 }
 
 
