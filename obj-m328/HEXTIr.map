@@ -1421,7 +1421,7 @@ END GROUP
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000     0xbc30
+.debug_info     0x00000000     0xbc2f
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x00000000      0x5f4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
  .debug_info    0x000005f4     0x19f0 obj-m328/src/catalog.o
@@ -1432,24 +1432,24 @@ END GROUP
  .debug_info    0x00007947      0x72c obj-m328/src/hexbus.o
  .debug_info    0x00008073     0x1030 obj-m328/src/hexops.o
  .debug_info    0x000090a3       0xee obj-m328/src/led.o
- .debug_info    0x00009191      0x8b3 obj-m328/src/main.o
- .debug_info    0x00009a44      0x155 obj-m328/src/powermgmt.o
- .debug_info    0x00009b99      0x344 obj-m328/src/registry.o
- .debug_info    0x00009edd     0x1223 obj-m328/src/sdcard.o
- .debug_info    0x0000b100      0x269 obj-m328/src/spi.o
- .debug_info    0x0000b369      0x179 obj-m328/src/timer.o
- .debug_info    0x0000b4e2       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
- .debug_info    0x0000b59d       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
- .debug_info    0x0000b658       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
- .debug_info    0x0000b713       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
- .debug_info    0x0000b7ce       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
- .debug_info    0x0000b889       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
- .debug_info    0x0000b944       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
- .debug_info    0x0000b9ff       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
- .debug_info    0x0000baba       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
- .debug_info    0x0000bb75       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
+ .debug_info    0x00009191      0x8b2 obj-m328/src/main.o
+ .debug_info    0x00009a43      0x155 obj-m328/src/powermgmt.o
+ .debug_info    0x00009b98      0x344 obj-m328/src/registry.o
+ .debug_info    0x00009edc     0x1223 obj-m328/src/sdcard.o
+ .debug_info    0x0000b0ff      0x269 obj-m328/src/spi.o
+ .debug_info    0x0000b368      0x179 obj-m328/src/timer.o
+ .debug_info    0x0000b4e1       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
+ .debug_info    0x0000b59c       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
+ .debug_info    0x0000b657       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
+ .debug_info    0x0000b712       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+ .debug_info    0x0000b7cd       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
+ .debug_info    0x0000b888       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
+ .debug_info    0x0000b943       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
+ .debug_info    0x0000b9fe       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
+ .debug_info    0x0000bab9       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
+ .debug_info    0x0000bb74       0xbb c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
 
-.debug_abbrev   0x00000000     0x27e5
+.debug_abbrev   0x00000000     0x27e2
  *(.debug_abbrev)
  .debug_abbrev  0x00000000      0x5a2 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
  .debug_abbrev  0x000005a2      0x48c obj-m328/src/catalog.o
@@ -1460,22 +1460,22 @@ END GROUP
  .debug_abbrev  0x000014d0      0x2f5 obj-m328/src/hexbus.o
  .debug_abbrev  0x000017c5      0x360 obj-m328/src/hexops.o
  .debug_abbrev  0x00001b25       0xac obj-m328/src/led.o
- .debug_abbrev  0x00001bd1      0x2c9 obj-m328/src/main.o
- .debug_abbrev  0x00001e9a       0xf4 obj-m328/src/powermgmt.o
- .debug_abbrev  0x00001f8e      0x10c obj-m328/src/registry.o
- .debug_abbrev  0x0000209a      0x425 obj-m328/src/sdcard.o
- .debug_abbrev  0x000024bf      0x14a obj-m328/src/spi.o
- .debug_abbrev  0x00002609      0x114 obj-m328/src/timer.o
- .debug_abbrev  0x0000271d       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
- .debug_abbrev  0x00002731       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
- .debug_abbrev  0x00002745       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
- .debug_abbrev  0x00002759       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
- .debug_abbrev  0x0000276d       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
- .debug_abbrev  0x00002781       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
- .debug_abbrev  0x00002795       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
- .debug_abbrev  0x000027a9       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
- .debug_abbrev  0x000027bd       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
- .debug_abbrev  0x000027d1       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
+ .debug_abbrev  0x00001bd1      0x2c6 obj-m328/src/main.o
+ .debug_abbrev  0x00001e97       0xf4 obj-m328/src/powermgmt.o
+ .debug_abbrev  0x00001f8b      0x10c obj-m328/src/registry.o
+ .debug_abbrev  0x00002097      0x425 obj-m328/src/sdcard.o
+ .debug_abbrev  0x000024bc      0x14a obj-m328/src/spi.o
+ .debug_abbrev  0x00002606      0x114 obj-m328/src/timer.o
+ .debug_abbrev  0x0000271a       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
+ .debug_abbrev  0x0000272e       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
+ .debug_abbrev  0x00002742       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
+ .debug_abbrev  0x00002756       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+ .debug_abbrev  0x0000276a       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_copy_data.o)
+ .debug_abbrev  0x0000277e       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_clear_bss.o)
+ .debug_abbrev  0x00002792       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
+ .debug_abbrev  0x000027a6       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
+ .debug_abbrev  0x000027ba       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
+ .debug_abbrev  0x000027ce       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
 
 .debug_line     0x00000000     0x5327
  *(.debug_line .debug_line.* .debug_line_end)

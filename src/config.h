@@ -245,7 +245,11 @@ static inline void pwr_irq_disable(void) {
 
 // This needs to be moved somewhere else...
 //--------------------------
-#define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
+#if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
+  #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
+#else
+  #define CONFIG_HARDWARE_NAME HEXTIr (Arduino)
+#endif
 #define CONFIG_RTC_DSRTC
 //#define CONFIG_RTC_SOFTWARE
 #define CONFIG_SD_AUTO_RETRIES 10
