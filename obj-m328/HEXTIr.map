@@ -130,7 +130,7 @@ Discarded input sections
  .debug_aranges
                 0x00000000       0x18 obj-m328/src/debug.o
  .debug_line    0x00000000       0x1a obj-m328/src/debug.o
- .debug_str     0x00000000      0x16d obj-m328/src/debug.o
+ .debug_str     0x00000000      0x159 obj-m328/src/debug.o
  .comment       0x00000000       0x12 obj-m328/src/debug.o
  .text          0x00000000        0x0 obj-m328/src/diskio.o
  .data          0x00000000        0x0 obj-m328/src/diskio.o
@@ -185,7 +185,7 @@ Discarded input sections
  .debug_aranges
                 0x00000000       0x18 obj-m328/src/printer.o
  .debug_line    0x00000000       0x8a obj-m328/src/printer.o
- .debug_str     0x00000000      0x4de obj-m328/src/printer.o
+ .debug_str     0x00000000      0x4ca obj-m328/src/printer.o
  .comment       0x00000000       0x12 obj-m328/src/printer.o
  .text          0x00000000        0x0 obj-m328/src/registry.o
  .data          0x00000000        0x0 obj-m328/src/registry.o
@@ -204,7 +204,7 @@ Discarded input sections
  .debug_aranges
                 0x00000000       0x18 obj-m328/src/serial.o
  .debug_line    0x00000000       0xd3 obj-m328/src/serial.o
- .debug_str     0x00000000      0x51a obj-m328/src/serial.o
+ .debug_str     0x00000000      0x506 obj-m328/src/serial.o
  .comment       0x00000000       0x12 obj-m328/src/serial.o
  .text          0x00000000        0x0 obj-m328/src/spi.o
  .data          0x00000000        0x0 obj-m328/src/spi.o
@@ -217,7 +217,7 @@ Discarded input sections
  .debug_aranges
                 0x00000000       0x18 obj-m328/src/swuart.o
  .debug_line    0x00000000       0x1a obj-m328/src/swuart.o
- .debug_str     0x00000000      0x16e obj-m328/src/swuart.o
+ .debug_str     0x00000000      0x15a obj-m328/src/swuart.o
  .comment       0x00000000       0x12 obj-m328/src/swuart.o
  .text          0x00000000        0x0 obj-m328/src/timer.o
  .data          0x00000000        0x0 obj-m328/src/timer.o
@@ -230,7 +230,7 @@ Discarded input sections
  .debug_aranges
                 0x00000000       0x18 obj-m328/src/uart.o
  .debug_line    0x00000000       0x54 obj-m328/src/uart.o
- .debug_str     0x00000000      0x19d obj-m328/src/uart.o
+ .debug_str     0x00000000      0x189 obj-m328/src/uart.o
  .comment       0x00000000       0x12 obj-m328/src/uart.o
  .data          0x00000000        0x0 obj-m328/src/crc7asm.o
  .bss           0x00000000        0x0 obj-m328/src/crc7asm.o
@@ -1521,37 +1521,37 @@ END GROUP
  .debug_frame   0x000011d0       0x64 obj-m328/src/spi.o
  .debug_frame   0x00001234       0x7c obj-m328/src/timer.o
 
-.debug_str      0x00000000     0x1d2c
+.debug_str      0x00000000     0x1d18
  *(.debug_str)
  .debug_str     0x00000000      0x208 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
- .debug_str     0x00000208      0xcc5 obj-m328/src/catalog.o
-                                0xdc3 (size before relaxing)
- .debug_str     0x00000ecd        0xd obj-m328/src/diskio.o
-                                0x1b1 (size before relaxing)
- .debug_str     0x00000eda      0x3cb obj-m328/src/drive.o
-                                0xf77 (size before relaxing)
- .debug_str     0x000012a5       0x96 obj-m328/src/eeprom.o
-                                0x569 (size before relaxing)
- .debug_str     0x0000133b      0x37a obj-m328/src/ff.o
-                                0x85d (size before relaxing)
- .debug_str     0x000016b5      0x128 obj-m328/src/hexbus.o
-                                0x633 (size before relaxing)
- .debug_str     0x000017dd       0xb3 obj-m328/src/hexops.o
-                                0xa4b (size before relaxing)
- .debug_str     0x00001890       0x26 obj-m328/src/led.o
-                                0x1ac (size before relaxing)
- .debug_str     0x000018b6       0xb7 obj-m328/src/main.o
-                                0x6c6 (size before relaxing)
- .debug_str     0x0000196d       0x6f obj-m328/src/powermgmt.o
-                                0x202 (size before relaxing)
- .debug_str     0x000019dc        0xf obj-m328/src/registry.o
-                                0x498 (size before relaxing)
- .debug_str     0x000019eb      0x2c4 obj-m328/src/sdcard.o
-                                0x530 (size before relaxing)
- .debug_str     0x00001caf       0x45 obj-m328/src/spi.o
-                                0x22f (size before relaxing)
- .debug_str     0x00001cf4       0x38 obj-m328/src/timer.o
-                                0x1e5 (size before relaxing)
+ .debug_str     0x00000208      0xcb1 obj-m328/src/catalog.o
+                                0xdaf (size before relaxing)
+ .debug_str     0x00000eb9        0xd obj-m328/src/diskio.o
+                                0x19d (size before relaxing)
+ .debug_str     0x00000ec6      0x3cb obj-m328/src/drive.o
+                                0xf63 (size before relaxing)
+ .debug_str     0x00001291       0x96 obj-m328/src/eeprom.o
+                                0x555 (size before relaxing)
+ .debug_str     0x00001327      0x37a obj-m328/src/ff.o
+                                0x849 (size before relaxing)
+ .debug_str     0x000016a1      0x128 obj-m328/src/hexbus.o
+                                0x61f (size before relaxing)
+ .debug_str     0x000017c9       0xb3 obj-m328/src/hexops.o
+                                0xa37 (size before relaxing)
+ .debug_str     0x0000187c       0x26 obj-m328/src/led.o
+                                0x198 (size before relaxing)
+ .debug_str     0x000018a2       0xb7 obj-m328/src/main.o
+                                0x6b2 (size before relaxing)
+ .debug_str     0x00001959       0x6f obj-m328/src/powermgmt.o
+                                0x1ee (size before relaxing)
+ .debug_str     0x000019c8        0xf obj-m328/src/registry.o
+                                0x484 (size before relaxing)
+ .debug_str     0x000019d7      0x2c4 obj-m328/src/sdcard.o
+                                0x51c (size before relaxing)
+ .debug_str     0x00001c9b       0x45 obj-m328/src/spi.o
+                                0x21b (size before relaxing)
+ .debug_str     0x00001ce0       0x38 obj-m328/src/timer.o
+                                0x1d1 (size before relaxing)
 
 .debug_loc      0x00000000     0x90a8
  *(.debug_loc)
