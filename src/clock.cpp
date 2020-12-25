@@ -92,6 +92,12 @@ static void clk_close(pab_t *pab __attribute__((unused))) {
 
   debug_puts_P("Close RTC\r\n");
 
+  if (pab->lun == LUN_CMD) {
+    // handle command channel close
+    hex_close_cmd();
+    return;
+  }
+
   if ( rtc_open ) {
     clk_reset();
   } else {
