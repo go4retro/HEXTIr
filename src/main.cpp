@@ -160,7 +160,7 @@ void setup(void) {
 
 
 int main(void) __attribute__((OS_main));
-int  __attribute__ ((noreturn)) main(void);
+//int  __attribute__ ((noreturn)) main(void);
 int main(void) {
 
   // Variables used common to both Arduino and makefile builds

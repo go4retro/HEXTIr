@@ -114,12 +114,14 @@ uint16_t cat_file_length_pgm(uint16_t num_entries) {
 // ------------------------- OPEN/INPUT catalog -------------------------
 
 uint16_t cat_max_file_length_txt(void) {
-  // 4 bytes for file size in kB plus
+  // 1 byte for " to enclose 
+  // FILE_SIZE_WIDTH bytes for file size in kB plus
+  // 1 byte for " plus
   // 1 byte for "," separator plus
   // _MAX_LFN_LENGTH bytes max. for file name plus
   // 1 byte for "," separator plus
   // 1 byte for file attribute (F,D,V,..)
-  uint16_t len = 4 + 1 + _MAX_LFN_LENGTH + 1 + 1;
+  uint16_t len = 1 + FILE_SIZE_WIDTH + 1 + 1 + _MAX_LFN_LENGTH + 1 + 1;
   return len;
 }
 
@@ -430,11 +432,13 @@ void hex_open_catalog(file_t *file, uint8_t lun, uint8_t att, char* path) {
     }
   }
   if(rc == HEXSTAT_SUCCESS) {
-    hex_send_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
-    hex_send_word(fsize);
-    hex_send_word(0);
-    hex_send_byte(HEXSTAT_SUCCESS);    // status code
-    hex_finish();
+    if(!hex_is_bav()) { // we can send response
+      hex_send_word(4);    // claims it is accepted buffer length, but looks to really be my return buffer length...
+      hex_send_word(fsize);
+      hex_send_word(0);
+      hex_send_byte(HEXSTAT_SUCCESS);    // status code
+      hex_finish();
+    }
   } else {
     hex_send_final_response( rc );
   }

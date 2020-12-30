@@ -156,13 +156,15 @@ static void clk_read(pab_t *pab) {
     rc = HEXSTAT_NOT_OPEN;
   }
   if ( rc == HEXSTAT_SUCCESS ) {
-    len = (len > pab->buflen) ? pab->buflen : len;
-    hex_send_word( len );
-    for ( i = 0; i < len; i++ ) {
-      hex_send_byte( buffer[ i ] );
+    if ( !hex_is_bav() ) {
+      len = (len > pab->buflen) ? pab->buflen : len;
+      hex_send_word( len );
+      for ( i = 0; i < len; i++ ) {
+        hex_send_byte( buffer[ i ] );
+      }
+      hex_send_byte( rc );
+      hex_finish();
     }
-    hex_send_byte( rc );
-    hex_finish();
   } else {
     hex_send_final_response( rc );
   }
