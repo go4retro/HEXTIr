@@ -56,12 +56,10 @@ static void hex_reset_bus(pab_t *pab) {
   debug_puts_P("Reset Bus\r\n");
 
   // We ONLY do all devices if the command is directed to device 0.
-  if ( pab->dev == 0 ) {
-    drv_reset();
-    prn_reset();
-    ser_reset();
-    clk_reset();
-  }
+  drv_reset();
+  prn_reset();
+  ser_reset();
+  clk_reset();
   // release the bus ignoring any further action on bus. no response sent.
   hex_finish();
   // wait here while bav is low

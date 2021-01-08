@@ -114,12 +114,14 @@ uint16_t cat_file_length_pgm(uint16_t num_entries) {
 // ------------------------- OPEN/INPUT catalog -------------------------
 
 uint16_t cat_max_file_length_txt(void) {
-  // 4 bytes for file size in kB plus
+  // 1 byte for " to enclose 
+  // FILE_SIZE_WIDTH bytes for file size in kB plus
+  // 1 byte for " plus
   // 1 byte for "," separator plus
   // _MAX_LFN_LENGTH bytes max. for file name plus
   // 1 byte for "," separator plus
   // 1 byte for file attribute (F,D,V,..)
-  uint16_t len = 4 + 1 + _MAX_LFN_LENGTH + 1 + 1;
+  uint16_t len = 1 + FILE_SIZE_WIDTH + 1 + 1 + _MAX_LFN_LENGTH + 1 + 1;
   return len;
 }
 
