@@ -56,7 +56,7 @@ in both builds.  If space becomes an issue, you can comment out specific periphe
 #define INCLUDE_PRINTER
 ```
 
-##PCB Design Copyright
+## PCB Design Copyright
 
 This project's PCB files are free designs; you can redistribute them 
 and/or modify them under the terms of the Creative Commons
@@ -70,7 +70,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 license for more details.
 
-##Firmware Copyright
+## Firmware Copyright
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
