@@ -13,11 +13,12 @@ of the various HEXBUS peripherals:
 
 ## Implementation
 ### Arduino Implementation
-Configure the Arduino IDE for the specific board in use.  Once configured, load the 
+Configure the Arduino IDE for the specific board in use. Adjust pin mappings in config.h
+if the board does not use Arduino UNO mappings.  Once configured, load the 
 src.ino file in the src directory, compile and download the object code to the Arduino
 system.
 
-Because the GCC C++ compiler and Arduino settings compile the code slightly differently,
+Because the GCC C++ compiler and Arduino IDE settings compile the code slightly differently,
 the resulting code size is larger and thus not all features can be enabled.  By default, 
 only the driver function is enabled in the Arduino build.  You can optionally enable some
 of the other peripherals by uncommenting lines in config.h:
@@ -31,6 +32,8 @@ of the other peripherals by uncommenting lines in config.h:
 //#define INCLUDE_SERIAL
 //#define INCLUDE_PRINTER
 ```
+
+The code has been successfully compiled using Arduino IDE 1.8.19 and 2.0.3
 
 ### Native Implementation
 The best code size is obtained by compiling the code natively via the AVR-GCC toolchain.
