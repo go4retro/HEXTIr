@@ -16,7 +16,7 @@ FIX = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_FIX))
 PRERELEASE = $(call select,3,$(VER_TABLE),$$(call str-eq,$$2,VER_PRERELEASE))
 
 #----------------------------------------------------------------------------
-# WinAVR Makefile Template written by Eric B. Weddington, Joerg Wunsch, et al.
+# WinAVR Makefile Template written by Eric B. Weddington, Jörg Wunsch, et al.
 #
 # Released to the Public Domain
 #
@@ -138,11 +138,13 @@ OPT = s
 #     AVR [Extended] COFF format requires stabs, plus an avr-objcopy run.
 DEBUG = dwarf-2
 
+
 # List any extra directories to look for include files here.
 #     Each directory must be seperated by a space.
 #     Use forward slashes for directory separators.
 #     For a directory that has spaces, enclose it in quotes.
 EXTRAINCDIRS =
+
 
 # Compiler flag to set the C Standard level.
 #     c89   = "ANSI" C
@@ -150,6 +152,7 @@ EXTRAINCDIRS =
 #     c99   = ISO C99 standard (not yet fully implemented)
 #     gnu99 = c99 plus GCC extensions
 CSTANDARD = -std=gnu99
+
 
 # Place -D or -U options here
 CDEFS = -DF_CPU=$(CONFIG_MCU_FREQ)UL
@@ -331,7 +334,7 @@ doxygen:
 	doxygen scripts/doxygen.conf
 
 # Display size of file.
-HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
+HEXSIZE = $(SIZE) --target=$(HEXFORMAT) $(TARGET).hex
 ELFSIZE = $(SIZE) -A $(TARGET).elf
 
 # Program the device.

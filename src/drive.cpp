@@ -543,7 +543,7 @@ static void drv_read(pab_t *pab) {
   if (file != NULL && (file->attr & FILEATTR_CATALOG)) {
     if (pab->lun == 0 ) {
       debug_putc('P');
-      hex_read_catalog(file);
+      hex_read_catalog_pgm(file);
       return;
     }
     else {

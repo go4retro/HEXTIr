@@ -94,7 +94,7 @@ void cat_write_record_pgm(uint16_t lineno, uint32_t fsize, const char* filename,
   }                                     //
   hex_send_byte(' ');                   // blank, 1 byte
   hex_send_byte('\"');                  // quote, 1 byte
-  for (i = 0; i < 17 && i < namelen ; i++) { // file name padded with trailing blanks, 17 bytes
+  for (i = 0; i < _MAX_LFN_LENGTH && i < namelen ; i++) { // file name padded with trailing blanks, at most _MAX_LFN_LENGTH bytes
     hex_send_byte(filename[i]);
   }
   hex_send_byte('\"');                  // quote, 1 byte
@@ -121,7 +121,7 @@ uint16_t cat_max_file_length_txt(void) {
   // _MAX_LFN_LENGTH bytes max. for file name plus
   // 1 byte for "," separator plus
   // 1 byte for file attribute (F,D,V,..)
-  uint16_t len = 1 + FILE_SIZE_WIDTH + 1 + 1 + _MAX_LFN_LENGTH + 1 + 1;
+  uint16_t len = 1 + FILE_SIZE_WIDTH + 1 + 1 + _MAX_LFN_LENGTH + 4 + 1 + 1;
   return len;
 }
 
@@ -258,7 +258,7 @@ static char* format_file_size(uint32_t bytes, char* buf, uint8_t width) {
 }
 
 
-void hex_read_catalog(file_t *file) {
+void hex_read_catalog_pgm(file_t *file) {
   hexstatus_t rc;
   BYTE res = FR_OK;
   char *filename;
@@ -267,7 +267,7 @@ void hex_read_catalog(file_t *file) {
   FILINFO fno;
   uint8_t namelen;
   #ifdef _MAX_LFN_LENGTH
-  UCHAR lfn[_MAX_LFN_LENGTH+1];
+  UCHAR lfn[_MAX_LFN_LENGTH + 1];
   fno.lfn = lfn;
   #endif
 

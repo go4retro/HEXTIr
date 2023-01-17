@@ -6,9 +6,9 @@ HEX D1->Arduino A1
 HEX D2->Arduino A2
 HEX D3->Arduino A3
 HEX HSK->Arduino 3
-HEX BAV->Arduino 7
+HEX BAV->Arduino 2
 Solder CD pin to 8
-Solder WP pin to -9
-Solder Arduino pin 2 to LED L1
+Solder WP pin to 9
+Solder Arduino pin A5 to LED L1
 HEX GND to GND
 

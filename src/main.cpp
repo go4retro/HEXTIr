@@ -51,7 +51,7 @@ registry_t  registry;
    open, and ensure our file lun tables are reset.
    There is NO response to this command.
 */
-static void hex_reset_bus(pab_t *pab) {
+static void hex_reset_bus(pab_t *pab __attribute__((unused))) {
 
   debug_puts_P("Reset Bus\r\n");
 
