@@ -122,6 +122,16 @@ Discarded input sections
                 0x0000000000000000       0x12 obj-m328/src/catalog.o
  .text.cat_max_file_length_txt
                 0x0000000000000000        0x6 obj-m328/src/catalog.o
+ .text          0x0000000000000000        0x0 obj-m328/src/clock.o
+ .data          0x0000000000000000        0x0 obj-m328/src/clock.o
+ .bss           0x0000000000000000        0x0 obj-m328/src/clock.o
+ .debug_info    0x0000000000000000      0x372 obj-m328/src/clock.o
+ .debug_abbrev  0x0000000000000000       0xc9 obj-m328/src/clock.o
+ .debug_aranges
+                0x0000000000000000       0x18 obj-m328/src/clock.o
+ .debug_line    0x0000000000000000       0xc8 obj-m328/src/clock.o
+ .debug_str     0x0000000000000000      0x50c obj-m328/src/clock.o
+ .comment       0x0000000000000000       0x31 obj-m328/src/clock.o
  .text          0x0000000000000000        0x0 obj-m328/src/debug.o
  .data          0x0000000000000000        0x0 obj-m328/src/debug.o
  .bss           0x0000000000000000        0x0 obj-m328/src/debug.o
@@ -138,6 +148,16 @@ Discarded input sections
  .text          0x0000000000000000        0x0 obj-m328/src/drive.o
  .data          0x0000000000000000        0x0 obj-m328/src/drive.o
  .bss           0x0000000000000000        0x0 obj-m328/src/drive.o
+ .text          0x0000000000000000        0x0 obj-m328/src/ds1307-3231.o
+ .data          0x0000000000000000        0x0 obj-m328/src/ds1307-3231.o
+ .bss           0x0000000000000000        0x0 obj-m328/src/ds1307-3231.o
+ .debug_info    0x0000000000000000       0x56 obj-m328/src/ds1307-3231.o
+ .debug_abbrev  0x0000000000000000       0x26 obj-m328/src/ds1307-3231.o
+ .debug_aranges
+                0x0000000000000000       0x18 obj-m328/src/ds1307-3231.o
+ .debug_line    0x0000000000000000       0x1a obj-m328/src/ds1307-3231.o
+ .debug_str     0x0000000000000000      0x173 obj-m328/src/ds1307-3231.o
+ .comment       0x0000000000000000       0x31 obj-m328/src/ds1307-3231.o
  .text          0x0000000000000000        0x0 obj-m328/src/eeprom.o
  .data          0x0000000000000000        0x0 obj-m328/src/eeprom.o
  .bss           0x0000000000000000        0x0 obj-m328/src/eeprom.o
@@ -190,6 +210,16 @@ Discarded input sections
  .text          0x0000000000000000        0x0 obj-m328/src/registry.o
  .data          0x0000000000000000        0x0 obj-m328/src/registry.o
  .bss           0x0000000000000000        0x0 obj-m328/src/registry.o
+ .text          0x0000000000000000        0x0 obj-m328/src/rtc.o
+ .data          0x0000000000000000        0x0 obj-m328/src/rtc.o
+ .bss           0x0000000000000000        0x0 obj-m328/src/rtc.o
+ .debug_info    0x0000000000000000       0x56 obj-m328/src/rtc.o
+ .debug_abbrev  0x0000000000000000       0x26 obj-m328/src/rtc.o
+ .debug_aranges
+                0x0000000000000000       0x18 obj-m328/src/rtc.o
+ .debug_line    0x0000000000000000       0x1a obj-m328/src/rtc.o
+ .debug_str     0x0000000000000000      0x16b obj-m328/src/rtc.o
+ .comment       0x0000000000000000       0x31 obj-m328/src/rtc.o
  .text          0x0000000000000000        0x0 obj-m328/src/sdcard.o
  .data          0x0000000000000000        0x0 obj-m328/src/sdcard.o
  .bss           0x0000000000000000        0x0 obj-m328/src/sdcard.o
@@ -206,6 +236,16 @@ Discarded input sections
  .debug_line    0x0000000000000000       0xd3 obj-m328/src/serial.o
  .debug_str     0x0000000000000000      0x51a obj-m328/src/serial.o
  .comment       0x0000000000000000       0x31 obj-m328/src/serial.o
+ .text          0x0000000000000000        0x0 obj-m328/src/softi2c.o
+ .data          0x0000000000000000        0x0 obj-m328/src/softi2c.o
+ .bss           0x0000000000000000        0x0 obj-m328/src/softi2c.o
+ .debug_info    0x0000000000000000       0x56 obj-m328/src/softi2c.o
+ .debug_abbrev  0x0000000000000000       0x26 obj-m328/src/softi2c.o
+ .debug_aranges
+                0x0000000000000000       0x18 obj-m328/src/softi2c.o
+ .debug_line    0x0000000000000000       0x1a obj-m328/src/softi2c.o
+ .debug_str     0x0000000000000000      0x16f obj-m328/src/softi2c.o
+ .comment       0x0000000000000000       0x31 obj-m328/src/softi2c.o
  .text          0x0000000000000000        0x0 obj-m328/src/spi.o
  .data          0x0000000000000000        0x0 obj-m328/src/spi.o
  .bss           0x0000000000000000        0x0 obj-m328/src/spi.o
@@ -511,9 +551,11 @@ Linker script and memory map
 Address of section .data set to 0x800100
 LOAD c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328.o
 LOAD obj-m328/src/catalog.o
+LOAD obj-m328/src/clock.o
 LOAD obj-m328/src/debug.o
 LOAD obj-m328/src/diskio.o
 LOAD obj-m328/src/drive.o
+LOAD obj-m328/src/ds1307-3231.o
 LOAD obj-m328/src/eeprom.o
 LOAD obj-m328/src/ff.o
 LOAD obj-m328/src/hexbus.o
@@ -523,8 +565,10 @@ LOAD obj-m328/src/main.o
 LOAD obj-m328/src/powermgmt.o
 LOAD obj-m328/src/printer.o
 LOAD obj-m328/src/registry.o
+LOAD obj-m328/src/rtc.o
 LOAD obj-m328/src/sdcard.o
 LOAD obj-m328/src/serial.o
+LOAD obj-m328/src/softi2c.o
 LOAD obj-m328/src/spi.o
 LOAD obj-m328/src/swuart.o
 LOAD obj-m328/src/timer.o
