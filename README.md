@@ -2,7 +2,7 @@
 TI HEX-BUS SD Drive Interface
 Copyright (C) 2017-20  Jim Brain
 
-##Description
+## Description
 Coupled with an Atmel ATMEGA328 microcontroller (either as a standalone PCB or an 
 Arduino UNO, Nano, etc. development board), this firmware implements the functionality
 of the various HEXBUS peripherals:
@@ -11,8 +11,8 @@ of the various HEXBUS peripherals:
 * RS232 port at device # 20
 * RS232-based printer port at device #10
 
-##Implementation
-###Arduino Implementation
+## Implementation
+### Arduino Implementation
 Configure the Arduino IDE for the specific board in use.  Once configured, load the 
 src.ino file in the src directory, compile and download the object code to the Arduino
 system.
@@ -32,15 +32,16 @@ of the other peripherals by uncommenting lines in config.h:
 //#define INCLUDE_PRINTER
 ```
 
-###Native Implementation
-If compiling directly from the command line, run the following make command:
+### Native Implementation
+The best code size is obtained by compiling the code natively via the AVR-GCC toolchain.
 
-####For users of the PCB design in the PCB directory:
-make CONFIG=config clean all fuses program
+**To use the PCB design in the PCB directory, run the following make command:**
 
-####For folks using an Arduino UNO with a SD Card shield, run the following make command:
+> make CONFIG=config clean all fuses program
 
-make CONFIG=config-arduino clean all fuses program
+**To use an Arduino UNO with a SD Card shield, run the following make command:**
+
+> make CONFIG=config-arduino clean all fuses program
 
 You may need to adjust the avrdude settings in the respecive config files in the 
 main directory.
