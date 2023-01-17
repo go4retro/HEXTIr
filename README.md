@@ -17,17 +17,43 @@ Configure the Arduino IDE for the specific board in use.  Once configured, load 
 src.ino file in the src directory, compile and download the object code to the Arduino
 system.
 
-###Native Implementation
-If running on the native hardware config, run the following make command:
+Because the GCC C++ compiler and Arduino settings compile the code slightly differently,
+the resulting code size is larger and thus not all features can be enabled.  By default, 
+only the driver function is enabled in the Arduino build.  You can optionally enable some
+of the other peripherals by uncommenting lines in config.h:
 
+```
+#elif CONFIG_HARDWARE_VARIANT == 4
+/* ---------- Hardware configuration: Old HEXTIr Arduino ---------- */
+
+#define INCLUDE_DRIVE
+//#define INCLUDE_CLOCK
+//#define INCLUDE_SERIAL
+//#define INCLUDE_PRINTER
+```
+
+###Native Implementation
+If compiling directly from the command line, run the following make command:
+
+####For users of the PCB design in the PCB directory:
 make CONFIG=config clean all fuses program
 
-If running the Arduino hardware config, run the following make command:
+####For folks using an Arduino UNO with a SD Card shield, run the following make command:
 
 make CONFIG=config-arduino clean all fuses program
 
 You may need to adjust the avrdude settings in the respecive config files in the 
 main directory.
+
+Native and Arduino builds differ only in the pin mappings.  All features are enabled
+in both builds.  If space becomes an issue, you can comment out specific peripherals in config.h:
+
+```
+#define INCLUDE_DRIVE
+#define INCLUDE_CLOCK
+#define INCLUDE_SERIAL
+#define INCLUDE_PRINTER
+```
 
 ##PCB Design Copyright
 

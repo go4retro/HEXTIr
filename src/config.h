@@ -74,9 +74,9 @@
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
 
 #define INCLUDE_DRIVE
-//#define INCLUDE_CLOCK
-//#define INCLUDE_SERIAL
-//#define INCLUDE_PRINTER
+#define INCLUDE_CLOCK
+#define INCLUDE_SERIAL
+#define INCLUDE_PRINTER
 
 #  define HEX_HSK_DDR         DDRC
 #  define HEX_HSK_OUT         PORTC
