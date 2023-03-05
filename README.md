@@ -10,6 +10,7 @@ of the various HEXBUS peripherals:
 * Secure Digital (SD) based random access disk drive at device # 100
 * RS232 port at device # 20
 * RS232-based printer port at device #10
+* RTC-based clock at device 230
 
 ## Implementation
 ### Arduino Implementation
@@ -33,7 +34,7 @@ of the other peripherals by uncommenting lines in config.h:
 //#define INCLUDE_PRINTER
 ```
 
-The code has been successfully compiled using Arduino IDE 1.8.19 and 2.0.3
+The code has been successfully compiled using Arduino IDE 1.8.19 and 2.0.3.
 
 ### Native Implementation
 The best code size is obtained by compiling the code natively via the AVR-GCC toolchain.

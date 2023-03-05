@@ -221,7 +221,7 @@ static inline void wakeup_pin_init(void) {
 }
 
 
-#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+//#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 #  define POWER_MGMT_HANDLER  INT0_vect
 
 static inline void pwr_irq_enable(void) {
@@ -319,7 +319,7 @@ static inline void board_init(void) {
 }
 
 
-#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+//#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 
 static inline void wakeup_pin_init(void) {
   DDRD &= ~_BV(PIN2);
@@ -521,6 +521,7 @@ static inline void leds_sleep(void) {
 
 #ifdef CONFIG_UART_BUF_SHIFT
  #define UART0_TX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
+ //#define UART0_RX_BUFFER_SHIFT CONFIG_UART_BUF_SHIFT
 #endif
 
 #ifdef FLASH_MEM_DATA
