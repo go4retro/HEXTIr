@@ -132,6 +132,11 @@ void pcf8583_set(struct tm *time) {
 }
 void rtc_set(struct tm *time) __attribute__ ((weak, alias("pcf8583_set")));
 
+rtc_type_t pcf8583_get_type(void) {
+  return RTC_TYPE_HW;
+}
+rtc_type_t rtc_get_type(void) __attribute__ ((weak, alias("pcf8583_get_type")));
+
 void pcf8583_init(void) {
   uint8_t tmp[4];
 

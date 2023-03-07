@@ -42,6 +42,15 @@ typedef enum {
   RTC_OK          /* RTC present and working           */
 } rtcstate_t;
 
+typedef enum {
+  RTC_TYPE_NONE,  /* No RTC present                    */
+  RTC_TYPE_SW,    /* Software RTC running              */
+  RTC_TYPE_HW     /* Hardware RTC running              */
+} rtc_type_t;
+
+
+rtc_type_t rtc_get_type(void);
+
 extern const /* PROGMEM */ struct tm rtc_default_date;
 extern rtcstate_t rtc_state;
 
@@ -59,14 +68,16 @@ void rtc_set(struct tm *time);
 uint8_t bcd2int(uint8_t value);
 uint8_t int2bcd(uint8_t value);
 
+
+
 #else
 
 #define rtc_init()      do {} while(0)
-#define rtc_get_state() do {} while(0)
+#define rtc_get_state() 0
 #define rtc_get(x)      do {} while(0)
 #define rtc_set(x)      do {} while(0)
-#define bcd2int(x)      do {} while(0)
-#define int2bcd(x)      do {} while(0)
+#define bcd2int(x)      0
+#define int2bcd(x)      0
 
 #endif
 #endif

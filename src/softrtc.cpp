@@ -152,6 +152,11 @@ void softrtc_set(struct tm *time) {
 }
 void rtc_set(struct tm *time) __attribute__ ((weak, alias("softrtc_set")));
 
+rtc_type_t softrtc_get_type(void) {
+  return RTC_TYPE_SW;
+}
+rtc_type_t rtc_get_type(void) __attribute__ ((weak, alias("softrtc_get_type")));
+
 void softrtc_init(void) {
   rtc_state = RTC_OK;
 }

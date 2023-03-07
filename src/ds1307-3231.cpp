@@ -127,6 +127,11 @@ void dsrtc_set(struct tm *time) {
 }
 void rtc_set(struct tm *time) __attribute__ ((weak, alias("dsrtc_set")));
 
+rtc_type_t dsrtc_get_type(void) {
+  return RTC_TYPE_HW;
+}
+rtc_type_t rtc_get_type(void) __attribute__ ((weak, alias("dsrtc_get_type")));
+
 /* detect DS RTC type and initialize */
 void dsrtc_init(void) {
   int16_t tmp;

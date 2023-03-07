@@ -37,12 +37,6 @@
 
 volatile tick_t ticks;
 
-#ifdef INCLUDE_POWERMGMT
-extern volatile uint8_t led_pwr_enable;  // this volatile transitions to 0 before we sleep, and ffh when not sleeping.
-#else
-#define led_pwr_enable  0xff             // w no power management, just always do busy led when active.
-#endif
-
 /* The main timer interrupt */
 SYSTEM_TICK_HANDLER {
   uint8_t state;
@@ -54,7 +48,7 @@ SYSTEM_TICK_HANDLER {
     if ((ticks & 15) == 0)
       toggle_led();
   } else {
-    set_led((state & LED_BUSY) & led_pwr_enable );
+    set_led((state & LED_BUSY));
   }
 
 #ifdef CONFIG_RTC_SOFTWARE

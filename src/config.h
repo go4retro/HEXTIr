@@ -141,7 +141,7 @@ static inline void wakeup_pin_init(void) {
 
 
 #  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
-#  define POWER_MGMT_HANDLER  INT0_vect
+#  define POWER_MGMT_HANDLER  ISR(INT0_vect)
 
 static inline void pwr_irq_enable(void) {
   EICRA |= _BV(ISC01);  // trigger power enable on falling IRQ.
@@ -221,8 +221,8 @@ static inline void wakeup_pin_init(void) {
 }
 
 
-//#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
-#  define POWER_MGMT_HANDLER  INT0_vect
+#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+#  define POWER_MGMT_HANDLER  ISR(INT0_vect)
 
 static inline void pwr_irq_enable(void) {
   EICRA |= _BV(ISC01);  // trigger power enable on falling IRQ.
@@ -319,13 +319,13 @@ static inline void board_init(void) {
 }
 
 
-//#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
+#  define INCLUDE_POWERMGMT  // Power Management may not be fully available on all platforms
 
 static inline void wakeup_pin_init(void) {
   DDRD &= ~_BV(PIN2);
 }
 
-#define POWER_MGMT_HANDLER  INT0_vect
+#define POWER_MGMT_HANDLER  ISR(INT0_vect)
 
 static inline void pwr_irq_enable(void) {
   EICRA |= _BV(ISC01);  // trigger power enable on falling IRQ.
@@ -445,9 +445,8 @@ static inline void toggle_led(void) {
   LED_BUSY_OUT ^= LED_BUSY_PIN;
 }
 
-static inline void leds_sleep(void) {
+static inline void led_sleep(void) {
   LED_BUSY_OUT &= ~LED_BUSY_PIN;
-  LED_BUSY_DDR |= LED_BUSY_PIN;
 }
 
 

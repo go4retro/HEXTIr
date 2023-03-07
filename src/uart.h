@@ -314,6 +314,7 @@ void uart_trace(void *ptr, uint16_t start, uint16_t len);
 void uart_flush(void);
 //void uart_puts_P(prog_char *text);
 void uart_puts_P(const char *text);
+uint8_t uart_data_tosend(void);
 uint8_t uart_data_available(void);
 void uart_putcrlf(void);
 
@@ -325,6 +326,8 @@ void uart_putcrlf(void);
 #define uart_trace(x,y,z)       do {} while(0)
 #define uart_flush()            do {} while(0)
 #define uart_puts_P(x)          do {} while(0)
+#define uart_data_tosend()      0
+#define uart_data_available()   0
 #define uart_putcrlf()          do {} while(0)
 #endif
 
@@ -335,6 +338,7 @@ void uart0_puthex(uint8_t hex);
 void uart0_trace(void *ptr, uint16_t start, uint16_t len);
 void uart0_flush(void);
 void uart0_puts_P(const char *text);
+uint8_t uart0_data_tosend(void);
 uint8_t uart0_data_available(void);
 void uart0_putcrlf(void);
 #  include <stdio.h>
@@ -346,6 +350,7 @@ void uart0_putcrlf(void);
 #  define uart0_trace(x,y,z)      do {} while(0)
 #  define uart0_puts_P(x)        do {} while(0)
 #  define uart0_data_available() 0
+#  define uart0_data_tosend()    0
 #  define uart0_putcrlf()        do {} while(0)
 #endif
 

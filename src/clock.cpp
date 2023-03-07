@@ -286,6 +286,11 @@ void clk_register(void) {
 }
 
 
+uint8_t clk_is_open(void) {
+  return (rtc_open != FALSE);
+}
+
+
 void clk_init() {
   struct tm t;
 

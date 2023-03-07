@@ -74,13 +74,26 @@ rtcstate_t rtc_get_state(void) {
   return rtc_state;
 }
 
+// if there is only 1 RTC included in the source file list, it has a weak
+// aliases to rtc_init()/get()/set(), so none of these are needed.
 #ifdef NEED_RTCMUX
 /* RTC "multiplexer" to select the best available RTC at runtime */
 
 typedef enum { RTC_NONE, RTC_SOFTWARE, RTC_PCF8583,
-               RTC_LPC17XX, RTC_DSRTC } rtc_type_t;
+               RTC_LPC17XX, RTC_DSRTC } rtc_model_t;
 
-static rtc_type_t current_rtc = RTC_NONE;
+static rtc_model_t current_rtc = RTC_NONE;
+
+rtc_type_t rtc_get_type(void) {
+  switch(current_rtc) {
+    case RTC_NONE:
+      return RTC_TYPE_NONE;
+    case RTC_SOFTWARE:
+      return RTC_TYPE_SW;
+    default:
+      return RTC_TYPE_HW;
+  }
+}
 
 void rtc_init(void) {
   #ifdef CONFIG_RTC_DSRTC

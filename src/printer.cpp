@@ -364,6 +364,12 @@ void prn_register(void) {
   reg_add(DEV_PRN_START, prn_dev, DEV_PRN_END, ops);
 }
 
+
+uint8_t prn_is_open(void) {
+  return (_prn_open != FALSE);
+}
+
+
 void prn_init( void ) {
 
   _prn_open = FALSE;

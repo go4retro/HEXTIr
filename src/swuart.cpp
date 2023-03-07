@@ -94,9 +94,16 @@ void swuart_setrate(uint8_t port, uint16_t bpsrate) {
   rate[port] = bpsrate;
 }
 
+
 void swuart_flush(void) {
   while(running) {;}
 }
+
+
+uint8_t swuart_data_tosend(void) {
+  return (running != 0);
+}
+
 
 //#define SWUART_TEST
 

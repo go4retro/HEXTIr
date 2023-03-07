@@ -561,6 +561,11 @@ void ser_register(void) {
 }
 
 
+uint8_t ser_is_open(void) {
+  return (_ser_open != FALSE);
+}
+
+
 void ser_init(void) {
   uart_init();
   _ser_open = FALSE;

@@ -32,10 +32,12 @@
 #ifdef INCLUDE_CLOCK
 void clk_reset(void);
 void clk_register(void);
+uint8_t clk_is_open(void);
 void clk_init(void);
 #else
 #define clk_reset()     do {} while(0)
 #define clk_register()  do {} while(0)
+#define clk_is_open()   0
 #define clk_init()      do {} while(0)
 #endif
 

@@ -80,6 +80,15 @@ ISR(USARTA_RXC_vect) {
 }
 #  endif
 
+uint8_t uart0_data_tosend(void) {
+#if defined UART0_TX_BUFFER_SHIFT && UART0_TX_BUFFER_SHIFT > 0
+  return ( UCSRAB & _BV(UDRIEA)); // is the interrrupt still on?
+#else // check if output register empty and transmit complete
+  return (!( UCSRAA & _BV(UDREA)) || !( UCSRAA & _BV(TXCA)));
+#endif
+}
+uint8_t uart_data_tosend(void) __attribute__ ((weak, alias("uart0_data_tosend")));
+
 uint8_t uart0_data_available(void) {
 #if defined UART0_RX_BUFFER_SHIFT && UART0_RX_BUFFER_SHIFT > 0
   /* Return 0 (FALSE) if the receive buffer is empty */

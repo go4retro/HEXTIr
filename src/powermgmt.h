@@ -26,10 +26,18 @@ extern "C"{
 
 #ifdef INCLUDE_POWERMGMT
 
-void sleep_the_system( void );
+typedef enum {
+  SLEEP_IDLE,
+  SLEEP_STANDBY,
+  SLEEP_PWR_DOWN
+} sleep_mode_t;
+
+void pwr_sleep( sleep_mode_t mode );
+void pwr_init(void);
 
 #else
-#define sleep_the_system()  do {} while (0)
+#define pwr_sleep(x)  do {} while (0)
+#define pwr_init()    do {} while (0)
 #endif
 
 

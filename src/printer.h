@@ -39,10 +39,12 @@ typedef struct _printcfg_t {
 
 void prn_reset(void);
 void prn_register(void);
+uint8_t prn_is_open(void);
 void prn_init(void);
 #else
 #define prn_reset()     do {} while(0)
 #define prn_register()	do {} while(0)
+#define prn_is_open()   0
 #define prn_init()      do {} while(0)
 #endif
 #endif /* PRINTER_H */

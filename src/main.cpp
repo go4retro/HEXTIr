@@ -35,6 +35,7 @@
 #include "printer.h"
 #include "powermgmt.h"
 #include "registry.h"
+#include "rtc.h"
 #include "serial.h"
 #include "swuart.h"
 #include "timer.h"
@@ -137,6 +138,7 @@ static inline void bus_init(void) {
 
 void setup(void) {
   board_init();
+  pwr_init();
   debug_init();
 
   sei();
@@ -166,11 +168,14 @@ int main(void) {
   uint8_t ignore_cmd = FALSE;
   pab_raw_t pabdata;
   BYTE res;
+  rtc_type_t rtc_type;
 #ifdef HAVE_HOTPLUG
   uint8_t disk_state_old = 0;
 #endif
 
   setup();
+
+  rtc_type = rtc_get_type();
 
   pabdata.pab.cmd = 0;
   pabdata.pab.lun = 0;
@@ -186,8 +191,23 @@ int main(void) {
     set_busy_led( FALSE );
 
     while (hex_is_bav()) {
-      sleep_the_system();  // sleep until BAV falls. If low, HSK will be low.(if power management enabled, if not this is nop)
+      // sleep until BAV falls. If low, HSK will be low.(if power management enabled, if not this is nop)
+      if(rtc_type != RTC_TYPE_SW) {  // can't sleep if RTC is SW
+        if(ser_is_open() || prn_is_open()) { // snooze
+          if(!uart_data_tosend() && !swuart_data_tosend()) {
+            pwr_sleep(SLEEP_IDLE);
+          }
+        } else {
+          pwr_sleep(SLEEP_STANDBY);
+        }
+      }
     }
+
+    // BAV low woke us up. Wait to see if we
+    // get a HSK low, if so, drop our HSK and then proceed.
+    // We do this here, because HSK must be held low after transmitter pulls it low
+    // within a very short window of time (< 8us).
+    hex_capture_hsk();
 
     debug_putc('^');
     set_busy_led( TRUE ); // TODO why do we set busy led here?

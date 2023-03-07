@@ -23,4 +23,4 @@
 #define VER_MINOR         9
 #define VER_PATCH         3 
 #define VER_FIX           4
-#define VER_PRERELEASE    
+#define VER_PRERELEASE    PR

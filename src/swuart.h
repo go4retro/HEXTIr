@@ -89,6 +89,7 @@ void swuart_puts_P(uint8_t port, const char *text);
 void swuart_putcrlf(uint8_t port);
 void swuart_setrate(uint8_t port, uint16_t bpsrate);
 void swuart_flush(void);
+uint8_t swuart_data_tosend(void);
 void swuart_init(void);
 
   #else
@@ -98,6 +99,7 @@ void swuart_init(void);
 #define swuart_putcrlf(x)     do {} while(0)
 #define swuart_setrate(x, y)  do {} while(0)
 #define swuart_flush()        do {} while(0)
+#define swuart_data_tosend()  0
 #define swuart_init()         do {} while(0)
   #endif
 #endif /* SRC_SWUART_H_ */
