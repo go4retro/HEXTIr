@@ -46,22 +46,15 @@
 
 #include <avr/io.h>
 
-#if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
- #define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
- // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
-#endif
-
-#ifndef ARDUINO
- #include "autoconf.h"
+#ifdef ARDUINO
+#  if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
+#    define CONFIG_HARDWARE_VARIANT   3 // Hardware variant 3 is Arduino, with BAV on D2 for wakeup from standby mode.
+      // Variant 3 has been tested on Pro Mini, Uno, and Nano as functional.  Select target platform in the IDE.
+#  else
+#    error "ARDUINO VARIANT is unknown."
+#  endif
 #else
-
-// Debug to serial
-//#define CONFIG_UART_DEBUG
-//#define CONFIG_UART_DEBUG_SW
-#define CONFIG_UART_DEBUG_RATE    115200
-#define CONFIG_UART_DEBUG_FLUSH
-#define CONFIG_UART_BUF_SHIFT     8
-
+ #include "autoconf.h"
 #endif
 
 /* ----- Common definitions for all AVR hardware variants ------ */
@@ -73,10 +66,10 @@
 #if CONFIG_HARDWARE_VARIANT == 1
 /* ---------- Hardware configuration: HEXTIr v1 ---------- */
 
-#define INCLUDE_DRIVE
-#define INCLUDE_CLOCK
-#define INCLUDE_SERIAL
-#define INCLUDE_PRINTER
+#  define INCLUDE_DRIVE
+#  define INCLUDE_CLOCK
+#  define INCLUDE_SERIAL
+#  define INCLUDE_PRINTER
 
 #  define HEX_HSK_DDR         DDRC
 #  define HEX_HSK_OUT         PORTC
@@ -157,10 +150,10 @@ static inline void pwr_irq_disable(void) {
 #elif CONFIG_HARDWARE_VARIANT == 2
 /* ---------- Hardware configuration: HEXTIr Arduino ---------- */
 
-#define INCLUDE_DRIVE
-#define INCLUDE_CLOCK
-#define INCLUDE_SERIAL
-#define INCLUDE_PRINTER
+#  define INCLUDE_DRIVE
+#  define INCLUDE_CLOCK
+#  define INCLUDE_SERIAL
+#  define INCLUDE_PRINTER
 
 #  define HEX_HSK_DDR         DDRD
 #  define HEX_HSK_OUT         PORTD
@@ -245,14 +238,21 @@ static inline void pwr_irq_disable(void) {
 
 // This needs to be moved somewhere else...
 //--------------------------
-#if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
-  #define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
-#else
-  #define CONFIG_HARDWARE_NAME HEXTIr (Arduino)
-#endif
-#define CONFIG_RTC_DSRTC
-//#define CONFIG_RTC_SOFTWARE
-#define CONFIG_SD_AUTO_RETRIES 10
+#  if defined ARDUINO_AVR_UNO || defined ARDUINO_AVR_PRO || defined ARDUINO_AVR_NANO
+#    define CONFIG_HARDWARE_NAME HEXTIr (Arduino IDE)
+#    define CONFIG_RTC_DSRTC
+//#    define CONFIG_RTC_SOFTWARE
+#    define CONFIG_SD_AUTO_RETRIES 10
+
+// Debug to serial
+//#define CONFIG_UART_DEBUG
+//#define CONFIG_UART_DEBUG_SW
+#    define CONFIG_UART_DEBUG_RATE    115200
+#    define CONFIG_UART_DEBUG_FLUSH
+#    define CONFIG_UART_BUF_SHIFT     8
+#  else
+#    define CONFIG_HARDWARE_NAME HEXTIr (Arduino)
+#  endif
 //--------------------------
 
 #  define HEX_HSK_DDR         DDRD
@@ -287,7 +287,7 @@ static inline void pwr_irq_disable(void) {
 // the SoftwareSerial library.
 
 static inline void sdcard_interface_init(void) {
-#ifdef ARDUINO_AVR_UNO
+#  ifdef ARDUINO_AVR_UNO
   DDRB  &= ~_BV(PB0);  // detect
   PORTB |=  _BV(PB0);
   DDRB  &= ~_BV(PB1);  // wp
@@ -296,23 +296,23 @@ static inline void sdcard_interface_init(void) {
   //EICRB |=  _BV(ISC60);
   PCMSK0 |= _BV(PCINT0);
   //EIMSK |=  _BV(INT6);
-#endif
+#  endif
 }
 
 static inline uint8_t sdcard_detect(void) {
-#ifdef ARDUINO_AVR_UNO
+#  ifdef ARDUINO_AVR_UNO
   return !(PINB & _BV(PIN0));
-#else
+#  else
   return 1;
-#endif
+#  endif
 }
 
 static inline uint8_t sdcard_wp(void) {
-#ifdef ARDUINO_AVR_UNO
+#  ifdef ARDUINO_AVR_UNO
   return PINB & _BV(PIN1);
-#else
+#  else
   return 0;
-#endif
+#  endif
 }
 
 static inline void board_init(void) {
@@ -325,7 +325,7 @@ static inline void wakeup_pin_init(void) {
   DDRD &= ~_BV(PIN2);
 }
 
-#define POWER_MGMT_HANDLER  ISR(INT0_vect)
+#  define POWER_MGMT_HANDLER  ISR(INT0_vect)
 
 static inline void pwr_irq_enable(void) {
   EICRA |= _BV(ISC01);  // trigger power enable on falling IRQ.

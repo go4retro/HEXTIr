@@ -30,7 +30,6 @@
 
 #include <avr/io.h>
 #include "config.h"
-
 #include "spi.h"
 
 /* interrupts disabled, SPI enabled, MSB first, master mode */

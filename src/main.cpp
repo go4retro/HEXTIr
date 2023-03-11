@@ -167,7 +167,7 @@ int main(void) {
   uint8_t i = 0;
   uint8_t ignore_cmd = FALSE;
   pab_raw_t pabdata;
-  BYTE res;
+  hexerror_t res;
   rtc_type_t rtc_type;
 #ifdef HAVE_HOTPLUG
   uint8_t disk_state_old = 0;
@@ -203,11 +203,13 @@ int main(void) {
       }
     }
 
+#ifdef INCLUDE_POWERMGMT
     // BAV low woke us up. Wait to see if we
     // get a HSK low, if so, drop our HSK and then proceed.
     // We do this here, because HSK must be held low after transmitter pulls it low
     // within a very short window of time (< 8us).
     hex_capture_hsk();
+#endif
 
     debug_putc('^');
     set_busy_led( TRUE ); // TODO why do we set busy led here?

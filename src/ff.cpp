@@ -54,6 +54,7 @@
 /                       or following cluster.
 /---------------------------------------------------------------------------*/
 #include <string.h>
+
 #include "config.h"
 #include "ff.h"         /* FatFs declarations */
 #include "diskio.h"     /* Include file for user provided disk functions */

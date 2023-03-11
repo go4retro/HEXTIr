@@ -34,16 +34,25 @@
 extern "C"{
 #endif
 
-#include "time.h"
+#include "rtc.h"
 
-void softrtc_get(struct tm *time);
-void softrtc_set(struct tm *time);
-void softrtc_init(void);
 
 #ifdef CONFIG_RTC_SOFTWARE
+
 void softrtc_tick(void);
+void softrtc_get(struct tm *time);
+void softrtc_set(struct tm *time);
+rtc_type_t softrtc_get_type(void);
+void softrtc_init(void);
+
 #else
-#  define softrtc_tick() do {} while (0)
+
+#  define softrtc_get(x)      do {} while(0)
+#  define softrtc_set(x)      do {} while(0)
+#  define softrtc_get_type()  0
+#  define softrtc_init()      do {} while(0)
+#  define softrtc_tick()      do {} while(0)
+
 #endif
 
 #ifdef __cplusplus

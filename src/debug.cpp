@@ -25,7 +25,6 @@
 #include "config.h"
 #include "swuart.h"
 #include "uart.h"
-
 #include "debug.h"
 
 #if defined CONFIG_UART_DEBUG || defined CONFIG_UART_DEBUG_SW || defined ARDUINO_UART_DEBUG

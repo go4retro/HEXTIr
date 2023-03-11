@@ -20,9 +20,9 @@
 
 #include <util/delay.h>
 #include "config.h"
-#include "hexbus.h"
 #include "integer.h"
 #include "uart.h"
+#include "hexbus.h"
 
 /*
    hex_is_bav() -

@@ -27,10 +27,15 @@
 #ifndef EEPROM_H
 #define EEPROM_H
 #include "config.h"
+#ifdef INCLUDE_CLOCK
 #include "clock.h"
+#endif
+#ifdef INCLUDE_SERIAL
 #include "serial.h"
+#endif
+#ifdef INCLUDE_PRINTER
 #include "printer.h"
-
+#endif
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -54,7 +59,9 @@ typedef struct config_s {
   uint16_t    structsize;
   uint8_t     glob_flags;
 // drive section
+#ifdef INCLUDE_DRIVE
   uint8_t     drv_dev;
+#endif
 #ifdef INCLUDE_CLOCK
   uint8_t     clk_dev;
 #endif

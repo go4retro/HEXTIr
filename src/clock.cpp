@@ -32,7 +32,6 @@
 #include "hexops.h"
 #include "registry.h"
 #include "rtc.h"
-#include "time.h"
 #include "clock.h"
 
 #ifdef INCLUDE_CLOCK

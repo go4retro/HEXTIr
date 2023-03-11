@@ -34,11 +34,23 @@
 extern "C"{
 #endif
 
-#include "time.h"
+#include "rtc.h"
+
+#ifdef CONFIG_RTC_PCF8583
 
 void pcf8583_get(struct tm *time);
 void pcf8583_set(struct tm *time);
+rtc_type_t pcf8583_get_type(void);
 void pcf8583_init(void);
+
+#else
+
+#  define pcf8583_get(x)      do {} while(0)
+#  define pcf8583_set(x)      do {} while(0)
+#  define pcf8583_get_type()  0
+#  define pcf8583_init()      do {} while(0)
+
+#endif
 
 #ifdef __cplusplus
 } // extern "C"

@@ -26,6 +26,7 @@
 #include "eeprom.h"
 #include "hexbus.h"
 #include "hexops.h"
+#include "registry.h"
 #include "timer.h"
 #include "uart.h"
 #include "hexops.h"

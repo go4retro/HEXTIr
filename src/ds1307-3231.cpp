@@ -38,13 +38,12 @@
 #include "config.h"
 #include "debug.h"
 #include "i2c.h"
-#include "time.h"
 #include "rtc.h"
 #include "ds1307-3231.h"
 
 #ifdef CONFIG_RTC_DSRTC     // hide file from Arduino if not enabled
 
-#define RTC_ADDR 0xd0
+#define RTC_ADDR        0xd0
 
 #define REG_SECOND      0
 #define REG_MINUTE      1

@@ -679,7 +679,7 @@ END GROUP
 .rela.plt
  *(.rela.plt)
 
-.text           0x0000000000000000     0x7396
+.text           0x0000000000000000     0x7394
  *(.vectors)
  .vectors       0x0000000000000000       0x68 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328p.o
                 0x0000000000000000                __vector_default
@@ -847,580 +847,580 @@ END GROUP
                 0x0000000000000ede       0x30 obj-m328p-arduino/src/clock.o
                 0x0000000000000ede                clk_register
  .text.clk_init
-                0x0000000000000f0e       0x3e obj-m328p-arduino/src/clock.o
+                0x0000000000000f0e       0x3c obj-m328p-arduino/src/clock.o
                 0x0000000000000f0e                clk_init
  .text.find_lun
-                0x0000000000000f4c       0x38 obj-m328p-arduino/src/drive.o
+                0x0000000000000f4a       0x38 obj-m328p-arduino/src/drive.o
  .text.drv_verify
-                0x0000000000000f84       0xe0 obj-m328p-arduino/src/drive.o
+                0x0000000000000f82       0xe0 obj-m328p-arduino/src/drive.o
  .text.drv_status
-                0x0000000000001064       0x8e obj-m328p-arduino/src/drive.o
+                0x0000000000001062       0x8e obj-m328p-arduino/src/drive.o
  .text.next_value_size
-                0x00000000000010f2       0xbc obj-m328p-arduino/src/drive.o
+                0x00000000000010f0       0xbc obj-m328p-arduino/src/drive.o
  .text.drv_read
-                0x00000000000011ae      0x23c obj-m328p-arduino/src/drive.o
+                0x00000000000011ac      0x23c obj-m328p-arduino/src/drive.o
  .text.free_lun
-                0x00000000000013ea       0x46 obj-m328p-arduino/src/drive.o
+                0x00000000000013e8       0x46 obj-m328p-arduino/src/drive.o
  .text.reserve_lun
-                0x0000000000001430       0x5e obj-m328p-arduino/src/drive.o
+                0x000000000000142e       0x5e obj-m328p-arduino/src/drive.o
  .text.drv_close
-                0x000000000000148e       0x6a obj-m328p-arduino/src/drive.o
+                0x000000000000148c       0x6a obj-m328p-arduino/src/drive.o
  .text.drv_start
-                0x00000000000014f8       0x1e obj-m328p-arduino/src/drive.o
+                0x00000000000014f6       0x1e obj-m328p-arduino/src/drive.o
  .text.drv_delete
-                0x0000000000001516       0x76 obj-m328p-arduino/src/drive.o
+                0x0000000000001514       0x76 obj-m328p-arduino/src/drive.o
  .text.drv_restore
-                0x000000000000158c       0x42 obj-m328p-arduino/src/drive.o
+                0x000000000000158a       0x42 obj-m328p-arduino/src/drive.o
  .text.drv_delete_open
-                0x00000000000015ce       0x66 obj-m328p-arduino/src/drive.o
+                0x00000000000015cc       0x66 obj-m328p-arduino/src/drive.o
  .text.drv_exec_cmds.constprop.4
-                0x0000000000001634      0x13c obj-m328p-arduino/src/drive.o
+                0x0000000000001632      0x13c obj-m328p-arduino/src/drive.o
  .text.drv_write
-                0x0000000000001770      0x258 obj-m328p-arduino/src/drive.o
+                0x000000000000176e      0x258 obj-m328p-arduino/src/drive.o
  .text.drv_open
-                0x00000000000019c8      0x1f4 obj-m328p-arduino/src/drive.o
+                0x00000000000019c6      0x1f4 obj-m328p-arduino/src/drive.o
  .text.drv_register
-                0x0000000000001bbc       0x20 obj-m328p-arduino/src/drive.o
-                0x0000000000001bbc                drv_register
+                0x0000000000001bba       0x20 obj-m328p-arduino/src/drive.o
+                0x0000000000001bba                drv_register
  .text.drv_reset
-                0x0000000000001bdc       0x5a obj-m328p-arduino/src/drive.o
-                0x0000000000001bdc                drv_reset
+                0x0000000000001bda       0x5a obj-m328p-arduino/src/drive.o
+                0x0000000000001bda                drv_reset
  .text.drv_reset_dev
-                0x0000000000001c36       0x10 obj-m328p-arduino/src/drive.o
+                0x0000000000001c34       0x10 obj-m328p-arduino/src/drive.o
  .text.drv_init
-                0x0000000000001c46       0x30 obj-m328p-arduino/src/drive.o
-                0x0000000000001c46                drv_init
+                0x0000000000001c44       0x30 obj-m328p-arduino/src/drive.o
+                0x0000000000001c44                drv_init
  .text.dsrtc_get
-                0x0000000000001c76       0x9c obj-m328p-arduino/src/ds1307-3231.o
-                0x0000000000001c76                rtc_get
-                0x0000000000001c76                dsrtc_get
+                0x0000000000001c74       0x9c obj-m328p-arduino/src/ds1307-3231.o
+                0x0000000000001c74                rtc_get
+                0x0000000000001c74                dsrtc_get
  .text.dsrtc_set
-                0x0000000000001d12       0xb2 obj-m328p-arduino/src/ds1307-3231.o
-                0x0000000000001d12                dsrtc_set
-                0x0000000000001d12                rtc_set
+                0x0000000000001d10       0xb2 obj-m328p-arduino/src/ds1307-3231.o
+                0x0000000000001d10                dsrtc_set
+                0x0000000000001d10                rtc_set
  .text.dsrtc_get_type
-                0x0000000000001dc4        0x4 obj-m328p-arduino/src/ds1307-3231.o
-                0x0000000000001dc4                rtc_get_type
-                0x0000000000001dc4                dsrtc_get_type
+                0x0000000000001dc2        0x4 obj-m328p-arduino/src/ds1307-3231.o
+                0x0000000000001dc2                rtc_get_type
+                0x0000000000001dc2                dsrtc_get_type
  .text.dsrtc_init
-                0x0000000000001dc8       0x52 obj-m328p-arduino/src/ds1307-3231.o
-                0x0000000000001dc8                dsrtc_init
-                0x0000000000001dc8                rtc_init
+                0x0000000000001dc6       0x52 obj-m328p-arduino/src/ds1307-3231.o
+                0x0000000000001dc6                dsrtc_init
+                0x0000000000001dc6                rtc_init
  .text.ee_get_config
-                0x0000000000001e1a       0x6a obj-m328p-arduino/src/eeprom.o
-                0x0000000000001e1a                ee_get_config
+                0x0000000000001e18       0x6a obj-m328p-arduino/src/eeprom.o
+                0x0000000000001e18                ee_get_config
  .text.ee_set_config
-                0x0000000000001e84       0x38 obj-m328p-arduino/src/eeprom.o
-                0x0000000000001e84                ee_set_config
+                0x0000000000001e82       0x38 obj-m328p-arduino/src/eeprom.o
+                0x0000000000001e82                ee_set_config
  .text.clust2sect
-                0x0000000000001ebc       0x50 obj-m328p-arduino/src/ff.o
+                0x0000000000001eba       0x50 obj-m328p-arduino/src/ff.o
  .text.get_fileinfo
-                0x0000000000001f0c       0xe2 obj-m328p-arduino/src/ff.o
+                0x0000000000001f0a       0xe2 obj-m328p-arduino/src/ff.o
  .text.dos_char
-                0x0000000000001fee       0x50 obj-m328p-arduino/src/ff.o
+                0x0000000000001fec       0x50 obj-m328p-arduino/src/ff.o
  .text.auto_mount.isra.5
-                0x000000000000203e       0x34 obj-m328p-arduino/src/ff.o
+                0x000000000000203c       0x34 obj-m328p-arduino/src/ff.o
  .text.validate
-                0x0000000000002072       0x1a obj-m328p-arduino/src/ff.o
+                0x0000000000002070       0x1a obj-m328p-arduino/src/ff.o
  .text.move_window.constprop.8
-                0x000000000000208c      0x118 obj-m328p-arduino/src/ff.o
+                0x000000000000208a      0x118 obj-m328p-arduino/src/ff.o
  .text.move_fs_window
-                0x00000000000021a4        0x4 obj-m328p-arduino/src/ff.o
+                0x00000000000021a2        0x4 obj-m328p-arduino/src/ff.o
  .text.check_fs
-                0x00000000000021a8       0xa4 obj-m328p-arduino/src/ff.o
+                0x00000000000021a6       0xa4 obj-m328p-arduino/src/ff.o
  .text.get_cluster
-                0x000000000000224c      0x142 obj-m328p-arduino/src/ff.o
+                0x000000000000224a      0x142 obj-m328p-arduino/src/ff.o
  .text.next_dir_entry
-                0x000000000000238e       0xc2 obj-m328p-arduino/src/ff.o
+                0x000000000000238c       0xc2 obj-m328p-arduino/src/ff.o
  .text.put_cluster
-                0x0000000000002450      0x178 obj-m328p-arduino/src/ff.o
+                0x000000000000244e      0x178 obj-m328p-arduino/src/ff.o
  .text.create_chain
-                0x00000000000025c8      0x17e obj-m328p-arduino/src/ff.o
+                0x00000000000025c6      0x17e obj-m328p-arduino/src/ff.o
  .text.remove_chain
-                0x0000000000002746       0x98 obj-m328p-arduino/src/ff.o
+                0x0000000000002744       0x98 obj-m328p-arduino/src/ff.o
  .text.reserve_direntry
-                0x00000000000027de      0x2ce obj-m328p-arduino/src/ff.o
- .text.sync     0x0000000000002aac       0xe0 obj-m328p-arduino/src/ff.o
+                0x00000000000027dc      0x2ce obj-m328p-arduino/src/ff.o
+ .text.sync     0x0000000000002aaa       0xe0 obj-m328p-arduino/src/ff.o
  .text.trace_path
-                0x0000000000002b8c      0x416 obj-m328p-arduino/src/ff.o
+                0x0000000000002b8a      0x416 obj-m328p-arduino/src/ff.o
  .text.mount_drv
-                0x0000000000002fa2      0x3ea obj-m328p-arduino/src/ff.o
-                0x0000000000002fa2                mount_drv
+                0x0000000000002fa0      0x3ea obj-m328p-arduino/src/ff.o
+                0x0000000000002fa0                mount_drv
  .text.add_direntry
-                0x000000000000338c      0x3f8 obj-m328p-arduino/src/ff.o
-                0x000000000000338c                add_direntry
- .text.f_mount  0x0000000000003784       0x10 obj-m328p-arduino/src/ff.o
-                0x0000000000003784                f_mount
- .text.f_open   0x0000000000003794      0x26a obj-m328p-arduino/src/ff.o
-                0x0000000000003794                f_open
- .text.f_read   0x00000000000039fe      0x20a obj-m328p-arduino/src/ff.o
-                0x00000000000039fe                f_read
- .text.f_write  0x0000000000003c08      0x2b0 obj-m328p-arduino/src/ff.o
-                0x0000000000003c08                f_write
- .text.f_sync   0x0000000000003eb8       0x9e obj-m328p-arduino/src/ff.o
-                0x0000000000003eb8                f_sync
- .text.f_close  0x0000000000003f56       0x16 obj-m328p-arduino/src/ff.o
-                0x0000000000003f56                f_close
- .text.f_lseek  0x0000000000003f6c      0x2f2 obj-m328p-arduino/src/ff.o
-                0x0000000000003f6c                f_lseek
+                0x000000000000338a      0x3f8 obj-m328p-arduino/src/ff.o
+                0x000000000000338a                add_direntry
+ .text.f_mount  0x0000000000003782       0x10 obj-m328p-arduino/src/ff.o
+                0x0000000000003782                f_mount
+ .text.f_open   0x0000000000003792      0x26a obj-m328p-arduino/src/ff.o
+                0x0000000000003792                f_open
+ .text.f_read   0x00000000000039fc      0x20a obj-m328p-arduino/src/ff.o
+                0x00000000000039fc                f_read
+ .text.f_write  0x0000000000003c06      0x2b0 obj-m328p-arduino/src/ff.o
+                0x0000000000003c06                f_write
+ .text.f_sync   0x0000000000003eb6       0x9e obj-m328p-arduino/src/ff.o
+                0x0000000000003eb6                f_sync
+ .text.f_close  0x0000000000003f54       0x16 obj-m328p-arduino/src/ff.o
+                0x0000000000003f54                f_close
+ .text.f_lseek  0x0000000000003f6a      0x2f2 obj-m328p-arduino/src/ff.o
+                0x0000000000003f6a                f_lseek
  .text.f_opendir
-                0x000000000000425e       0xa8 obj-m328p-arduino/src/ff.o
-                0x000000000000425e                f_opendir
+                0x000000000000425c       0xa8 obj-m328p-arduino/src/ff.o
+                0x000000000000425c                f_opendir
  .text.f_readdir
-                0x0000000000004306      0x158 obj-m328p-arduino/src/ff.o
-                0x0000000000004306                f_readdir
+                0x0000000000004304      0x158 obj-m328p-arduino/src/ff.o
+                0x0000000000004304                f_readdir
  .text.f_unlink
-                0x000000000000445e      0x1aa obj-m328p-arduino/src/ff.o
-                0x000000000000445e                f_unlink
- .text.f_mkdir  0x0000000000004608      0x294 obj-m328p-arduino/src/ff.o
-                0x0000000000004608                f_mkdir
- .text.f_chdir  0x000000000000489c       0x96 obj-m328p-arduino/src/ff.o
-                0x000000000000489c                f_chdir
+                0x000000000000445c      0x1aa obj-m328p-arduino/src/ff.o
+                0x000000000000445c                f_unlink
+ .text.f_mkdir  0x0000000000004606      0x294 obj-m328p-arduino/src/ff.o
+                0x0000000000004606                f_mkdir
+ .text.f_chdir  0x000000000000489a       0x96 obj-m328p-arduino/src/ff.o
+                0x000000000000489a                f_chdir
  .text.f_rename
-                0x0000000000004932      0x1f4 obj-m328p-arduino/src/ff.o
-                0x0000000000004932                f_rename
+                0x0000000000004930      0x1f4 obj-m328p-arduino/src/ff.o
+                0x0000000000004930                f_rename
  .text.hex_hsk_lo
-                0x0000000000004b26        0xa obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b24        0xa obj-m328p-arduino/src/hexbus.o
  .text.hex_wait_for_hsk_lo
-                0x0000000000004b30       0x10 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b2e       0x10 obj-m328p-arduino/src/hexbus.o
  .text.hex_is_bav
-                0x0000000000004b40        0x6 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004b40                hex_is_bav
+                0x0000000000004b3e        0x6 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b3e                hex_is_bav
  .text.hex_release_data
-                0x0000000000004b46       0x16 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004b46                hex_release_data
+                0x0000000000004b44       0x16 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b44                hex_release_data
  .text.hex_release_bus
-                0x0000000000004b5c        0xe obj-m328p-arduino/src/hexbus.o
-                0x0000000000004b5c                hex_release_bus
+                0x0000000000004b5a        0xe obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b5a                hex_release_bus
  .text.hex_finish
-                0x0000000000004b6a       0x12 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004b6a                hex_finish
+                0x0000000000004b68       0x12 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b68                hex_finish
  .text.hex_capture_hsk
-                0x0000000000004b7c        0xc obj-m328p-arduino/src/hexbus.o
-                0x0000000000004b7c                hex_capture_hsk
+                0x0000000000004b7a        0xc obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b7a                hex_capture_hsk
  .text.hex_recv_byte
-                0x0000000000004b88       0x44 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004b88                hex_recv_byte
+                0x0000000000004b86       0x44 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004b86                hex_recv_byte
  .text.hex_send_byte
-                0x0000000000004bcc       0x68 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004bcc                hex_send_byte
+                0x0000000000004bca       0x68 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004bca                hex_send_byte
  .text.hex_send_word
-                0x0000000000004c34       0x12 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004c34                hex_send_word
+                0x0000000000004c32       0x12 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004c32                hex_send_word
  .text.hex_send_size_response
-                0x0000000000004c46       0x2e obj-m328p-arduino/src/hexbus.o
-                0x0000000000004c46                hex_send_size_response
+                0x0000000000004c44       0x2e obj-m328p-arduino/src/hexbus.o
+                0x0000000000004c44                hex_send_size_response
  .text.hex_send_final_response
-                0x0000000000004c74       0x18 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004c74                hex_send_final_response
+                0x0000000000004c72       0x18 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004c72                hex_send_final_response
  .text.hex_init
-                0x0000000000004c8c       0x16 obj-m328p-arduino/src/hexbus.o
-                0x0000000000004c8c                hex_init
+                0x0000000000004c8a       0x16 obj-m328p-arduino/src/hexbus.o
+                0x0000000000004c8a                hex_init
  .text.parse_number
-                0x0000000000004ca2       0xde obj-m328p-arduino/src/hexops.o
-                0x0000000000004ca2                parse_number
+                0x0000000000004ca0       0xde obj-m328p-arduino/src/hexops.o
+                0x0000000000004ca0                parse_number
  .text.hex_get_data
-                0x0000000000004d80       0x36 obj-m328p-arduino/src/hexops.o
-                0x0000000000004d80                hex_get_data
+                0x0000000000004d7e       0x36 obj-m328p-arduino/src/hexops.o
+                0x0000000000004d7e                hex_get_data
  .text.hex_eat_it
-                0x0000000000004db6       0x40 obj-m328p-arduino/src/hexops.o
-                0x0000000000004db6                hex_eat_it
+                0x0000000000004db4       0x40 obj-m328p-arduino/src/hexops.o
+                0x0000000000004db4                hex_eat_it
  .text.hex_unsupported
-                0x0000000000004df6        0xc obj-m328p-arduino/src/hexops.o
-                0x0000000000004df6                hex_unsupported
+                0x0000000000004df4        0xc obj-m328p-arduino/src/hexops.o
+                0x0000000000004df4                hex_unsupported
  .text.hex_null
-                0x0000000000004e02        0xa obj-m328p-arduino/src/hexops.o
-                0x0000000000004e02                hex_null
+                0x0000000000004e00        0xa obj-m328p-arduino/src/hexops.o
+                0x0000000000004e00                hex_null
  .text.hex_open_helper
-                0x0000000000004e0c       0x64 obj-m328p-arduino/src/hexops.o
-                0x0000000000004e0c                hex_open_helper
- .text.trim     0x0000000000004e70       0x60 obj-m328p-arduino/src/hexops.o
-                0x0000000000004e70                trim
+                0x0000000000004e0a       0x64 obj-m328p-arduino/src/hexops.o
+                0x0000000000004e0a                hex_open_helper
+ .text.trim     0x0000000000004e6e       0x60 obj-m328p-arduino/src/hexops.o
+                0x0000000000004e6e                trim
  .text.parse_cmd
-                0x0000000000004ed0       0xaa obj-m328p-arduino/src/hexops.o
-                0x0000000000004ed0                parse_cmd
+                0x0000000000004ece       0xaa obj-m328p-arduino/src/hexops.o
+                0x0000000000004ece                parse_cmd
  .text.parse_equate
-                0x0000000000004f7a       0x7e obj-m328p-arduino/src/hexops.o
-                0x0000000000004f7a                parse_equate
+                0x0000000000004f78       0x7e obj-m328p-arduino/src/hexops.o
+                0x0000000000004f78                parse_equate
  .text.split_cmd
-                0x0000000000004ff8       0x60 obj-m328p-arduino/src/hexops.o
-                0x0000000000004ff8                split_cmd
+                0x0000000000004ff6       0x60 obj-m328p-arduino/src/hexops.o
+                0x0000000000004ff6                split_cmd
  .text.hex_finish_open
-                0x0000000000005058       0x12 obj-m328p-arduino/src/hexops.o
-                0x0000000000005058                hex_finish_open
+                0x0000000000005056       0x12 obj-m328p-arduino/src/hexops.o
+                0x0000000000005056                hex_finish_open
  .text.hex_exec_cmd
-                0x000000000000506a       0xe4 obj-m328p-arduino/src/hexops.o
-                0x000000000000506a                hex_exec_cmd
+                0x0000000000005068       0xe4 obj-m328p-arduino/src/hexops.o
+                0x0000000000005068                hex_exec_cmd
  .text.hex_exec_cmds
-                0x000000000000514e       0x54 obj-m328p-arduino/src/hexops.o
-                0x000000000000514e                hex_exec_cmds
+                0x000000000000514c       0x54 obj-m328p-arduino/src/hexops.o
+                0x000000000000514c                hex_exec_cmds
  .text.hex_write_cmd_helper
-                0x00000000000051a2       0x18 obj-m328p-arduino/src/hexops.o
-                0x00000000000051a2                hex_write_cmd_helper
+                0x00000000000051a0       0x18 obj-m328p-arduino/src/hexops.o
+                0x00000000000051a0                hex_write_cmd_helper
  .text.hex_write_cmd
-                0x00000000000051ba       0x46 obj-m328p-arduino/src/hexops.o
-                0x00000000000051ba                hex_write_cmd
+                0x00000000000051b8       0x46 obj-m328p-arduino/src/hexops.o
+                0x00000000000051b8                hex_write_cmd
  .text.hex_close_cmd
-                0x0000000000005200        0x6 obj-m328p-arduino/src/hexops.o
-                0x0000000000005200                hex_close_cmd
+                0x00000000000051fe        0x6 obj-m328p-arduino/src/hexops.o
+                0x00000000000051fe                hex_close_cmd
  .text.hex_read_status
-                0x0000000000005206       0x42 obj-m328p-arduino/src/hexops.o
-                0x0000000000005206                hex_read_status
+                0x0000000000005204       0x42 obj-m328p-arduino/src/hexops.o
+                0x0000000000005204                hex_read_status
  .text.set_busy_led
-                0x0000000000005248       0x18 obj-m328p-arduino/src/led.o
-                0x0000000000005248                set_busy_led
+                0x0000000000005246       0x18 obj-m328p-arduino/src/led.o
+                0x0000000000005246                set_busy_led
  .text.get_led_state
-                0x0000000000005260        0x6 obj-m328p-arduino/src/led.o
-                0x0000000000005260                get_led_state
+                0x000000000000525e        0x6 obj-m328p-arduino/src/led.o
+                0x000000000000525e                get_led_state
  .text.hex_reset_bus
-                0x0000000000005266       0x18 obj-m328p-arduino/src/main.o
- .text.setup    0x000000000000527e       0x30 obj-m328p-arduino/src/main.o
-                0x000000000000527e                setup
+                0x0000000000005264       0x18 obj-m328p-arduino/src/main.o
+ .text.setup    0x000000000000527c       0x30 obj-m328p-arduino/src/main.o
+                0x000000000000527c                setup
  .text.startup.main
-                0x00000000000052ae      0x158 obj-m328p-arduino/src/main.o
-                0x00000000000052ae                main
+                0x00000000000052ac      0x158 obj-m328p-arduino/src/main.o
+                0x00000000000052ac                main
  .text.__vector_1
-                0x0000000000005406       0x3e obj-m328p-arduino/src/powermgmt.o
-                0x0000000000005406                __vector_1
+                0x0000000000005404       0x3e obj-m328p-arduino/src/powermgmt.o
+                0x0000000000005404                __vector_1
  .text.pwr_sleep
-                0x0000000000005444       0x66 obj-m328p-arduino/src/powermgmt.o
-                0x0000000000005444                pwr_sleep
+                0x0000000000005442       0x66 obj-m328p-arduino/src/powermgmt.o
+                0x0000000000005442                pwr_sleep
  .text.pwr_init
-                0x00000000000054aa       0x18 obj-m328p-arduino/src/powermgmt.o
-                0x00000000000054aa                pwr_init
+                0x00000000000054a8       0x18 obj-m328p-arduino/src/powermgmt.o
+                0x00000000000054a8                pwr_init
  .text.is_cfg_valid
-                0x00000000000054c2       0x18 obj-m328p-arduino/src/printer.o
+                0x00000000000054c0       0x18 obj-m328p-arduino/src/printer.o
  .text.prn_reset_dev
-                0x00000000000054da        0xe obj-m328p-arduino/src/printer.o
+                0x00000000000054d8        0xe obj-m328p-arduino/src/printer.o
  .text.prn_read
-                0x00000000000054e8       0x12 obj-m328p-arduino/src/printer.o
+                0x00000000000054e6       0x12 obj-m328p-arduino/src/printer.o
  .text.prn_exec_cmds
-                0x00000000000054fa       0xf4 obj-m328p-arduino/src/printer.o
+                0x00000000000054f8       0xf4 obj-m328p-arduino/src/printer.o
  .text.prn_close
-                0x00000000000055ee       0x22 obj-m328p-arduino/src/printer.o
+                0x00000000000055ec       0x22 obj-m328p-arduino/src/printer.o
  .text.prn_open
-                0x0000000000005610       0xe6 obj-m328p-arduino/src/printer.o
+                0x000000000000560e       0xe6 obj-m328p-arduino/src/printer.o
  .text.prn_write
-                0x00000000000056f6       0xa4 obj-m328p-arduino/src/printer.o
+                0x00000000000056f4       0xa4 obj-m328p-arduino/src/printer.o
  .text.prn_reset
-                0x000000000000579a        0x6 obj-m328p-arduino/src/printer.o
-                0x000000000000579a                prn_reset
+                0x0000000000005798        0x6 obj-m328p-arduino/src/printer.o
+                0x0000000000005798                prn_reset
  .text.prn_register
-                0x00000000000057a0       0x18 obj-m328p-arduino/src/printer.o
-                0x00000000000057a0                prn_register
+                0x000000000000579e       0x18 obj-m328p-arduino/src/printer.o
+                0x000000000000579e                prn_register
  .text.prn_is_open
-                0x00000000000057b8        0xe obj-m328p-arduino/src/printer.o
-                0x00000000000057b8                prn_is_open
+                0x00000000000057b6        0xe obj-m328p-arduino/src/printer.o
+                0x00000000000057b6                prn_is_open
  .text.prn_init
-                0x00000000000057c6       0x18 obj-m328p-arduino/src/printer.o
-                0x00000000000057c6                prn_init
- .text.reg_add  0x00000000000057de       0x48 obj-m328p-arduino/src/registry.o
-                0x00000000000057de                reg_add
+                0x00000000000057c4       0x18 obj-m328p-arduino/src/printer.o
+                0x00000000000057c4                prn_init
+ .text.reg_add  0x00000000000057dc       0x48 obj-m328p-arduino/src/registry.o
+                0x00000000000057dc                reg_add
  .text.get_fattime
-                0x0000000000005826       0xa6 obj-m328p-arduino/src/rtc.o
-                0x0000000000005826                get_fattime
- .text.bcd2int  0x00000000000058cc       0x12 obj-m328p-arduino/src/rtc.o
-                0x00000000000058cc                bcd2int
- .text.int2bcd  0x00000000000058de        0xe obj-m328p-arduino/src/rtc.o
-                0x00000000000058de                int2bcd
+                0x0000000000005824       0xa6 obj-m328p-arduino/src/rtc.o
+                0x0000000000005824                get_fattime
+ .text.bcd2int  0x00000000000058ca       0x12 obj-m328p-arduino/src/rtc.o
+                0x00000000000058ca                bcd2int
+ .text.int2bcd  0x00000000000058dc        0xe obj-m328p-arduino/src/rtc.o
+                0x00000000000058dc                int2bcd
  .text.rtc_get_state
-                0x00000000000058ec        0x6 obj-m328p-arduino/src/rtc.o
-                0x00000000000058ec                rtc_get_state
+                0x00000000000058ea        0x6 obj-m328p-arduino/src/rtc.o
+                0x00000000000058ea                rtc_get_state
  .text._crc_xmodem_update
-                0x00000000000058f2       0x34 obj-m328p-arduino/src/sdcard.o
+                0x00000000000058f0       0x34 obj-m328p-arduino/src/sdcard.o
  .text.getticks
-                0x0000000000005926       0x10 obj-m328p-arduino/src/sdcard.o
+                0x0000000000005924       0x10 obj-m328p-arduino/src/sdcard.o
  .text.deselect_card
-                0x0000000000005936        0xa obj-m328p-arduino/src/sdcard.o
+                0x0000000000005934        0xa obj-m328p-arduino/src/sdcard.o
  .text.send_command.constprop.7
-                0x0000000000005940       0x8a obj-m328p-arduino/src/sdcard.o
+                0x000000000000593e       0x8a obj-m328p-arduino/src/sdcard.o
  .text.__vector_3
-                0x00000000000059ca       0x26 obj-m328p-arduino/src/sdcard.o
-                0x00000000000059ca                __vector_3
- .text.sd_init  0x00000000000059f0       0x1e obj-m328p-arduino/src/sdcard.o
-                0x00000000000059f0                sd_init
-                0x00000000000059f0                disk_init
+                0x00000000000059c8       0x26 obj-m328p-arduino/src/sdcard.o
+                0x00000000000059c8                __vector_3
+ .text.sd_init  0x00000000000059ee       0x1e obj-m328p-arduino/src/sdcard.o
+                0x00000000000059ee                sd_init
+                0x00000000000059ee                disk_init
  .text.sd_status
-                0x0000000000005a0e       0x14 obj-m328p-arduino/src/sdcard.o
-                0x0000000000005a0e                sd_status
-                0x0000000000005a0e                disk_status
+                0x0000000000005a0c       0x14 obj-m328p-arduino/src/sdcard.o
+                0x0000000000005a0c                sd_status
+                0x0000000000005a0c                disk_status
  .text.sd_initialize
-                0x0000000000005a22      0x19a obj-m328p-arduino/src/sdcard.o
-                0x0000000000005a22                sd_initialize
-                0x0000000000005a22                disk_initialize
- .text.sd_read  0x0000000000005bbc      0x132 obj-m328p-arduino/src/sdcard.o
-                0x0000000000005bbc                disk_read
-                0x0000000000005bbc                sd_read
+                0x0000000000005a20      0x19a obj-m328p-arduino/src/sdcard.o
+                0x0000000000005a20                sd_initialize
+                0x0000000000005a20                disk_initialize
+ .text.sd_read  0x0000000000005bba      0x132 obj-m328p-arduino/src/sdcard.o
+                0x0000000000005bba                disk_read
+                0x0000000000005bba                sd_read
  .text.sd_write
-                0x0000000000005cee      0x112 obj-m328p-arduino/src/sdcard.o
-                0x0000000000005cee                disk_write
-                0x0000000000005cee                sd_write
+                0x0000000000005cec      0x112 obj-m328p-arduino/src/sdcard.o
+                0x0000000000005cec                disk_write
+                0x0000000000005cec                sd_write
  .text.ser_rtn_sta
-                0x0000000000005e00        0x2 obj-m328p-arduino/src/serial.o
+                0x0000000000005dfe        0x2 obj-m328p-arduino/src/serial.o
  .text.is_cfg_valid
-                0x0000000000005e02       0x18 obj-m328p-arduino/src/serial.o
+                0x0000000000005e00       0x18 obj-m328p-arduino/src/serial.o
  .text.ser_exec_cmds
-                0x0000000000005e1a      0x350 obj-m328p-arduino/src/serial.o
+                0x0000000000005e18      0x350 obj-m328p-arduino/src/serial.o
  .text.ser_read
-                0x000000000000616a       0x92 obj-m328p-arduino/src/serial.o
+                0x0000000000006168       0x92 obj-m328p-arduino/src/serial.o
  .text.ser_open
-                0x00000000000061fc      0x186 obj-m328p-arduino/src/serial.o
+                0x00000000000061fa      0x186 obj-m328p-arduino/src/serial.o
  .text.ser_write
-                0x0000000000006382       0xbe obj-m328p-arduino/src/serial.o
+                0x0000000000006380       0xbe obj-m328p-arduino/src/serial.o
  .text.ser_set_opts
-                0x0000000000006440        0x2 obj-m328p-arduino/src/serial.o
+                0x000000000000643e        0x2 obj-m328p-arduino/src/serial.o
  .text.ser_reset
-                0x0000000000006442        0xc obj-m328p-arduino/src/serial.o
-                0x0000000000006442                ser_reset
+                0x0000000000006440        0xc obj-m328p-arduino/src/serial.o
+                0x0000000000006440                ser_reset
  .text.ser_reset_dev
-                0x000000000000644e       0x10 obj-m328p-arduino/src/serial.o
+                0x000000000000644c       0x10 obj-m328p-arduino/src/serial.o
  .text.ser_close
-                0x000000000000645e       0x24 obj-m328p-arduino/src/serial.o
+                0x000000000000645c       0x24 obj-m328p-arduino/src/serial.o
  .text.ser_register
-                0x0000000000006482       0x18 obj-m328p-arduino/src/serial.o
-                0x0000000000006482                ser_register
+                0x0000000000006480       0x18 obj-m328p-arduino/src/serial.o
+                0x0000000000006480                ser_register
  .text.ser_is_open
-                0x000000000000649a        0xe obj-m328p-arduino/src/serial.o
-                0x000000000000649a                ser_is_open
+                0x0000000000006498        0xe obj-m328p-arduino/src/serial.o
+                0x0000000000006498                ser_is_open
  .text.ser_init
-                0x00000000000064a8       0x56 obj-m328p-arduino/src/serial.o
-                0x00000000000064a8                ser_init
+                0x00000000000064a6       0x56 obj-m328p-arduino/src/serial.o
+                0x00000000000064a6                ser_init
  .text.set_scl.part.0
-                0x00000000000064fe        0xa obj-m328p-arduino/src/softi2c.o
+                0x00000000000064fc        0xa obj-m328p-arduino/src/softi2c.o
  .text.set_sda.part.1
-                0x0000000000006508        0x6 obj-m328p-arduino/src/softi2c.o
- .text.set_sda  0x000000000000650e        0xe obj-m328p-arduino/src/softi2c.o
+                0x0000000000006506        0x6 obj-m328p-arduino/src/softi2c.o
+ .text.set_sda  0x000000000000650c        0xe obj-m328p-arduino/src/softi2c.o
  .text.stop_condition
-                0x000000000000651c       0x1c obj-m328p-arduino/src/softi2c.o
+                0x000000000000651a       0x1c obj-m328p-arduino/src/softi2c.o
  .text.set_scl.constprop.2
-                0x0000000000006538        0x6 obj-m328p-arduino/src/softi2c.o
+                0x0000000000006536        0x6 obj-m328p-arduino/src/softi2c.o
  .text.i2c_recv_byte
-                0x000000000000653e       0x60 obj-m328p-arduino/src/softi2c.o
+                0x000000000000653c       0x60 obj-m328p-arduino/src/softi2c.o
  .text.i2c_send_byte
-                0x000000000000659e       0x58 obj-m328p-arduino/src/softi2c.o
+                0x000000000000659c       0x58 obj-m328p-arduino/src/softi2c.o
  .text.start_condition
-                0x00000000000065f6       0x18 obj-m328p-arduino/src/softi2c.o
+                0x00000000000065f4       0x18 obj-m328p-arduino/src/softi2c.o
  .text.i2c_write_register
-                0x000000000000660e       0x32 obj-m328p-arduino/src/softi2c.o
-                0x000000000000660e                i2c_write_register
+                0x000000000000660c       0x32 obj-m328p-arduino/src/softi2c.o
+                0x000000000000660c                i2c_write_register
  .text.i2c_write_registers
-                0x0000000000006640       0x4e obj-m328p-arduino/src/softi2c.o
-                0x0000000000006640                i2c_write_registers
+                0x000000000000663e       0x4e obj-m328p-arduino/src/softi2c.o
+                0x000000000000663e                i2c_write_registers
  .text.i2c_read_register
-                0x000000000000668e       0x3a obj-m328p-arduino/src/softi2c.o
-                0x000000000000668e                i2c_read_register
+                0x000000000000668c       0x3a obj-m328p-arduino/src/softi2c.o
+                0x000000000000668c                i2c_read_register
  .text.i2c_read_registers
-                0x00000000000066c8       0x6a obj-m328p-arduino/src/softi2c.o
-                0x00000000000066c8                i2c_read_registers
+                0x00000000000066c6       0x6a obj-m328p-arduino/src/softi2c.o
+                0x00000000000066c6                i2c_read_registers
  .text.i2c_init
-                0x0000000000006732       0x12 obj-m328p-arduino/src/softi2c.o
-                0x0000000000006732                i2c_init
+                0x0000000000006730       0x12 obj-m328p-arduino/src/softi2c.o
+                0x0000000000006730                i2c_init
  .text.spi_set_speed
-                0x0000000000006744       0x14 obj-m328p-arduino/src/spi.o
-                0x0000000000006744                spi_set_speed
+                0x0000000000006742       0x14 obj-m328p-arduino/src/spi.o
+                0x0000000000006742                spi_set_speed
  .text.spi_init
-                0x0000000000006758       0x28 obj-m328p-arduino/src/spi.o
-                0x0000000000006758                spi_init
+                0x0000000000006756       0x28 obj-m328p-arduino/src/spi.o
+                0x0000000000006756                spi_init
  .text.spi_tx_byte
-                0x0000000000006780        0xc obj-m328p-arduino/src/spi.o
-                0x0000000000006780                spi_tx_byte
+                0x000000000000677e        0xc obj-m328p-arduino/src/spi.o
+                0x000000000000677e                spi_tx_byte
  .text.spi_rx_byte
-                0x000000000000678c        0xe obj-m328p-arduino/src/spi.o
-                0x000000000000678c                spi_rx_byte
+                0x000000000000678a        0xe obj-m328p-arduino/src/spi.o
+                0x000000000000678a                spi_rx_byte
  .text.spi_exchange_block
-                0x000000000000679a       0x30 obj-m328p-arduino/src/spi.o
-                0x000000000000679a                spi_exchange_block
+                0x0000000000006798       0x30 obj-m328p-arduino/src/spi.o
+                0x0000000000006798                spi_exchange_block
  .text.__vector_14
-                0x00000000000067ca       0x80 obj-m328p-arduino/src/timer.o
-                0x00000000000067ca                __vector_14
+                0x00000000000067c8       0x80 obj-m328p-arduino/src/timer.o
+                0x00000000000067c8                __vector_14
  .text.timer_init
-                0x000000000000684a       0x1a obj-m328p-arduino/src/timer.o
-                0x000000000000684a                timer_init
+                0x0000000000006848       0x1a obj-m328p-arduino/src/timer.o
+                0x0000000000006848                timer_init
  .text.__vector_19
-                0x0000000000006864       0x56 obj-m328p-arduino/src/uart.o
-                0x0000000000006864                __vector_19
+                0x0000000000006862       0x56 obj-m328p-arduino/src/uart.o
+                0x0000000000006862                __vector_19
  .text.uart0_data_tosend
-                0x00000000000068ba        0x8 obj-m328p-arduino/src/uart.o
-                0x00000000000068ba                uart0_data_tosend
-                0x00000000000068ba                uart_data_tosend
+                0x00000000000068b8        0x8 obj-m328p-arduino/src/uart.o
+                0x00000000000068b8                uart0_data_tosend
+                0x00000000000068b8                uart_data_tosend
  .text.uart0_data_available
-                0x00000000000068c2        0xc obj-m328p-arduino/src/uart.o
-                0x00000000000068c2                uart_data_available
-                0x00000000000068c2                uart0_data_available
+                0x00000000000068c0        0xc obj-m328p-arduino/src/uart.o
+                0x00000000000068c0                uart_data_available
+                0x00000000000068c0                uart0_data_available
  .text.uart0_putc
-                0x00000000000068ce       0x2a obj-m328p-arduino/src/uart.o
-                0x00000000000068ce                uart0_putc
-                0x00000000000068ce                uart_putc
+                0x00000000000068cc       0x2a obj-m328p-arduino/src/uart.o
+                0x00000000000068cc                uart0_putc
+                0x00000000000068cc                uart_putc
  .text.uart0_getc
-                0x00000000000068f8        0xe obj-m328p-arduino/src/uart.o
-                0x00000000000068f8                uart0_getc
-                0x00000000000068f8                uart_getc
+                0x00000000000068f6        0xe obj-m328p-arduino/src/uart.o
+                0x00000000000068f6                uart0_getc
+                0x00000000000068f6                uart_getc
  .text.uart0_config
-                0x0000000000006906       0x20 obj-m328p-arduino/src/uart.o
-                0x0000000000006906                uart_config
-                0x0000000000006906                uart0_config
+                0x0000000000006904       0x20 obj-m328p-arduino/src/uart.o
+                0x0000000000006904                uart_config
+                0x0000000000006904                uart0_config
  .text.uart_init
-                0x0000000000006926       0x26 obj-m328p-arduino/src/uart.o
-                0x0000000000006926                uart_init
+                0x0000000000006924       0x26 obj-m328p-arduino/src/uart.o
+                0x0000000000006924                uart_init
  .text.libgcc.mul
-                0x000000000000694c       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
-                0x000000000000694c                __mulsi3
+                0x000000000000694a       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_mulsi3.o)
+                0x000000000000694a                __mulsi3
  .text.libgcc.div
-                0x000000000000696a       0x18 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodqi4.o)
-                0x000000000000696a                __udivmodqi4
+                0x0000000000006968       0x18 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodqi4.o)
+                0x0000000000006968                __udivmodqi4
  .text.libgcc.div
-                0x0000000000006982       0x28 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
-                0x0000000000006982                __udivmodhi4
+                0x0000000000006980       0x28 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodhi4.o)
+                0x0000000000006980                __udivmodhi4
  .text.libgcc.div
-                0x00000000000069aa       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
-                0x00000000000069aa                __udivmodsi4
- .text.libgcc   0x00000000000069ee        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_tablejump2.o)
-                0x00000000000069ee                __tablejump2__
+                0x00000000000069a8       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_udivmodsi4.o)
+                0x00000000000069a8                __udivmodsi4
+ .text.libgcc   0x00000000000069ec        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_tablejump2.o)
+                0x00000000000069ec                __tablejump2__
  .text.libgcc.mul
-                0x00000000000069fa       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
-                0x00000000000069fa                __muluhisi3
+                0x00000000000069f8       0x14 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_muluhisi3.o)
+                0x00000000000069f8                __muluhisi3
  .text.libgcc.prologue
-                0x0000000000006a0e       0x38 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
-                0x0000000000006a0e                __prologue_saves__
+                0x0000000000006a0c       0x38 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_prologue.o)
+                0x0000000000006a0c                __prologue_saves__
  .text.libgcc.prologue
-                0x0000000000006a46       0x36 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
-                0x0000000000006a46                __epilogue_restores__
+                0x0000000000006a44       0x36 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_epilogue.o)
+                0x0000000000006a44                __epilogue_restores__
  .text.libgcc.mul
-                0x0000000000006a7c       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
-                0x0000000000006a7c                __umulhisi3
+                0x0000000000006a7a       0x1e c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_umulhisi3.o)
+                0x0000000000006a7a                __umulhisi3
  .text.avr-libc.fplib
-                0x0000000000006a9a        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3.o)
-                0x0000000000006a9a                __subsf3
-                0x0000000000006a9c                __addsf3
+                0x0000000000006a98        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3.o)
+                0x0000000000006a98                __subsf3
+                0x0000000000006a9a                __addsf3
  .text.avr-libc.fplib
-                0x0000000000006aa4       0xc0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3x.o)
-                0x0000000000006abe                __addsf3x
+                0x0000000000006aa2       0xc0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(addsf3x.o)
+                0x0000000000006abc                __addsf3x
  .text.avr-libc.fplib
-                0x0000000000006b64        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3.o)
-                0x0000000000006b64                __divsf3
+                0x0000000000006b62        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3.o)
+                0x0000000000006b62                __divsf3
  .text.avr-libc.fplib
-                0x0000000000006b68       0xcc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3x.o)
-                0x0000000000006b7e                __divsf3x
-                0x0000000000006b82                __divsf3_pse
+                0x0000000000006b66       0xcc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(divsf3x.o)
+                0x0000000000006b7c                __divsf3x
+                0x0000000000006b80                __divsf3_pse
  .text.avr-libc.fplib
-                0x0000000000006c34        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixsfsi.o)
-                0x0000000000006c34                __fixsfsi
+                0x0000000000006c32        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixsfsi.o)
+                0x0000000000006c32                __fixsfsi
  .text.avr-libc.fplib
-                0x0000000000006c3e       0x58 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixunssfsi.o)
-                0x0000000000006c3e                __fixunssfsi
+                0x0000000000006c3c       0x58 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fixunssfsi.o)
+                0x0000000000006c3c                __fixunssfsi
  .text.avr-libc.fplib
-                0x0000000000006c96       0x7a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(floatsisf.o)
-                0x0000000000006c96                __floatunsisf
-                0x0000000000006c9a                __floatsisf
+                0x0000000000006c94       0x7a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(floatsisf.o)
+                0x0000000000006c94                __floatunsisf
+                0x0000000000006c98                __floatsisf
  .text.avr-libc.fplib
-                0x0000000000006d10        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_inf.o)
-                0x0000000000006d10                __fp_inf
+                0x0000000000006d0e        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_inf.o)
+                0x0000000000006d0e                __fp_inf
  .text.avr-libc.fplib
-                0x0000000000006d1c        0x6 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_nan.o)
-                0x0000000000006d1c                __fp_nan
+                0x0000000000006d1a        0x6 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_nan.o)
+                0x0000000000006d1a                __fp_nan
  .text.avr-libc.fplib
-                0x0000000000006d22        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscA.o)
-                0x0000000000006d22                __fp_pscA
+                0x0000000000006d20        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscA.o)
+                0x0000000000006d20                __fp_pscA
  .text.avr-libc.fplib
-                0x0000000000006d30        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscB.o)
-                0x0000000000006d30                __fp_pscB
+                0x0000000000006d2e        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_pscB.o)
+                0x0000000000006d2e                __fp_pscB
  .text.avr-libc.fplib
-                0x0000000000006d3e       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_round.o)
-                0x0000000000006d3e                __fp_round
+                0x0000000000006d3c       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_round.o)
+                0x0000000000006d3c                __fp_round
  .text.avr-libc.fplib
-                0x0000000000006d60       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_split3.o)
-                0x0000000000006d60                __fp_split3
-                0x0000000000006d70                __fp_splitA
+                0x0000000000006d5e       0x44 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_split3.o)
+                0x0000000000006d5e                __fp_split3
+                0x0000000000006d6e                __fp_splitA
  .text.avr-libc.fplib
-                0x0000000000006da4        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_zero.o)
-                0x0000000000006da4                __fp_zero
-                0x0000000000006da6                __fp_szero
+                0x0000000000006da2        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_zero.o)
+                0x0000000000006da2                __fp_zero
+                0x0000000000006da4                __fp_szero
  .text.avr-libc.fplib
-                0x0000000000006db2        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log10.o)
-                0x0000000000006db2                log10
+                0x0000000000006db0        0xc c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log10.o)
+                0x0000000000006db0                log10
  .text.avr-libc.fplib
-                0x0000000000006dbe       0x8a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log.o)
-                0x0000000000006dc8                log
+                0x0000000000006dbc       0x8a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(log.o)
+                0x0000000000006dc6                log
  .text.avr-libc.fplib
-                0x0000000000006e48        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3.o)
-                0x0000000000006e48                __mulsf3
+                0x0000000000006e46        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3.o)
+                0x0000000000006e46                __mulsf3
  .text.avr-libc.fplib
-                0x0000000000006e4c       0xc2 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3x.o)
-                0x0000000000006e60                __mulsf3x
-                0x0000000000006e64                __mulsf3_pse
+                0x0000000000006e4a       0xc2 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(mulsf3x.o)
+                0x0000000000006e5e                __mulsf3x
+                0x0000000000006e62                __mulsf3_pse
  .text.avr-libc.fplib
-                0x0000000000006f0e       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_mpack.o)
-                0x0000000000006f0e                __fp_mpack
-                0x0000000000006f12                __fp_mpack_finite
+                0x0000000000006f0c       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_mpack.o)
+                0x0000000000006f0c                __fp_mpack
+                0x0000000000006f10                __fp_mpack_finite
  .text.avr-libc.fplib
-                0x0000000000006f2a       0x4a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_powser.o)
-                0x0000000000006f2a                __fp_powser
+                0x0000000000006f28       0x4a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libm.a(fp_powser.o)
+                0x0000000000006f28                __fp_powser
  .text.avr-libc
-                0x0000000000006f74      0x24a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(malloc.o)
-                0x0000000000006f74                malloc
-                0x00000000000070ac                free
+                0x0000000000006f72      0x24a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(malloc.o)
+                0x0000000000006f72                malloc
+                0x00000000000070aa                free
  .text.avr-libc
-                0x00000000000071be       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp_P.o)
-                0x00000000000071be                memcmp_P
+                0x00000000000071bc       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp_P.o)
+                0x00000000000071bc                memcmp_P
  .text.avr-libc
-                0x00000000000071d8       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcpy_P.o)
-                0x00000000000071d8                memcpy_P
+                0x00000000000071d6       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcpy_P.o)
+                0x00000000000071d6                memcpy_P
  .text.avr-libc
-                0x00000000000071ea       0x30 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strdup.o)
-                0x00000000000071ea                strdup
+                0x00000000000071e8       0x30 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strdup.o)
+                0x00000000000071e8                strdup
  .text.avr-libc
-                0x000000000000721a       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp.o)
-                0x000000000000721a                memcmp
+                0x0000000000007218       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcmp.o)
+                0x0000000000007218                memcmp
  .text.avr-libc
-                0x0000000000007234       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcpy.o)
-                0x0000000000007234                memcpy
+                0x0000000000007232       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memcpy.o)
+                0x0000000000007232                memcpy
  .text.avr-libc
-                0x0000000000007246       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memmove.o)
-                0x0000000000007246                memmove
+                0x0000000000007244       0x22 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memmove.o)
+                0x0000000000007244                memmove
  .text.avr-libc
-                0x0000000000007268        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memset.o)
-                0x0000000000007268                memset
+                0x0000000000007266        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(memset.o)
+                0x0000000000007266                memset
  .text.avr-libc
-                0x0000000000007276       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcmp.o)
-                0x0000000000007276                strcmp
+                0x0000000000007274       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcmp.o)
+                0x0000000000007274                strcmp
  .text.avr-libc
-                0x0000000000007288        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcpy.o)
-                0x0000000000007288                strcpy
+                0x0000000000007286        0xe c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strcpy.o)
+                0x0000000000007286                strcpy
  .text.avr-libc
-                0x0000000000007296       0x16 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrchr.o)
-                0x0000000000007296                strrchr
+                0x0000000000007294       0x16 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrchr.o)
+                0x0000000000007294                strrchr
  .text.avr-libc
-                0x00000000000072ac       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ltoa_ncheck.o)
-                0x00000000000072ac                __ltoa_ncheck
+                0x00000000000072aa       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ltoa_ncheck.o)
+                0x00000000000072aa                __ltoa_ncheck
  .text.avr-libc
-                0x00000000000072c8       0x42 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ultoa_ncheck.o)
-                0x00000000000072c8                __ultoa_ncheck
-                0x00000000000072ca                __ultoa_common
+                0x00000000000072c6       0x42 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(ultoa_ncheck.o)
+                0x00000000000072c6                __ultoa_ncheck
+                0x00000000000072c8                __ultoa_common
  .text.avr-libc
-                0x000000000000730a       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrev.o)
-                0x000000000000730a                strrev
+                0x0000000000007308       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(strrev.o)
+                0x0000000000007308                strrev
  .text.avr-libc
-                0x000000000000732a       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eerd_block.o)
-                0x000000000000732a                eeprom_read_block
-                0x000000000000732e                eeprom_read_blraw
+                0x0000000000007328       0x20 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eerd_block.o)
+                0x0000000000007328                eeprom_read_block
+                0x000000000000732c                eeprom_read_blraw
  .text.avr-libc
-                0x000000000000734a       0x10 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eerd_byte.o)
-                0x000000000000734a                eeprom_read_byte
+                0x0000000000007348       0x10 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eerd_byte.o)
+                0x0000000000007348                eeprom_read_byte
  .text.avr-libc
-                0x000000000000735a        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eerd_word.o)
-                0x000000000000735a                eeprom_read_word
+                0x0000000000007358        0xa c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eerd_word.o)
+                0x0000000000007358                eeprom_read_word
  .text.avr-libc
-                0x0000000000007364       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eewr_block.o)
-                0x0000000000007364                eeprom_write_block
+                0x0000000000007362       0x12 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eewr_block.o)
+                0x0000000000007362                eeprom_write_block
  .text.avr-libc
-                0x0000000000007376       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eewr_byte.o)
-                0x0000000000007376                eeprom_write_byte
-                0x0000000000007378                eeprom_write_r18
-                0x0000000000007392                . = ALIGN (0x2)
+                0x0000000000007374       0x1c c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libatmega328p.a(eewr_byte.o)
+                0x0000000000007374                eeprom_write_byte
+                0x0000000000007376                eeprom_write_r18
+                0x0000000000007390                . = ALIGN (0x2)
  *(.fini9)
- .fini9         0x0000000000007392        0x0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
-                0x0000000000007392                _exit
-                0x0000000000007392                exit
+ .fini9         0x0000000000007390        0x0 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+                0x0000000000007390                _exit
+                0x0000000000007390                exit
  *(.fini9)
  *(.fini8)
  *(.fini8)
@@ -1439,11 +1439,11 @@ END GROUP
  *(.fini1)
  *(.fini1)
  *(.fini0)
- .fini0         0x0000000000007392        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
+ .fini0         0x0000000000007390        0x4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/avr5\libgcc.a(_exit.o)
  *(.fini0)
-                0x0000000000007396                _etext = .
+                0x0000000000007394                _etext = .
 
-.data           0x0000000000800100       0x24 load address 0x0000000000007396
+.data           0x0000000000800100       0x24 load address 0x0000000000007394
                 0x0000000000800100                PROVIDE (__data_start, .)
  *(.data)
  .data          0x0000000000800100        0x6 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5\libc.a(malloc.o)
@@ -1523,8 +1523,8 @@ END GROUP
                 0x000000000080075c                __brkval
                 0x000000000080075e                __flp
                 0x0000000000800760                PROVIDE (__bss_end, .)
-                0x0000000000007396                __data_load_start = LOADADDR (.data)
-                0x00000000000073ba                __data_load_end = (__data_load_start + SIZEOF (.data))
+                0x0000000000007394                __data_load_start = LOADADDR (.data)
+                0x00000000000073b8                __data_load_end = (__data_load_start + SIZEOF (.data))
 
 .noinit         0x0000000000800760        0x0
                 [!provide]                        PROVIDE (__noinit_start, .)
@@ -1668,7 +1668,7 @@ END GROUP
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x0000000000000000    0x10e2e
+.debug_info     0x0000000000000000    0x10ee8
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x0000000000000000      0x5f4 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328p.o
  .debug_info    0x00000000000005f4     0x19f0 obj-m328p-arduino/src/catalog.o
@@ -1677,23 +1677,23 @@ END GROUP
  .debug_info    0x000000000000301c     0x2127 obj-m328p-arduino/src/drive.o
  .debug_info    0x0000000000005143      0x4ae obj-m328p-arduino/src/ds1307-3231.o
  .debug_info    0x00000000000055f1      0x80d obj-m328p-arduino/src/eeprom.o
- .debug_info    0x0000000000005dfe     0x357e obj-m328p-arduino/src/ff.o
- .debug_info    0x000000000000937c      0x80d obj-m328p-arduino/src/hexbus.o
- .debug_info    0x0000000000009b89     0x1307 obj-m328p-arduino/src/hexops.o
- .debug_info    0x000000000000ae90       0xee obj-m328p-arduino/src/led.o
- .debug_info    0x000000000000af7e      0xda5 obj-m328p-arduino/src/main.o
- .debug_info    0x000000000000bd23      0x160 obj-m328p-arduino/src/powermgmt.o
- .debug_info    0x000000000000be83      0xf54 obj-m328p-arduino/src/printer.o
- .debug_info    0x000000000000cdd7      0x344 obj-m328p-arduino/src/registry.o
- .debug_info    0x000000000000d11b      0x20f obj-m328p-arduino/src/rtc.o
- .debug_info    0x000000000000d32a     0x1223 obj-m328p-arduino/src/sdcard.o
- .debug_info    0x000000000000e54d     0x12f0 obj-m328p-arduino/src/serial.o
- .debug_info    0x000000000000f83d      0xc7e obj-m328p-arduino/src/softi2c.o
- .debug_info    0x00000000000104bb      0x269 obj-m328p-arduino/src/spi.o
- .debug_info    0x0000000000010724      0x169 obj-m328p-arduino/src/timer.o
- .debug_info    0x000000000001088d      0x5a1 obj-m328p-arduino/src/uart.o
+ .debug_info    0x0000000000005dfe     0x357f obj-m328p-arduino/src/ff.o
+ .debug_info    0x000000000000937d      0x80d obj-m328p-arduino/src/hexbus.o
+ .debug_info    0x0000000000009b8a     0x1307 obj-m328p-arduino/src/hexops.o
+ .debug_info    0x000000000000ae91       0xee obj-m328p-arduino/src/led.o
+ .debug_info    0x000000000000af7f      0xda6 obj-m328p-arduino/src/main.o
+ .debug_info    0x000000000000bd25      0x160 obj-m328p-arduino/src/powermgmt.o
+ .debug_info    0x000000000000be85      0xf54 obj-m328p-arduino/src/printer.o
+ .debug_info    0x000000000000cdd9      0x344 obj-m328p-arduino/src/registry.o
+ .debug_info    0x000000000000d11d      0x20f obj-m328p-arduino/src/rtc.o
+ .debug_info    0x000000000000d32c     0x1223 obj-m328p-arduino/src/sdcard.o
+ .debug_info    0x000000000000e54f     0x12f0 obj-m328p-arduino/src/serial.o
+ .debug_info    0x000000000000f83f      0xc7e obj-m328p-arduino/src/softi2c.o
+ .debug_info    0x00000000000104bd      0x269 obj-m328p-arduino/src/spi.o
+ .debug_info    0x0000000000010726      0x221 obj-m328p-arduino/src/timer.o
+ .debug_info    0x0000000000010947      0x5a1 obj-m328p-arduino/src/uart.o
 
-.debug_abbrev   0x0000000000000000     0x3b00
+.debug_abbrev   0x0000000000000000     0x3b4e
  *(.debug_abbrev)
  .debug_abbrev  0x0000000000000000      0x5a2 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328p.o
  .debug_abbrev  0x00000000000005a2      0x48c obj-m328p-arduino/src/catalog.o
@@ -1706,19 +1706,19 @@ END GROUP
  .debug_abbrev  0x0000000000001aa7      0x371 obj-m328p-arduino/src/hexbus.o
  .debug_abbrev  0x0000000000001e18      0x3b7 obj-m328p-arduino/src/hexops.o
  .debug_abbrev  0x00000000000021cf       0xac obj-m328p-arduino/src/led.o
- .debug_abbrev  0x000000000000227b      0x34b obj-m328p-arduino/src/main.o
- .debug_abbrev  0x00000000000025c6       0xf3 obj-m328p-arduino/src/powermgmt.o
- .debug_abbrev  0x00000000000026b9      0x38a obj-m328p-arduino/src/printer.o
- .debug_abbrev  0x0000000000002a43      0x10c obj-m328p-arduino/src/registry.o
- .debug_abbrev  0x0000000000002b4f      0x12f obj-m328p-arduino/src/rtc.o
- .debug_abbrev  0x0000000000002c7e      0x425 obj-m328p-arduino/src/sdcard.o
- .debug_abbrev  0x00000000000030a3      0x3dd obj-m328p-arduino/src/serial.o
- .debug_abbrev  0x0000000000003480      0x1ec obj-m328p-arduino/src/softi2c.o
- .debug_abbrev  0x000000000000366c      0x14a obj-m328p-arduino/src/spi.o
- .debug_abbrev  0x00000000000037b6      0x114 obj-m328p-arduino/src/timer.o
- .debug_abbrev  0x00000000000038ca      0x236 obj-m328p-arduino/src/uart.o
+ .debug_abbrev  0x000000000000227b      0x35a obj-m328p-arduino/src/main.o
+ .debug_abbrev  0x00000000000025d5       0xf3 obj-m328p-arduino/src/powermgmt.o
+ .debug_abbrev  0x00000000000026c8      0x38a obj-m328p-arduino/src/printer.o
+ .debug_abbrev  0x0000000000002a52      0x10c obj-m328p-arduino/src/registry.o
+ .debug_abbrev  0x0000000000002b5e      0x12f obj-m328p-arduino/src/rtc.o
+ .debug_abbrev  0x0000000000002c8d      0x425 obj-m328p-arduino/src/sdcard.o
+ .debug_abbrev  0x00000000000030b2      0x3dd obj-m328p-arduino/src/serial.o
+ .debug_abbrev  0x000000000000348f      0x1ec obj-m328p-arduino/src/softi2c.o
+ .debug_abbrev  0x000000000000367b      0x14a obj-m328p-arduino/src/spi.o
+ .debug_abbrev  0x00000000000037c5      0x153 obj-m328p-arduino/src/timer.o
+ .debug_abbrev  0x0000000000003918      0x236 obj-m328p-arduino/src/uart.o
 
-.debug_line     0x0000000000000000     0x67cf
+.debug_line     0x0000000000000000     0x67e3
  *(.debug_line .debug_line.* .debug_line_end)
  .debug_line    0x0000000000000000       0x1a c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328p.o
  .debug_line    0x000000000000001a      0x743 obj-m328p-arduino/src/catalog.o
@@ -1729,19 +1729,19 @@ END GROUP
  .debug_line    0x0000000000001b38      0x1ba obj-m328p-arduino/src/eeprom.o
  .debug_line    0x0000000000001cf2     0x1cce obj-m328p-arduino/src/ff.o
  .debug_line    0x00000000000039c0      0x3d5 obj-m328p-arduino/src/hexbus.o
- .debug_line    0x0000000000003d95      0x627 obj-m328p-arduino/src/hexops.o
- .debug_line    0x00000000000043bc       0xce obj-m328p-arduino/src/led.o
- .debug_line    0x000000000000448a      0x371 obj-m328p-arduino/src/main.o
+ .debug_line    0x0000000000003d95      0x628 obj-m328p-arduino/src/hexops.o
+ .debug_line    0x00000000000043bd       0xce obj-m328p-arduino/src/led.o
+ .debug_line    0x000000000000448b      0x370 obj-m328p-arduino/src/main.o
  .debug_line    0x00000000000047fb      0x164 obj-m328p-arduino/src/powermgmt.o
  .debug_line    0x000000000000495f      0x47c obj-m328p-arduino/src/printer.o
  .debug_line    0x0000000000004ddb       0xe5 obj-m328p-arduino/src/registry.o
- .debug_line    0x0000000000004ec0      0x10d obj-m328p-arduino/src/rtc.o
- .debug_line    0x0000000000004fcd      0x771 obj-m328p-arduino/src/sdcard.o
- .debug_line    0x000000000000573e      0x67c obj-m328p-arduino/src/serial.o
- .debug_line    0x0000000000005dba      0x417 obj-m328p-arduino/src/softi2c.o
- .debug_line    0x00000000000061d1      0x197 obj-m328p-arduino/src/spi.o
- .debug_line    0x0000000000006368      0x10a obj-m328p-arduino/src/timer.o
- .debug_line    0x0000000000006472      0x35d obj-m328p-arduino/src/uart.o
+ .debug_line    0x0000000000004ec0      0x10e obj-m328p-arduino/src/rtc.o
+ .debug_line    0x0000000000004fce      0x771 obj-m328p-arduino/src/sdcard.o
+ .debug_line    0x000000000000573f      0x67c obj-m328p-arduino/src/serial.o
+ .debug_line    0x0000000000005dbb      0x417 obj-m328p-arduino/src/softi2c.o
+ .debug_line    0x00000000000061d2      0x197 obj-m328p-arduino/src/spi.o
+ .debug_line    0x0000000000006369      0x11d obj-m328p-arduino/src/timer.o
+ .debug_line    0x0000000000006486      0x35d obj-m328p-arduino/src/uart.o
 
 .debug_frame    0x0000000000000000     0x196c
  *(.debug_frame)
@@ -1790,7 +1790,7 @@ END GROUP
  .debug_str     0x0000000000001be3       0x26 obj-m328p-arduino/src/led.o
                                         0x1ac (size before relaxing)
  .debug_str     0x0000000000001c09      0x130 obj-m328p-arduino/src/main.o
-                                        0x9c0 (size before relaxing)
+                                        0x9c6 (size before relaxing)
  .debug_str     0x0000000000001d39       0x59 obj-m328p-arduino/src/powermgmt.o
                                         0x20b (size before relaxing)
  .debug_str     0x0000000000001d92       0xbf obj-m328p-arduino/src/printer.o
@@ -1808,7 +1808,7 @@ END GROUP
  .debug_str     0x0000000000002364       0x45 obj-m328p-arduino/src/spi.o
                                         0x22f (size before relaxing)
  .debug_str     0x00000000000023a9       0x38 obj-m328p-arduino/src/timer.o
-                                        0x1d6 (size before relaxing)
+                                        0x252 (size before relaxing)
  .debug_str     0x00000000000023e1       0xa6 obj-m328p-arduino/src/uart.o
                                         0x312 (size before relaxing)
 

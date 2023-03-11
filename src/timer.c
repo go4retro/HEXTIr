@@ -32,7 +32,6 @@
 #include "integer.h"
 #include "led.h"
 #include "softrtc.h"
-
 #include "timer.h"
 
 volatile tick_t ticks;

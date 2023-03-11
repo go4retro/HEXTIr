@@ -32,11 +32,12 @@
 #include <avr/pgmspace.h>
 
 #include "config.h"
-#include "ds1307-3231.h"
-#include "pcf8583.h"
-#include "softrtc.h"
-#include "time.h"
 #include "rtc.h"
+#ifdef NEED_RTCMUX
+#  include "ds1307-3231.h"
+#  include "pcf8583.h"
+#  include "softrtc.h"
+#endif
 
 #ifdef HAVE_RTC     // hide file from Arduino if not enabled
 

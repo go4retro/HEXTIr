@@ -31,7 +31,6 @@
 #include "drive.h"
 #include "ff.h"
 #include "hexbus.h"
-
 #include "catalog.h"
 
 #ifdef INCLUDE_DRIVE

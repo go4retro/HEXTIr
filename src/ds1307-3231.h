@@ -33,11 +33,23 @@
 extern "C"{
 #endif
 
-#include "time.h"
+#include "rtc.h"
+
+#ifdef CONFIG_RTC_DSRTC
 
 void dsrtc_get(struct tm *time);
 void dsrtc_set(struct tm *time);
+rtc_type_t dsrtc_get_type(void);
 void dsrtc_init(void);
+
+#else
+
+#  define dsrtc_get()             do {} while(0)
+#  define dsrtc_set()             do {} while(0)
+#  define dsrtc_get_type(void)    0
+#  define dsrtc_init()            do {} while(0)
+
+#endif
 
 #ifdef __cplusplus
 } // extern "C"

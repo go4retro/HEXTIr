@@ -23,6 +23,7 @@
 #include <avr/eeprom.h>
 #include "config.h"
 #include "debug.h"
+#include "integer.h"
 #include "eeprom.h"
 
 static EEMEM config_t _eeconfig;
