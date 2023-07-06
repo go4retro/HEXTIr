@@ -1020,6 +1020,9 @@ void drv_register(void) {
   }
   reg_add(DEV_DRV_START, drv_dev, DEV_DRV_END, ops);
   disk_init();
+  //debug_puts_P("Drive Function on device #");
+  //debug_putdec(drv_dev);
+  //debug_putcrlf();  
 }
 
 

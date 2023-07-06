@@ -12576,7 +12576,7 @@ W = angled&lt;p&gt;
 <part name="C2" library="rcl" deviceset="C-EU" device="025-024X044"/>
 <part name="GND1" library="supply1" deviceset="GND" device=""/>
 <part name="FRAME1" library="frames" deviceset="FRAME_A_L" device="" value="FRAME_A_L"/>
-<part name="R1" library="resistor" deviceset="R-US_" device="0204/2V"/>
+<part name="R1" library="resistor" deviceset="R-US_" device="0204/2V" value="10K"/>
 <part name="SD1" library="con-atom-sd" deviceset="SD01-AP20324" device=""/>
 <part name="GND3" library="supply1" deviceset="GND" device=""/>
 <part name="GND4" library="supply1" deviceset="GND" device=""/>

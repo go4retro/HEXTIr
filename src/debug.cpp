@@ -55,6 +55,14 @@ void debug_puthex(uint8_t hex) {
 }
 
 
+void debug_putdec(uint8_t dec) {
+
+  debug_putc((dec/100) + '0');
+  debug_putc(((dec/10) % 10) + '0');
+  debug_putc((dec % 10) + '0');
+}
+
+
 void debug_putcrlf(void) {
   debug_putc(13);
   debug_putc(10);

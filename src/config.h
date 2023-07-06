@@ -71,10 +71,10 @@
 #  define INCLUDE_SERIAL
 #  define INCLUDE_PRINTER
 
-#  define HEX_HSK_DDR         DDRC
-#  define HEX_HSK_OUT         PORTC
-#  define HEX_HSK_IN          PINC
-#  define HEX_HSK_PIN         _BV(PIN4)
+#  define HEX_HSK_DDR         DDRD
+#  define HEX_HSK_OUT         PORTD
+#  define HEX_HSK_IN          PIND
+#  define HEX_HSK_PIN         _BV(PIN3)
 
 #  define HEX_BAV_DDR         DDRD
 #  define HEX_BAV_OUT         PORTD
@@ -86,9 +86,9 @@
 #  define HEX_DATA_IN         PINC
 #  define HEX_DATA_PIN        (_BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3))
 
-#  define LED_BUSY_DDR        DDRC
-#  define LED_BUSY_OUT        PORTC
-#  define LED_BUSY_PIN        _BV(PIN5)
+#  define LED_BUSY_DDR        DDRD
+#  define LED_BUSY_OUT        PORTD
+#  define LED_BUSY_PIN        _BV(PIN7)
 
 #  define HAVE_SD
 #  define SD_CHANGE_HANDLER     ISR(PCINT0_vect)
@@ -100,10 +100,10 @@
 
 
 static inline void sdcard_interface_init(void) {
-  DDRB  &= ~_BV(PB0);  // wp
-  PORTB |=  _BV(PB0);
-  DDRB  &= ~_BV(PB1);  // detect
+  DDRB  &= ~_BV(PB1);  // wp
   PORTB |=  _BV(PB1);
+  DDRB  &= ~_BV(PB0);  // detect
+  PORTB |=  _BV(PB0);
   PCICR |= _BV(PCIE0);
   //EICRB |=  _BV(ISC60);
   PCMSK0 |= _BV(PCINT1);
@@ -112,19 +112,19 @@ static inline void sdcard_interface_init(void) {
 
 
 static inline uint8_t sdcard_detect(void) {
-  return !(PINB & _BV(PIN1));
+  return !(PINB & _BV(PIN0));
 }
 
 
 static inline uint8_t sdcard_wp(void) {
-  return PINB & _BV(PIN0);
+  return PINB & _BV(PIN1);
 }
 
 
 static inline void board_init(void) {
   // turn on power LED
-  DDRD  |= _BV(PIN3);
-  PORTD |= _BV(PIN3);
+  DDRD  |= _BV(PIN6);
+  PORTD |= _BV(PIN6);
 }
 
 

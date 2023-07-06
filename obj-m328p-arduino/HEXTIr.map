@@ -142,7 +142,7 @@ Discarded input sections
  .debug_aranges
                 0x0000000000000000       0x18 obj-m328p-arduino/src/debug.o
  .debug_line    0x0000000000000000       0x54 obj-m328p-arduino/src/debug.o
- .debug_str     0x0000000000000000      0x19e obj-m328p-arduino/src/debug.o
+ .debug_str     0x0000000000000000      0x19a obj-m328p-arduino/src/debug.o
  .comment       0x0000000000000000       0x31 obj-m328p-arduino/src/debug.o
  .text          0x0000000000000000        0x0 obj-m328p-arduino/src/diskio.o
  .data          0x0000000000000000        0x0 obj-m328p-arduino/src/diskio.o
@@ -221,7 +221,7 @@ Discarded input sections
  .debug_aranges
                 0x0000000000000000       0x18 obj-m328p-arduino/src/swuart.o
  .debug_line    0x0000000000000000       0x1a obj-m328p-arduino/src/swuart.o
- .debug_str     0x0000000000000000      0x16e obj-m328p-arduino/src/swuart.o
+ .debug_str     0x0000000000000000      0x16a obj-m328p-arduino/src/swuart.o
  .comment       0x0000000000000000       0x31 obj-m328p-arduino/src/swuart.o
  .text          0x0000000000000000        0x0 obj-m328p-arduino/src/timer.o
  .data          0x0000000000000000        0x0 obj-m328p-arduino/src/timer.o
@@ -1766,51 +1766,51 @@ END GROUP
  .debug_frame   0x00000000000017c8       0x7c obj-m328p-arduino/src/timer.o
  .debug_frame   0x0000000000001844      0x128 obj-m328p-arduino/src/uart.o
 
-.debug_str      0x0000000000000000     0x2487
+.debug_str      0x0000000000000000     0x2483
  *(.debug_str)
  .debug_str     0x0000000000000000      0x208 c:/tools/avr-gcc_7.3.0/bin/../lib/gcc/avr/7.3.0/../../../../avr/lib/avr5/crtatmega328p.o
- .debug_str     0x0000000000000208      0xcc9 obj-m328p-arduino/src/catalog.o
-                                        0xdc7 (size before relaxing)
- .debug_str     0x0000000000000ed1      0x30b obj-m328p-arduino/src/clock.o
-                                        0xc20 (size before relaxing)
- .debug_str     0x00000000000011dc        0xd obj-m328p-arduino/src/diskio.o
-                                        0x1b1 (size before relaxing)
- .debug_str     0x00000000000011e9      0x337 obj-m328p-arduino/src/drive.o
-                                       0x110d (size before relaxing)
- .debug_str     0x0000000000001520      0x101 obj-m328p-arduino/src/ds1307-3231.o
-                                        0x2f3 (size before relaxing)
- .debug_str     0x0000000000001621       0x96 obj-m328p-arduino/src/eeprom.o
-                                        0x6ff (size before relaxing)
- .debug_str     0x00000000000016b7      0x386 obj-m328p-arduino/src/ff.o
-                                        0x869 (size before relaxing)
- .debug_str     0x0000000000001a3d      0x128 obj-m328p-arduino/src/hexbus.o
-                                        0x65c (size before relaxing)
- .debug_str     0x0000000000001b65       0x7e obj-m328p-arduino/src/hexops.o
-                                        0xbd6 (size before relaxing)
- .debug_str     0x0000000000001be3       0x26 obj-m328p-arduino/src/led.o
-                                        0x1ac (size before relaxing)
- .debug_str     0x0000000000001c09      0x130 obj-m328p-arduino/src/main.o
-                                        0x9c6 (size before relaxing)
- .debug_str     0x0000000000001d39       0x59 obj-m328p-arduino/src/powermgmt.o
-                                        0x20b (size before relaxing)
- .debug_str     0x0000000000001d92       0xbf obj-m328p-arduino/src/printer.o
-                                        0xbed (size before relaxing)
- .debug_str     0x0000000000001e51        0xf obj-m328p-arduino/src/registry.o
-                                        0x498 (size before relaxing)
- .debug_str     0x0000000000001e60        0xa obj-m328p-arduino/src/rtc.o
-                                        0x235 (size before relaxing)
- .debug_str     0x0000000000001e6a      0x2c4 obj-m328p-arduino/src/sdcard.o
-                                        0x530 (size before relaxing)
- .debug_str     0x000000000000212e      0x1c4 obj-m328p-arduino/src/serial.o
-                                        0xd9a (size before relaxing)
- .debug_str     0x00000000000022f2       0x72 obj-m328p-arduino/src/softi2c.o
-                                        0x29d (size before relaxing)
- .debug_str     0x0000000000002364       0x45 obj-m328p-arduino/src/spi.o
-                                        0x22f (size before relaxing)
- .debug_str     0x00000000000023a9       0x38 obj-m328p-arduino/src/timer.o
-                                        0x252 (size before relaxing)
- .debug_str     0x00000000000023e1       0xa6 obj-m328p-arduino/src/uart.o
-                                        0x312 (size before relaxing)
+ .debug_str     0x0000000000000208      0xcc5 obj-m328p-arduino/src/catalog.o
+                                        0xdc3 (size before relaxing)
+ .debug_str     0x0000000000000ecd      0x30b obj-m328p-arduino/src/clock.o
+                                        0xc1c (size before relaxing)
+ .debug_str     0x00000000000011d8        0xd obj-m328p-arduino/src/diskio.o
+                                        0x1ad (size before relaxing)
+ .debug_str     0x00000000000011e5      0x337 obj-m328p-arduino/src/drive.o
+                                       0x1109 (size before relaxing)
+ .debug_str     0x000000000000151c      0x101 obj-m328p-arduino/src/ds1307-3231.o
+                                        0x2ef (size before relaxing)
+ .debug_str     0x000000000000161d       0x96 obj-m328p-arduino/src/eeprom.o
+                                        0x6fb (size before relaxing)
+ .debug_str     0x00000000000016b3      0x386 obj-m328p-arduino/src/ff.o
+                                        0x865 (size before relaxing)
+ .debug_str     0x0000000000001a39      0x128 obj-m328p-arduino/src/hexbus.o
+                                        0x658 (size before relaxing)
+ .debug_str     0x0000000000001b61       0x7e obj-m328p-arduino/src/hexops.o
+                                        0xbd2 (size before relaxing)
+ .debug_str     0x0000000000001bdf       0x26 obj-m328p-arduino/src/led.o
+                                        0x1a8 (size before relaxing)
+ .debug_str     0x0000000000001c05      0x130 obj-m328p-arduino/src/main.o
+                                        0x9c2 (size before relaxing)
+ .debug_str     0x0000000000001d35       0x59 obj-m328p-arduino/src/powermgmt.o
+                                        0x207 (size before relaxing)
+ .debug_str     0x0000000000001d8e       0xbf obj-m328p-arduino/src/printer.o
+                                        0xbe9 (size before relaxing)
+ .debug_str     0x0000000000001e4d        0xf obj-m328p-arduino/src/registry.o
+                                        0x494 (size before relaxing)
+ .debug_str     0x0000000000001e5c        0xa obj-m328p-arduino/src/rtc.o
+                                        0x231 (size before relaxing)
+ .debug_str     0x0000000000001e66      0x2c4 obj-m328p-arduino/src/sdcard.o
+                                        0x52c (size before relaxing)
+ .debug_str     0x000000000000212a      0x1c4 obj-m328p-arduino/src/serial.o
+                                        0xd96 (size before relaxing)
+ .debug_str     0x00000000000022ee       0x72 obj-m328p-arduino/src/softi2c.o
+                                        0x299 (size before relaxing)
+ .debug_str     0x0000000000002360       0x45 obj-m328p-arduino/src/spi.o
+                                        0x22b (size before relaxing)
+ .debug_str     0x00000000000023a5       0x38 obj-m328p-arduino/src/timer.o
+                                        0x24e (size before relaxing)
+ .debug_str     0x00000000000023dd       0xa6 obj-m328p-arduino/src/uart.o
+                                        0x30e (size before relaxing)
 
 .debug_loc      0x0000000000000000     0xb940
  *(.debug_loc)
