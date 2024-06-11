@@ -1,5 +1,5 @@
   100 ON BREAK ERROR:ON ERROR 200
-  110 DATA "Sa","So","Mo","Di","Mi","Do","Fr"
+  110 DATA "Sa","Su","Mo","Tu","We","Th","Fr"
   120 DIM A$(6)
   130 FOR I=0 TO 6:READ A$(I):NEXT
   140 OPEN #1,"230",INPUT
