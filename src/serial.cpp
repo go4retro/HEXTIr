@@ -140,12 +140,14 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, uint8_t *dev, ser
     case 'n':
       cfg->parity = PARITY_NONE;
       break;
+    // Space parity: parity bit is always zero
+    // Mark parity: parity bit is always one
+    // Neither is supported by the ATmega USART, so the best option
+    // is simply to err out right now. However, they could be useful
+    // with seven bit transfers (seven bit with space parity is just
+    // seven bit ASCII to an 8N1 connection).
     case 's':
-      // TODO What is space parity?
-      break;
     case 'm':
-      // TODO What is MARK parity?
-      break;
     default:
       rc = HEXSTAT_DATA_ERR;
       break;
@@ -202,6 +204,7 @@ static inline hexstatus_t ser_exec_cmd(char* buf, uint8_t len, uint8_t *dev, ser
     }
     break;
   case SER_CMD_CR:
+  case SER_CMD_LINE: // Memo Processor uses this
     switch(lower(buf[0])) {
     case 'n':
       cfg->line = LINE_NONE;
