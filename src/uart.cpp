@@ -153,8 +153,21 @@ void uart_putcrlf(void) __attribute__ ((weak, alias("uart0_putcrlf")));
 
 #  ifdef DYNAMIC_UART
 void uart0_config(uint16_t rate, uartlen_t length, uartpar_t parity, uartstop_t stopbits) {
+#    ifdef UART_DOUBLE_SPEED
+  // Hack for 300bps (Memo Processor only supports 110bps and 300bps)
+  if (rate == CALC_BPS(300)) {
+    UBRRAH = CALC_BPS(600) >> 8;
+    UBRRAL = CALC_BPS(600) & 0xff;
+    UCSRAA &= ~(1<<U2X0);
+  } else {
+    UCSRAA = (1<<U2X0);
+    UBRRAH = rate >> 8;
+    UBRRAL = rate & 0xff;
+  }
+#    else
   UBRRAH = rate >> 8;
   UBRRAL = rate & 0xff;
+#    endif
 
   UART0_CONFIG(length, parity, stopbits);
 }
